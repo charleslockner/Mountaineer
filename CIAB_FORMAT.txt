@@ -1,0 +1,43 @@
+Format specification for the ciab model file (CIAB = Charles is a Boss):
+
+[] denotes a data field
+{} denotes a collection of data fields to which () and <> applies to each [] within it
+() denotes the number of repetitions
+<> denotes the data type
+
+vert_pos_type -----> 1
+vert_norm_field ---> 2
+vert_color_field --> 3
+vert_uv_field -----> 4
+vert_tang_field ---> 5
+vert_bitan_field --> 6
+vert_index_field --> 7
+bone_index_field --> 8
+bone_weight_field -> 9
+bone_tree_field ---> 10
+animation_field ---> 11
+
+[vert_count]<int32> [index_count]<int32> [bone_count]<int32> [animation_count]<int32>
+[ vert_pos_type ]<uint8> (vert_count){[posX] [posY] [posZ]}<float32>
+[ vert_norm_field ]<uint8> (vert_count){[normX] [normY] [normZ]}<float32>
+[ vert_color_field ]<uint8> (vert_count){[red] [green] [blue]}<float32>
+[ vert_uv_field ]<uint8> (vert_count){[u_coord] [v_coord]}<float32>
+[ vert_tang_field ]<uint8> (vert_count){[tanX] [tanY] [tanZ]}<float32>
+[ vert_bitan_field ]<uint8> (vert_count){[bitanX] [bitanY] [bitanZ]}<float32>
+[ vert_index_field ]<uint8> (index_count)[index]<uint32>
+[ bone_index_field ]<uint8> (vert_count){[bone_1_index] [bone_2_index] [bone_3_index]}<uint16>
+[ bone_weight_field ]<uint8> (vert_count){[bone_1_weight] [bone_2_weight] [bone_3_weight]}<float32>
+[ bone_tree_field ]<uint8> [bone_root_index]<int16> (bone_count){[parent]<int16> [children_count]<int16> (children_count)[child_index]<int16>
+   (16)[mat_n_m]<float32>]}
+[ animation_field ]<uint8>
+(animation_count){
+   [duration]<float32>
+   (bone_count){
+      [pos_key_count]<uint32>
+      (pos_key_count){[time]<float> {[posX] [posY] [posZ]}<float32>}
+      [rot_key_count]<uint32>
+      (rot_key_count){[time]<float> {[rotW] [rotX] [rotY] [rotZ]}<float32>}
+      [scl_key_count]<uint32>
+      (scl_key_count){[time]<float> {[sclX] [sclY] [sclZ]}<float32>}
+   }
+}
