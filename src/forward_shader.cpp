@@ -27,14 +27,14 @@ void ForwardShader::setupHandles() {
    h_uModelMatrix = glGetUniformLocation(program, "uModelMatrix");
    h_uProjViewMatrix = glGetUniformLocation(program, "uProjViewMatrix");
    h_uCameraPosition = glGetUniformLocation(program, "uCameraPosition");
-   // h_uLights = glGetUniformLocation(program, "uLights");
-   // h_uTexture = glGetUniformLocation(program, "uTexture");
+   h_uLights = glGetUniformLocation(program, "uLights");
+   h_uTexture = glGetUniformLocation(program, "uTexture");
    h_uBoneTransforms = glGetUniformLocation(program, "uBoneTransforms");
 
    h_aVertexPosition = glGetAttribLocation(program, "aVertexPosition");
    h_aVertexNormal = glGetAttribLocation(program, "aVertexNormal");
    // h_aVertexColor = glGetAttribLocation(program, "aVertexColor");
-   // h_aTextureCoord = glGetAttribLocation(program, "aTextureCoord");
+   h_aTextureCoord = glGetAttribLocation(program, "aTextureCoord");
    h_aBoneIndices = glGetAttribLocation(program, "aBoneIndices");
    h_aBoneWeights = glGetAttribLocation(program, "aBoneWeights");
 }
@@ -66,7 +66,7 @@ void ForwardShader::sendModelData(Model * model) {
    sendVertexAttribArray(h_aVertexPosition, model->vbo, 3, GL_FLOAT);
    sendVertexAttribArray(h_aVertexNormal, model->nbo, 3, GL_FLOAT);
    // sendVertexAttribArray(h_aVertexColor, model->cbo, 3, GL_FLOAT);
-   // sendVertexAttribArray(h_aTextureCoord, model->uvbo, 2, GL_FLOAT);
+   sendVertexAttribArray(h_aTextureCoord, model->uvbo, 2, GL_FLOAT);
    sendVertexAttribArray(h_aBoneIndices, model->bibo, 4, GL_FLOAT);
    sendVertexAttribArray(h_aBoneWeights, model->bwbo, 4, GL_FLOAT);
 

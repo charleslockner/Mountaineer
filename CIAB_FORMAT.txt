@@ -28,7 +28,7 @@ animation_field ---> 11
 [ bone_index_field ]<uint8> (vert_count){[bone_1_index] [bone_2_index] [bone_3_index]}<uint16>
 [ bone_weight_field ]<uint8> (vert_count){[bone_1_weight] [bone_2_weight] [bone_3_weight]}<float32>
 [ bone_tree_field ]<uint8> [bone_root_index]<int16> (bone_count){[parent]<int16> [children_count]<int16> (children_count)[child_index]<int16>
-   (16)[mat_n_m]<float32>]}
+   (16)[mat_bone_pose]<float32>] (16)[mat_parent_transform]<float32>]}
 [ animation_field ]<uint8>
 (animation_count){
    [duration]<float32>

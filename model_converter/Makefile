@@ -1,10 +1,11 @@
 CC=g++
 EXE=dae_to_ciab
-LIBDIR=include
+LIBDIR=../lib
 
 OPTLEVEL=-O1
 WARN=
 INCLUDES=-Iinclude
+#-I$(LIBDIR)/include
 
 CFLAGS=-c $(INCLUDES) $(WARN) $(OPTLEVEL) -g
 

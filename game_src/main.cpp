@@ -17,12 +17,6 @@ Entity * cubeEnt;
 
 EntityShader * shader;
 
-bool forwardHeld = false;
-bool backwardHeld = false;
-bool leftHeld = false;
-bool rightHeld = false;
-bool upHeld = false;
-bool downHeld = false;
 double lastScreenX;
 double lastScreenY;
 
@@ -30,67 +24,34 @@ static void error_callback(int error, const char* description) {
    fputs(description, stderr);
 }
 
+bool keyToggles[512] = {false};
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
    if (action == GLFW_PRESS) {
       switch (key) {
-         case GLFW_KEY_W:
-         case GLFW_KEY_UP:
-            forwardHeld = true;
-            break;
-         case GLFW_KEY_S:
-         case GLFW_KEY_DOWN:
-            backwardHeld = true;
-            break;
-         case GLFW_KEY_A:
-         case GLFW_KEY_LEFT:
-            leftHeld = true;
-            break;
-         case GLFW_KEY_D:
-         case GLFW_KEY_RIGHT:
-            rightHeld = true;
-            break;
-         case GLFW_KEY_SPACE:
-            upHeld = true;
-            break;
-         case GLFW_KEY_LEFT_SHIFT:
-            downHeld = true;
-            break;
          case GLFW_KEY_T:
             camera->lookAt(cubeEnt->position);
             break;
          case GLFW_KEY_ESCAPE:
             glfwSetWindowShouldClose(window, GL_TRUE);
             break;
+         case GLFW_KEY_L:
+            break;
          default:
-            // WE DON'T CARE
+            keyToggles[key] = true;
             break;
       }
    } else if (action == GLFW_RELEASE) {
       switch (key) {
-         case GLFW_KEY_W:
-         case GLFW_KEY_UP:
-            forwardHeld = false;
-            break;
-         case GLFW_KEY_S:
-         case GLFW_KEY_DOWN:
-            backwardHeld = false;
-            break;
-         case GLFW_KEY_A:
-         case GLFW_KEY_LEFT:
-            leftHeld = false;
-            break;
-         case GLFW_KEY_D:
-         case GLFW_KEY_RIGHT:
-            rightHeld = false;
-            break;
-         case GLFW_KEY_SPACE:
-            upHeld = false;
-            break;
-         case GLFW_KEY_LEFT_SHIFT:
-            downHeld = false;
+         case GLFW_KEY_L:
+            keyToggles[key] = !keyToggles[key];
+            if(keyToggles[key])
+               glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            else
+               glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             break;
          default:
-            // WE DON'T CARE
+            keyToggles[key] = false;
             break;
       }
    }
@@ -103,10 +64,10 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 }
 
 void setupWorldData() {
-   worldData.lights[0].position = glm::vec3(0.0, 0.0, -1.0);
+   worldData.lights[0].position = glm::vec3(10.0, 10.0, 10.0);
    worldData.lights[0].direction = glm::vec3(1.0, 0.0, 0.0);
    worldData.lights[0].color = glm::vec3(1.0, 1.0, 1.0);
-   worldData.lights[0].strength = 50;
+   worldData.lights[0].strength = 200;
    worldData.lights[0].attenuation = 50.0;
    worldData.lights[0].spread = 15;
    worldData.numLights = 1;
@@ -146,17 +107,17 @@ GLFWwindow * windowSetup() {
 void updateCameraPosition(double timePassed) {
    float distTraveled = CAMERA_SPEED * timePassed;
 
-   if (forwardHeld)
+   if (keyToggles[GLFW_KEY_W])
       camera->moveForward(distTraveled);
-   if (backwardHeld)
+   if (keyToggles[GLFW_KEY_S])
       camera->moveBackward(distTraveled);
-   if (leftHeld)
+   if (keyToggles[GLFW_KEY_A])
       camera->moveLeft(distTraveled);
-   if (rightHeld)
+   if (keyToggles[GLFW_KEY_D])
       camera->moveRight(distTraveled);
-   if (upHeld)
+   if (keyToggles[GLFW_KEY_SPACE])
       camera->moveUp(distTraveled);
-   if (downHeld)
+   if (keyToggles[GLFW_KEY_LEFT_SHIFT])
       camera->moveDown(distTraveled);
 }
 
@@ -171,7 +132,6 @@ int main(void) {
    cubeModel = MB_build("assets/models/trex.ciab",
                         "assets/textures/stones.bmp");
    cubeEnt = new Entity(glm::vec3(0,0,-5), cubeModel);
-
 
    shader->sendCameraData(camera);
    shader->sendWorldData(&worldData);

@@ -28,6 +28,8 @@
 #define BONE_TREE_TYPE     10
 #define ANIMATIONS_TYPE    11
 
+// TODO: write HAS_NORMALS, HAS_COLORS, HAS_TEXCOORDS, HAS_TANGENTANDBITANGENTS, HAS_BONES, HAS_ANIMATIONS
+
 #define MAX_INFLUENCES 4
 
 typedef struct {
@@ -97,7 +99,7 @@ void writeNormals(FILE * fp, aiMesh& mesh) {
 
 void writeColors(FILE * fp, aiMesh& mesh) {
    if (mesh.HasVertexColors(0)) {
-      std::cerr << "Writing vertex normals...\n";
+      std::cerr << "Writing vertex colors...\n";
       unsigned char type = COLORS_TYPE;
       fwrite(& type, sizeof(unsigned char), 1, fp);
 
@@ -105,6 +107,7 @@ void writeColors(FILE * fp, aiMesh& mesh) {
          fwrite(& mesh.mColors[0][i].r, sizeof(float), 1, fp);
          fwrite(& mesh.mColors[0][i].g, sizeof(float), 1, fp);
          fwrite(& mesh.mColors[0][i].b, sizeof(float), 1, fp);
+         printf("rgb= %f %f %f\n", mesh.mColors[0][i].r, mesh.mColors[0][i].g, mesh.mColors[0][i].b);
       }
    }
 }
@@ -261,11 +264,19 @@ void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
          fwrite(& childIndex, sizeof(short), 1, fp);
       }
 
-      // Write the offset matrix
-      aiMatrix4x4 m = mesh.mBones[i]->mOffsetMatrix;
+      // Write the inverse bindPose matrix
+      aiMatrix4x4 mBP = mesh.mBones[i]->mOffsetMatrix;
       for (int r = 0; r < 4; r++)
          for (int c = 0; c < 4; c++) {
-            float val = m[r][c];
+            float val = mBP[r][c];
+            fwrite(& val, sizeof(float), 1, fp);
+         }
+
+      // Write the parentBone transform matrix
+      aiMatrix4x4 mP = node->mTransformation;
+      for (int r = 0; r < 4; r++)
+         for (int c = 0; c < 4; c++) {
+            float val = mP[r][c];
             fwrite(& val, sizeof(float), 1, fp);
          }
    }
@@ -279,6 +290,8 @@ void writeBones(FILE * fp, aiMesh& mesh, aiNode * root) {
 }
 
 void writeAnimations(FILE * fp, const aiScene * scene) {
+   aiNode * root = scene->mRootNode;
+
    unsigned char type = ANIMATIONS_TYPE;
    fwrite(& type, sizeof(unsigned char), 1, fp);
 
@@ -286,7 +299,6 @@ void writeAnimations(FILE * fp, const aiScene * scene) {
       std::cerr << "Writing animation " << i << "...\n";
 
       aiAnimation * anim = scene->mAnimations[i];
-
       assert(anim->mTicksPerSecond != 0);
 
       float duration = anim->mDuration;
@@ -294,36 +306,40 @@ void writeAnimations(FILE * fp, const aiScene * scene) {
 
       for (int j = 0; j < anim->mNumChannels; j++) {
          aiNodeAnim * nodeAnim = anim->mChannels[j];
+         aiNode * node = root->FindNode(nodeAnim->mNodeName);
+
+         aiVector3D sclPI;
+         aiQuaternion rotPI;
+         aiVector3D posPI;
+
+         aiMatrix4x4 mPI = node->mTransformation.Inverse();
+         mPI.Decompose(sclPI, rotPI, posPI);
 
          fwrite(& nodeAnim->mNumPositionKeys, sizeof(unsigned int), 1, fp);
          for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
             float time = nodeAnim->mPositionKeys[k].mTime;
-            float values[] = {nodeAnim->mPositionKeys[k].mValue.x,
-                              nodeAnim->mPositionKeys[k].mValue.y,
-                              nodeAnim->mPositionKeys[k].mValue.z};
             fwrite(& time, sizeof(float), 1, fp);
-            fwrite(& values, sizeof(float), 3, fp);
+
+            aiVector3D value = nodeAnim->mPositionKeys[k].mValue;
+            fwrite(& value, sizeof(float), 3, fp);
          }
 
          fwrite(& nodeAnim->mNumRotationKeys, sizeof(unsigned int), 1, fp);
          for (int k = 0; k < nodeAnim->mNumRotationKeys; k++) {
             float time = nodeAnim->mRotationKeys[k].mTime;
-            float values[] = {nodeAnim->mRotationKeys[k].mValue.w,
-                              nodeAnim->mRotationKeys[k].mValue.x,
-                              nodeAnim->mRotationKeys[k].mValue.y,
-                              nodeAnim->mRotationKeys[k].mValue.z};
             fwrite(& time, sizeof(float), 1, fp);
-            fwrite(& values, sizeof(float), 4, fp);
+
+            aiQuaternion value = nodeAnim->mRotationKeys[k].mValue;
+            fwrite(& value, sizeof(float), 4, fp);
          }
 
          fwrite(& nodeAnim->mNumScalingKeys, sizeof(unsigned int), 1, fp);
          for (int k = 0; k < nodeAnim->mNumScalingKeys; k++) {
             float time = nodeAnim->mScalingKeys[k].mTime;
-            float values[] = {nodeAnim->mScalingKeys[k].mValue.x,
-                              nodeAnim->mScalingKeys[k].mValue.y,
-                              nodeAnim->mScalingKeys[k].mValue.z};
             fwrite(& time, sizeof(float), 1, fp);
-            fwrite(& values, sizeof(float), 3, fp);
+
+            aiVector3D value = nodeAnim->mScalingKeys[k].mValue;
+            fwrite(& value, sizeof(float), 3, fp);
          }
       }
    }

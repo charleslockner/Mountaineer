@@ -33,7 +33,6 @@ static glm::vec3 interpolateVec3(Vec3Key * keys, int keyCount, float tickTime) {
       return keys[0].value;
 
    int earlyNdx = findEarlyVec3KeyIndex(keys, keyCount, tickTime);
-   // printf("%f\n", tickTime);
    int lateNdx = earlyNdx + 1;
 
    float ratio = (tickTime - keys[earlyNdx].time) / (keys[lateNdx].time - keys[earlyNdx].time);
@@ -61,8 +60,6 @@ static glm::mat4 computeAnimTransform(AnimBone * animBone, float time) {
    glm::quat rotateQuat = interpolateQuat(animBone->rotateKeys, animBone->rotateKeyCount, time);
    glm::vec3 transVec = interpolateVec3(animBone->translateKeys, animBone->translateKeyCount, time);
 
-   // printf("transVec %f %f %f\n", transVec.x, transVec.y, transVec.z);
-
    glm::mat4 scaleM = glm::scale(glm::mat4(1.0), scaleVec);
    glm::mat4 rotateM = glm::toMat4(rotateQuat);
    glm::mat4 transM = glm::translate(glm::mat4(1.0), transVec);
@@ -75,13 +72,14 @@ static void computeBoneTransform(glm::mat4 * transforms, Bone * tree, int boneIn
                                  AnimBone * animBones, glm::mat4 parentM, float time) {
 
    Bone * bone = & tree[boneIndex];
-   AnimBone * animBone = & animBones[boneIndex];
-   glm::mat4 inverseBonePose = bone->offset;
+   glm::mat4 animPoseM = bone->parentOffset;
+   glm::mat4 animKeysM = computeAnimTransform(& animBones[boneIndex], time);
+   glm::mat4 bonePoseM = bone->invBonePose;
 
-   glm::mat4 animM = parentM * computeAnimTransform(animBone, time);
-   transforms[boneIndex] = animM * inverseBonePose;
-
-   // transforms[boneIndex] = glm::mat4(1);
+   // glm::mat4 animM = parentM * animPoseM * animKeysM;
+   glm::mat4 animM = parentM * animPoseM;
+   // glm::mat4 animM = parentM * animKeysM;
+   transforms[boneIndex] = animM * bonePoseM;
 
    for (int i = 0; i < bone->childCount; i++)
       computeBoneTransform(transforms, tree, bone->childIndices[i], animBones, animM, time);

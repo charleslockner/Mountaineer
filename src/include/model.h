@@ -35,7 +35,8 @@ typedef struct {
    short parentIndex;
    short childCount;
    short * childIndices;
-   glm::mat4 offset;
+   glm::mat4 invBonePose;
+   glm::mat4 parentOffset;
 } Bone;
 
 typedef struct {

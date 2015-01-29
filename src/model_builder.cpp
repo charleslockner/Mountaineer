@@ -89,10 +89,12 @@ static void readBoneIndices(FILE *fp, Model * model) {
    for (int i = 0; i < count; i++)
       floatData[i] = ushortData[i];
 
+   // generate the buffer
    glGenBuffers(1, & model->bibo);
    glBindBuffer(GL_ARRAY_BUFFER, model->bibo);
    glBufferData(GL_ARRAY_BUFFER, count * sizeof(float), floatData, GL_STATIC_DRAW);
 
+   // free the data blocks
    free(ushortData);
    free(floatData);
 }
@@ -113,8 +115,10 @@ static void readBoneTree(FILE *fp, Model * model) {
       bone->childIndices = (short *)malloc(bone->childCount * sizeof(short));
       for (int j = 0; j < bone->childCount; j++)
          fread(& bone->childIndices[j], sizeof(short), 1, fp);
-      fread(& bone->offset, sizeof(glm::mat4), 1, fp);
-      bone->offset = glm::transpose(bone->offset);
+      fread(& bone->invBonePose, sizeof(glm::mat4), 1, fp);
+      bone->invBonePose = glm::transpose(bone->invBonePose);
+      fread(& bone->parentOffset, sizeof(glm::mat4), 1, fp);
+      bone->parentOffset = glm::transpose(bone->parentOffset);
    }
 }
 
@@ -163,16 +167,22 @@ static void readAnimations(FILE *fp, Model * model) {
    }
 }
 
-static void printBoneTree(Bone * boneTree, short size) {
-   for (int i = 0; i < size; i++) {
+static void printBoneTree(Bone * boneTree, short numBones) {
+   for (int i = 0; i < numBones; i++) {
       Bone * bone = & boneTree[i];
       printf("Bone: %d\n", i);
       printf("  parent: %d\n", bone->parentIndex);
       for (int j = 0; j < bone->childCount; j++) {
          printf("  child: %d\n", bone->childIndices[j]);
       }
-      glm::mat4 m = bone->offset;
-      printf("  offset:\n");
+      glm::mat4 m = bone->invBonePose;
+      printf("  invBonePose:\n");
+      printf("    %.2f %.2f %.2f %.2f\n", m[0][0], m[1][0], m[2][0], m[3][0]);
+      printf("    %.2f %.2f %.2f %.2f\n", m[0][1], m[1][1], m[2][1], m[3][1]);
+      printf("    %.2f %.2f %.2f %.2f\n", m[0][2], m[1][2], m[2][2], m[3][2]);
+      printf("    %.2f %.2f %.2f %.2f\n", m[0][3], m[1][3], m[2][3], m[3][3]);
+      m = bone->parentOffset;
+      printf("  parentOffset:\n");
       printf("    %.2f %.2f %.2f %.2f\n", m[0][0], m[1][0], m[2][0], m[3][0]);
       printf("    %.2f %.2f %.2f %.2f\n", m[0][1], m[1][1], m[2][1], m[3][1]);
       printf("    %.2f %.2f %.2f %.2f\n", m[0][2], m[1][2], m[2][2], m[3][2]);
