@@ -60,17 +60,17 @@ void ForwardShader::sendModelData(Model * model) {
    glUseProgram(program);
 
    glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, model->tbo);
+   glBindTexture(GL_TEXTURE_2D, model->texID);
    glUniform1i(h_uTexture, 0);
 
-   sendVertexAttribArray(h_aVertexPosition, model->vbo, 3, GL_FLOAT);
-   sendVertexAttribArray(h_aVertexNormal, model->nbo, 3, GL_FLOAT);
-   // sendVertexAttribArray(h_aVertexColor, model->cbo, 3, GL_FLOAT);
-   sendVertexAttribArray(h_aTextureCoord, model->uvbo, 2, GL_FLOAT);
-   sendVertexAttribArray(h_aBoneIndices, model->bibo, 4, GL_FLOAT);
-   sendVertexAttribArray(h_aBoneWeights, model->bwbo, 4, GL_FLOAT);
+   sendVertexAttribArray(h_aVertexPosition, model->posID, 3, GL_FLOAT);
+   sendVertexAttribArray(h_aVertexNormal, model->normID, 3, GL_FLOAT);
+   // sendVertexAttribArray(h_aVertexColor, model->colorID, 3, GL_FLOAT);
+   sendVertexAttribArray(h_aTextureCoord, model->uvID, 2, GL_FLOAT);
+   sendVertexAttribArray(h_aBoneIndices, model->bIndID, 4, GL_FLOAT);
+   sendVertexAttribArray(h_aBoneWeights, model->bWeightID, 4, GL_FLOAT);
 
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indID);
    indexCount = model->indexCount;
 }
 

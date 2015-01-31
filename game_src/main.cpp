@@ -20,11 +20,11 @@ EntityShader * shader;
 double lastScreenX;
 double lastScreenY;
 
+bool keyToggles[512] = {false};
+
 static void error_callback(int error, const char* description) {
    fputs(description, stderr);
 }
-
-bool keyToggles[512] = {false};
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
    if (action == GLFW_PRESS) {
@@ -64,7 +64,7 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 }
 
 void setupWorldData() {
-   worldData.lights[0].position = glm::vec3(10.0, 10.0, 10.0);
+   worldData.lights[0].position = glm::vec3(10.0, 10.0, -10.0);
    worldData.lights[0].direction = glm::vec3(1.0, 0.0, 0.0);
    worldData.lights[0].color = glm::vec3(1.0, 1.0, 1.0);
    worldData.lights[0].strength = 200;
@@ -131,11 +131,13 @@ int main(void) {
    setupWorldData();
    cubeModel = MB_build("assets/models/trex.ciab",
                         "assets/textures/stones.bmp");
-   cubeEnt = new Entity(glm::vec3(0,0,-5), cubeModel);
+   cubeEnt = new Entity(glm::vec3(0,0,-15), cubeModel);
 
    shader->sendCameraData(camera);
    shader->sendWorldData(&worldData);
    shader->sendModelData(cubeModel);
+
+   camera->lookAt(cubeEnt->position);
 
    double timePassed = 0;
    unsigned int numFrames = 0;
@@ -151,7 +153,7 @@ int main(void) {
       updateCameraPosition(deltaTime);
 
       shader->sendCameraData(camera);
-      cubeEnt->draw(shader, timePassed);
+      cubeEnt->draw(shader, deltaTime);
 
       glfwSwapBuffers(window);
       glfwPollEvents();

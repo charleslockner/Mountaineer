@@ -45,16 +45,9 @@ typedef struct {
    unsigned int boneCount;
    unsigned int animationCount;
 
-   unsigned int vbo;
-   unsigned int nbo;
-   unsigned int cbo;
-   unsigned int uvbo;
-   unsigned int tabo;
-   unsigned int btbo;
-   unsigned int ibo;
-   unsigned int tbo;
-   unsigned int bibo;
-   unsigned int bwbo;
+   unsigned int posID, normID, colorID, uvID,
+                tanID, bitanID, indID,
+                texID, bIndID, bWeightID;
 
    short boneRoot;
    Bone * bones;

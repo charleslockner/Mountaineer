@@ -9,6 +9,7 @@
 #include "model_builder.h"
 
 #define MAX_INFLUENCES 4
+// TODO: write HAS_NORMALS, HAS_COLORS, HAS_TEXCOORDS, HAS_TANGENTANDBITANGENTS, HAS_BONES, HAS_ANIMATIONS
 
 typedef enum {
    POSITIONS = 1,
@@ -51,31 +52,31 @@ static unsigned int createVBO(FILE *fp, int count, int size) {
 }
 
 static void readPositions(FILE *fp, Model * model) {
-   model->vbo = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   model->posID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
 }
 
 static void readNormals(FILE *fp, Model * model) {
-   model->nbo = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   model->normID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
 }
 
 static void readColors(FILE *fp, Model * model) {
-   model->cbo = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   model->colorID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
 }
 
 static void readTexCoords(FILE *fp, Model * model) {
-   model->uvbo = createVBO(fp, 2 * model->vertexCount, sizeof(float));
+   model->uvID = createVBO(fp, 2 * model->vertexCount, sizeof(float));
 }
 
 static void readTangents(FILE *fp, Model * model) {
-   model->tabo = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   model->tanID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
 }
 
 static void readBitangents(FILE *fp, Model * model) {
-   model->btbo = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   model->bitanID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
 }
 
 static void readIndices(FILE *fp, Model * model) {
-   model->ibo = createVBO(fp, model->indexCount, sizeof(unsigned int));
+   model->indID = createVBO(fp, model->indexCount, sizeof(unsigned int));
 }
 
 static void readBoneIndices(FILE *fp, Model * model) {
@@ -90,8 +91,8 @@ static void readBoneIndices(FILE *fp, Model * model) {
       floatData[i] = ushortData[i];
 
    // generate the buffer
-   glGenBuffers(1, & model->bibo);
-   glBindBuffer(GL_ARRAY_BUFFER, model->bibo);
+   glGenBuffers(1, & model->bIndID);
+   glBindBuffer(GL_ARRAY_BUFFER, model->bIndID);
    glBufferData(GL_ARRAY_BUFFER, count * sizeof(float), floatData, GL_STATIC_DRAW);
 
    // free the data blocks
@@ -100,7 +101,7 @@ static void readBoneIndices(FILE *fp, Model * model) {
 }
 
 static void readBoneWeights(FILE *fp, Model * model) {
-   model->bwbo = createVBO(fp, MAX_INFLUENCES * model->vertexCount, sizeof(float));
+   model->bWeightID = createVBO(fp, MAX_INFLUENCES * model->vertexCount, sizeof(float));
 }
 
 static void readBoneTree(FILE *fp, Model * model) {
@@ -295,7 +296,7 @@ Model * MB_build(const char * meshPath, const char * texPath) {
    loadMeshData(fp, model);
    fclose(fp);
 
-   model->tbo = MB_loadTexture(texPath);
+   model->texID = MB_loadTexture(texPath);
 
    // printBoneTree(model->bones, model->boneCount);
    // printAnimations(model->animations, model->animationCount, model->boneCount);

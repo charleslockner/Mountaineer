@@ -28,8 +28,6 @@
 #define BONE_TREE_TYPE     10
 #define ANIMATIONS_TYPE    11
 
-// TODO: write HAS_NORMALS, HAS_COLORS, HAS_TEXCOORDS, HAS_TANGENTANDBITANGENTS, HAS_BONES, HAS_ANIMATIONS
-
 #define MAX_INFLUENCES 4
 
 typedef struct {
@@ -56,6 +54,44 @@ FILE * safe_fopen(const char * path, const char * mode) {
    return fp;
 }
 
+void writeTypeField(FILE * fp, unsigned char type) {
+   fwrite(& type, sizeof(unsigned char), 1, fp);
+}
+
+void writeFloat(FILE * fp, float f) {
+   fwrite(& f, sizeof(float), 1, fp);
+}
+
+void writeUInt(FILE * fp, unsigned int i) {
+   fwrite(& i, sizeof(unsigned int), 1, fp);
+}
+
+void writeShort(FILE * fp, short i) {
+   fwrite(& i, sizeof(short), 1, fp);
+}
+
+void writeUShort(FILE * fp, unsigned short i) {
+   fwrite(& i, sizeof(unsigned short), 1, fp);
+}
+
+void writeVector3D(FILE * fp, aiVector3D v) {
+   for (int i = 0; i < 3; i++)
+      writeFloat(fp, v[i]);
+}
+
+void writeQuaternion(FILE * fp, aiQuaternion q) {
+   writeFloat(fp, q.w);
+   writeFloat(fp, q.x);
+   writeFloat(fp, q.y);
+   writeFloat(fp, q.z);
+}
+
+void write4x4M(FILE * fp, aiMatrix4x4 m) {
+   for (int r = 0; r < 4; r++)
+      for (int c = 0; c < 4; c++)
+         writeFloat(fp, m[r][c]);
+}
+
 void writeHeader(FILE * fp, aiMesh& mesh, int animCount) {
    std::cerr << "Writing header...\n";
    int numIndices = mesh.mNumFaces * 3;
@@ -72,42 +108,32 @@ void writeHeader(FILE * fp, aiMesh& mesh, int animCount) {
 void writePositions(FILE * fp, aiMesh& mesh) {
    if (mesh.HasPositions()) {
       std::cerr << "Writing vertex positions...\n";
-      unsigned char type = POSITIONS_TYPE;
-      fwrite(& type, sizeof(unsigned char), 1, fp);
+      writeTypeField(fp, POSITIONS_TYPE);
 
-      for (int i = 0; i < mesh.mNumVertices; i++) {
-         float posX = mesh.mVertices[i][0];
-         fwrite(& posX, sizeof(float), 1, fp);
-         float posY = mesh.mVertices[i][1];
-         fwrite(& posY, sizeof(float), 1, fp);
-         float posZ = mesh.mVertices[i][2];
-         fwrite(& posZ, sizeof(float), 1, fp);
-      }
+      for (int i = 0; i < mesh.mNumVertices; i++)
+         writeVector3D(fp, mesh.mVertices[i]);
    }
 }
 
 void writeNormals(FILE * fp, aiMesh& mesh) {
    if (mesh.HasNormals()) {
       std::cerr << "Writing vertex normals...\n";
-      unsigned char type = NORMALS_TYPE;
-      fwrite(& type, sizeof(unsigned char), 1, fp);
+      writeTypeField(fp, NORMALS_TYPE);
 
       for (int i = 0; i < mesh.mNumVertices; i++)
-         fwrite(& mesh.mNormals[i][0], sizeof(float), 3, fp);
+         writeVector3D(fp, mesh.mNormals[i]);
    }
 }
 
 void writeColors(FILE * fp, aiMesh& mesh) {
    if (mesh.HasVertexColors(0)) {
       std::cerr << "Writing vertex colors...\n";
-      unsigned char type = COLORS_TYPE;
-      fwrite(& type, sizeof(unsigned char), 1, fp);
+      writeTypeField(fp, COLORS_TYPE);
 
       for (int i = 0; i < mesh.mNumVertices; i++) {
-         fwrite(& mesh.mColors[0][i].r, sizeof(float), 1, fp);
-         fwrite(& mesh.mColors[0][i].g, sizeof(float), 1, fp);
-         fwrite(& mesh.mColors[0][i].b, sizeof(float), 1, fp);
-         printf("rgb= %f %f %f\n", mesh.mColors[0][i].r, mesh.mColors[0][i].g, mesh.mColors[0][i].b);
+         writeFloat(fp, mesh.mColors[0][i].r);
+         writeFloat(fp, mesh.mColors[0][i].g);
+         writeFloat(fp, mesh.mColors[0][i].b);
       }
    }
 }
@@ -115,12 +141,11 @@ void writeColors(FILE * fp, aiMesh& mesh) {
 void writeUVs(FILE * fp, aiMesh& mesh) {
    if (mesh.HasTextureCoords(0)) {
       std::cerr << "Writing texture coordinates...\n";
-      unsigned char type = TEXCOORDS_TYPE;
-      fwrite(& type, sizeof(unsigned char), 1, fp);
+      writeTypeField(fp, TEXCOORDS_TYPE);
 
       for (int i = 0; i < mesh.mNumVertices; i++) {
-         fwrite(& mesh.mTextureCoords[0][i].x, sizeof(float), 1, fp);
-         fwrite(& mesh.mTextureCoords[0][i].y, sizeof(float), 1, fp);
+         writeFloat(fp, mesh.mTextureCoords[0][i].x);
+         writeFloat(fp, mesh.mTextureCoords[0][i].y);
       }
    }
 }
@@ -128,37 +153,29 @@ void writeUVs(FILE * fp, aiMesh& mesh) {
 void writeTangentsAndBitangents(FILE * fp, aiMesh& mesh) {
    if (mesh.HasTangentsAndBitangents()) {
       std::cerr << "Writing tangents...\n";
-      unsigned char type = TANGENTS_TYPE;
-      fwrite(& type, sizeof(unsigned char), 1, fp);
+      writeTypeField(fp, TANGENTS_TYPE);
 
       for (int i = 0; i < mesh.mNumVertices; i++)
-         fwrite(& mesh.mTangents[i][0], sizeof(float), 3, fp);
+         writeVector3D(fp, mesh.mTangents[i]);
 
       std::cerr << "Writing bitangents...\n";
-      type = BITANGENTS_TYPE;
-      fwrite(& type, sizeof(unsigned char), 1, fp);
+      writeTypeField(fp, BITANGENTS_TYPE);
 
       for (int i = 0; i < mesh.mNumVertices; i++)
-         fwrite(& mesh.mBitangents[i][0], sizeof(float), 3, fp);
+         writeVector3D(fp, mesh.mBitangents[i]);
    }
 }
 
 void writeIndices(FILE * fp, aiMesh& mesh) {
    if (mesh.HasFaces()) {
       std::cerr << "Writing indices...\n";
-
-      unsigned char type = INDICES_TYPE;
-      fwrite(& type, sizeof(unsigned char), 1, fp);
+      writeTypeField(fp, INDICES_TYPE);
 
       for (int i = 0; i < mesh.mNumFaces; i++) {
-         unsigned int index = mesh.mFaces[i].mIndices[0];
-         fwrite(& index, sizeof(unsigned int), 1, fp);
-         index = mesh.mFaces[i].mIndices[1];
-         fwrite(& index, sizeof(unsigned int), 1, fp);
-         index = mesh.mFaces[i].mIndices[2];
-         fwrite(& index, sizeof(unsigned int), 1, fp);
-         // std::cerr << mesh.mFaces[i].mIndices[0] << " " << mesh.mFaces[i].mIndices[1] << " " << mesh.mFaces[i].mIndices[2] << "\n";
-      }
+         writeUInt(fp, mesh.mFaces[i].mIndices[0]);
+         writeUInt(fp, mesh.mFaces[i].mIndices[1]);
+         writeUInt(fp, mesh.mFaces[i].mIndices[2]);
+     }
    }
 }
 
@@ -191,33 +208,23 @@ void writeBoneIndicesAndWeights(FILE * fp, aiMesh& mesh) {
    arrangeBoneWeights(mesh, verts);
 
    std::cerr << "Writing bone indices...\n";
-   unsigned char type = BONE_INDICES_TYPE;
-   fwrite(& type, sizeof(unsigned char), 1, fp);
+   writeTypeField(fp, BONE_INDICES_TYPE);
 
-   for (uint i = 0; i < mesh.mNumVertices; i++) {
-      for (uint j = 0; j < MAX_INFLUENCES; j++) {
-         unsigned short bIndex = j < verts[i].boneWeights.size() ? verts[i].boneWeights[j].index : 0;
-         fwrite(& bIndex, sizeof(unsigned short), 1, fp);
-      }
-   }
+   for (uint i = 0; i < mesh.mNumVertices; i++)
+      for (uint j = 0; j < MAX_INFLUENCES; j++)
+         writeUShort(fp, j < verts[i].boneWeights.size() ? verts[i].boneWeights[j].index : 0);
 
    std::cerr << "Writing bone weights...\n";
-   type = BONE_WEIGHTS_TYPE;
-   fwrite(& type, sizeof(unsigned char), 1, fp);
+   writeTypeField(fp, BONE_WEIGHTS_TYPE);
 
-   for (uint i = 0; i < mesh.mNumVertices; i++) {
-      for (uint j = 0; j < MAX_INFLUENCES; j++) {
-         float bWeight = j < verts[i].boneWeights.size() ? verts[i].boneWeights[j].weight : 0;
-         fwrite(& bWeight, sizeof(float), 1, fp);
-      }
-   }
+   for (uint i = 0; i < mesh.mNumVertices; i++)
+      for (uint j = 0; j < MAX_INFLUENCES; j++)
+         writeFloat(fp, j < verts[i].boneWeights.size() ? verts[i].boneWeights[j].weight : 0);
 }
 
 int findRootBoneIndex(aiMesh& mesh, BoneMap * n2I, aiNode * root) {
    for (uint i = 0; i < mesh.mNumBones; i++) {
       aiNode * node = root->FindNode(mesh.mBones[i]->mName);
-
-      // Write the parent index
       BoneIterator it = n2I->find(node->mParent->mName.C_Str());
       if (it == n2I->end())
          return i;
@@ -229,8 +236,7 @@ int findRootBoneIndex(aiMesh& mesh, BoneMap * n2I, aiNode * root) {
 
 void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
    std::cerr << "Writing bone tree...\n";
-   unsigned char type = BONE_TREE_TYPE;
-   fwrite(& type, sizeof(unsigned char), 1, fp);
+   writeTypeField(fp, BONE_TREE_TYPE);
 
    // Fill in the name to index table
    BoneMap nameToIndexMap;
@@ -238,8 +244,7 @@ void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
       nameToIndexMap.insert(BoneMap::value_type(mesh.mBones[i]->mName.C_Str(), i));
 
    // write the bone root index
-   short boneRoot = findRootBoneIndex(mesh, & nameToIndexMap, root);
-   fwrite(& boneRoot, sizeof(short), 1, fp);
+   writeShort(fp, findRootBoneIndex(mesh, & nameToIndexMap, root));
 
    // Write each bone to file
    for (uint i = 0; i < mesh.mNumBones; i++) {
@@ -250,35 +255,21 @@ void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
       short parentIndex = -1;
       if (it != nameToIndexMap.end())
          parentIndex = it->second;
-      fwrite(& parentIndex, sizeof(short), 1, fp);
+      writeShort(fp, parentIndex);
 
       // Write the number of children
-      short numChildren = node->mNumChildren;
-      fwrite(& numChildren, sizeof(short), 1, fp);
-
+      writeShort(fp, node->mNumChildren);
       // Write each child index
-      for (int j = 0; j < numChildren; j++) {
+      for (int j = 0; j < node->mNumChildren; j++) {
          BoneIterator it = nameToIndexMap.find(node->mChildren[j]->mName.C_Str());
          assert (it != nameToIndexMap.end());
-         short childIndex = it->second;
-         fwrite(& childIndex, sizeof(short), 1, fp);
+         writeShort(fp, it->second);
       }
 
       // Write the inverse bindPose matrix
-      aiMatrix4x4 mBP = mesh.mBones[i]->mOffsetMatrix;
-      for (int r = 0; r < 4; r++)
-         for (int c = 0; c < 4; c++) {
-            float val = mBP[r][c];
-            fwrite(& val, sizeof(float), 1, fp);
-         }
-
+      write4x4M(fp, mesh.mBones[i]->mOffsetMatrix);
       // Write the parentBone transform matrix
-      aiMatrix4x4 mP = node->mTransformation;
-      for (int r = 0; r < 4; r++)
-         for (int c = 0; c < 4; c++) {
-            float val = mP[r][c];
-            fwrite(& val, sizeof(float), 1, fp);
-         }
+      write4x4M(fp, node->mTransformation);
    }
 }
 
@@ -291,18 +282,18 @@ void writeBones(FILE * fp, aiMesh& mesh, aiNode * root) {
 
 void writeAnimations(FILE * fp, const aiScene * scene) {
    aiNode * root = scene->mRootNode;
+   int numAnims = scene->mNumAnimations;
 
-   unsigned char type = ANIMATIONS_TYPE;
-   fwrite(& type, sizeof(unsigned char), 1, fp);
+   if (numAnims > 0) {
+      std::cerr << "Writing " << numAnims << " animation" << (numAnims == 1 ? "...\n" : "s...\n");
+      writeTypeField(fp, ANIMATIONS_TYPE);
+   }
 
    for (int i = 0; i < scene->mNumAnimations; i++) {
-      std::cerr << "Writing animation " << i << "...\n";
-
       aiAnimation * anim = scene->mAnimations[i];
       assert(anim->mTicksPerSecond != 0);
 
-      float duration = anim->mDuration;
-      fwrite(& duration, sizeof(float), 1, fp);
+      writeFloat(fp, anim->mDuration);
 
       for (int j = 0; j < anim->mNumChannels; j++) {
          aiNodeAnim * nodeAnim = anim->mChannels[j];
@@ -315,31 +306,22 @@ void writeAnimations(FILE * fp, const aiScene * scene) {
          aiMatrix4x4 mPI = node->mTransformation.Inverse();
          mPI.Decompose(sclPI, rotPI, posPI);
 
-         fwrite(& nodeAnim->mNumPositionKeys, sizeof(unsigned int), 1, fp);
+         writeUInt(fp, nodeAnim->mNumPositionKeys);
          for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
-            float time = nodeAnim->mPositionKeys[k].mTime;
-            fwrite(& time, sizeof(float), 1, fp);
-
-            aiVector3D value = nodeAnim->mPositionKeys[k].mValue;
-            fwrite(& value, sizeof(float), 3, fp);
+            writeFloat(fp, nodeAnim->mPositionKeys[k].mTime);
+            writeVector3D(fp, nodeAnim->mPositionKeys[k].mValue);
          }
 
-         fwrite(& nodeAnim->mNumRotationKeys, sizeof(unsigned int), 1, fp);
+         writeUInt(fp, nodeAnim->mNumRotationKeys);
          for (int k = 0; k < nodeAnim->mNumRotationKeys; k++) {
-            float time = nodeAnim->mRotationKeys[k].mTime;
-            fwrite(& time, sizeof(float), 1, fp);
-
-            aiQuaternion value = nodeAnim->mRotationKeys[k].mValue;
-            fwrite(& value, sizeof(float), 4, fp);
+            writeFloat(fp, nodeAnim->mRotationKeys[k].mTime);
+            writeQuaternion(fp, nodeAnim->mRotationKeys[k].mValue);
          }
 
-         fwrite(& nodeAnim->mNumScalingKeys, sizeof(unsigned int), 1, fp);
+         writeUInt(fp, nodeAnim->mNumScalingKeys);
          for (int k = 0; k < nodeAnim->mNumScalingKeys; k++) {
-            float time = nodeAnim->mScalingKeys[k].mTime;
-            fwrite(& time, sizeof(float), 1, fp);
-
-            aiVector3D value = nodeAnim->mScalingKeys[k].mValue;
-            fwrite(& value, sizeof(float), 3, fp);
+            writeFloat(fp, nodeAnim->mScalingKeys[k].mTime);
+            writeVector3D(fp, nodeAnim->mScalingKeys[k].mValue);
          }
       }
    }

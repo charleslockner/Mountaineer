@@ -2,6 +2,7 @@
 #define __ENTITY_H__
 
 #include "model.h"
+#include "animation.h"
 #include "shader.h"
 
 #define GLM_FORCE_RADIANS
@@ -16,7 +17,10 @@ public:
    glm::vec3 scale;
 
    Model * model;
+   AnimationHandler * animHandler;
+
    glm::mat4 boneTransforms[MAX_BONES];
+   glm::quat boneRotations[MAX_BONES];
 
    Entity(glm::vec3 pos, Model * model);
    ~Entity();
