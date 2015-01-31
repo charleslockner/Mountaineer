@@ -6,17 +6,26 @@ Entity::Entity(glm::vec3 position, Model * model) {
    this->rotation = 0.0f;
    this->scale = glm::vec3(1.0f);
    this->model = model;
+
    for (int i = 0; i < model->boneCount; i++)
       this->boneTransforms[i] = glm::mat4(1.0f);
+   for (int i = 0; i < model->boneCount; i++)
+      this->boneRotations[i] = glm::quat(1, glm::vec3(0,0,0));
 
-   this->animHandler = new AnimationHandler(model, boneTransforms);
-   this->animHandler->repeat(0);
+   this->boneController = new BoneController(model, boneTransforms, boneRotations);
+
+   // this->animHandler = new AnimationHandler(model, boneTransforms);
+   // this->animHandler->repeat(0);
 }
 
-Entity::~Entity() {}
+Entity::~Entity() {
+   delete boneController;
+   // delete animHandler;
+}
 
 void Entity::draw(EntityShader * shader, float timeDelta) {
-   animHandler->updateTransforms(timeDelta);
+   boneController->rotateBone(3, 0.1, glm::vec3(1,0,0));
+   // animHandler->updateTransforms(timeDelta);
 
    shader->sendEntityData(this);
    shader->render();

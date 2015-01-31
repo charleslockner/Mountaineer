@@ -18,7 +18,7 @@ LIBS=libassimp.3.1.1.dylib
 exe: $(EXE)
 
 run: $(EXE)
-	./$(EXE) trex_walk.dae ../assets/models/trex.ciab
+	./$(EXE) trex_roar.dae ../assets/models/trex.ciab
 
 clean:
 	rm -f $(EXE) $(OBJ)

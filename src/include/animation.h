@@ -1,5 +1,5 @@
-#ifndef __ANIMATION__
-#define __ANIMATION__
+#ifndef __ANIMATION_H__
+#define __ANIMATION_H__
 
 #include "model.h"
 
@@ -25,6 +25,4 @@ private:
    bool repeating;
 };
 
-void computeAnimationBoneTransforms(glm::mat4 * out, Model * model, int animNum, float time);
-
-#endif // __ANIMATION__
+#endif // __ANIMATION_H__

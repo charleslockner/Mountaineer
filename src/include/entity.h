@@ -4,6 +4,7 @@
 #include "model.h"
 #include "animation.h"
 #include "shader.h"
+#include "bone_controller.h"
 
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
@@ -18,6 +19,7 @@ public:
 
    Model * model;
    AnimationHandler * animHandler;
+   BoneController * boneController;
 
    glm::mat4 boneTransforms[MAX_BONES];
    glm::quat boneRotations[MAX_BONES];

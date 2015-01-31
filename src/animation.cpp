@@ -11,7 +11,7 @@ static glm::vec3 lerpVec3(glm::vec3 begin, glm::vec3 end, float ratio) {
    return begin + ratio * (end - begin);
 }
 
-// should improve this to constant time somehow (instead of log(keyCount))
+// should improve this to constant tickTime somehow (instead of log(keyCount))
 static int findEarlyVec3KeyIndex(Vec3Key * keys, int keyCount, float tickTime) {
    if (keyCount <= 2)
       return 0;
@@ -24,7 +24,7 @@ static int findEarlyVec3KeyIndex(Vec3Key * keys, int keyCount, float tickTime) {
       return halfCount + findEarlyVec3KeyIndex(keys + halfCount, keyCount - halfCount, tickTime);
 }
 
-// should improve this to constant time somehow (instead of log(keyCount))
+// should improve this to constant tickTime somehow (instead of log(keyCount))
 static int findEarlyQuatKeyIndex(QuatKey * keys, int keyCount, float tickTime) {
    if (keyCount <= 2)
       return 0;
@@ -61,10 +61,10 @@ static glm::quat interpolateQuat(QuatKey * keys, int keyCount, float tickTime) {
    return glm::slerp(keys[earlyNdx].value, keys[lateNdx].value, ratio);
 }
 
-static glm::mat4 computeAnimTransform(AnimBone * animBone, float time) {
-   glm::vec3 scaleVec = interpolateVec3(animBone->scaleKeys, animBone->scaleKeyCount, time);
-   glm::quat rotateQuat = interpolateQuat(animBone->rotateKeys, animBone->rotateKeyCount, time);
-   glm::vec3 transVec = interpolateVec3(animBone->translateKeys, animBone->translateKeyCount, time);
+static glm::mat4 computeAnimTransform(AnimBone * animBone, float tickTime) {
+   glm::vec3 scaleVec = interpolateVec3(animBone->scaleKeys, animBone->scaleKeyCount, tickTime);
+   glm::quat rotateQuat = interpolateQuat(animBone->rotateKeys, animBone->rotateKeyCount, tickTime);
+   glm::vec3 transVec = interpolateVec3(animBone->translateKeys, animBone->translateKeyCount, tickTime);
 
    glm::mat4 scaleM = glm::scale(glm::mat4(1.0), scaleVec);
    glm::mat4 rotateM = glm::toMat4(rotateQuat);
@@ -75,11 +75,10 @@ static glm::mat4 computeAnimTransform(AnimBone * animBone, float time) {
 }
 
 static void computeBoneTransform(glm::mat4 * transforms, Bone * tree, int boneIndex,
-                                 AnimBone * animBones, glm::mat4 parentM, float time) {
-
+                                 AnimBone * animBones, glm::mat4 parentM, float tickTime) {
    Bone * bone = & tree[boneIndex];
 
-   glm::mat4 animKeysM = computeAnimTransform(& animBones[boneIndex], time);
+   glm::mat4 animKeysM = computeAnimTransform(& animBones[boneIndex], tickTime);
    glm::mat4 animPoseM = bone->parentOffset;
    glm::mat4 bonePoseM = bone->invBonePose;
 
@@ -89,7 +88,7 @@ static void computeBoneTransform(glm::mat4 * transforms, Bone * tree, int boneIn
    transforms[boneIndex] = animM * bonePoseM;
 
    for (int i = 0; i < bone->childCount; i++)
-      computeBoneTransform(transforms, tree, bone->childIndices[i], animBones, animM, time);
+      computeBoneTransform(transforms, tree, bone->childIndices[i], animBones, animM, tickTime);
 }
 
 AnimationHandler::AnimationHandler(Model * model, glm::mat4 * boneTransforms) {
@@ -117,11 +116,11 @@ void AnimationHandler::playOnce(int animNum) {
    assert(animNum < model->animationCount);
 }
 
-void AnimationHandler::updateTransforms(float timeDelta) {
+void AnimationHandler::updateTransforms(float tickDelta) {
    Animation * anim = & model->animations[curAnimNum];
    float duration = model->animations[curAnimNum].duration;
 
-   curTime += timeDelta;
+   curTime += tickDelta;
    if (curTime > duration)
       curTime = repeating ? curTime - duration : duration;
 
