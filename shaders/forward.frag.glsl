@@ -15,7 +15,7 @@ void main(void) {
    float specDot, lightStrength, lightAttenuation, lightRadius, lightDistance, illumination;
    float shine;
 
-   texColor = vec3(texture2D(uTexture, vec2(vTextureCoord.s, vTextureCoord.t)));
+   texColor = vec3(texture2D(uTexture, vec2(vTextureCoord.s, vTextureCoord.t))) * vVertexColor;
    normal = normalize(vWorldNormal);
 
    view = normalize(vWorldPosition - uCameraPosition);

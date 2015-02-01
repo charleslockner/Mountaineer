@@ -1,0 +1,10 @@
+Michelle Beckwith, Drew Messer, Caitlin Moran, Joseph Shannon
+http://www.calpoly.edu/~jgphelan/_Media%20Assets/shannon_moran_messer_final_draft.pdf
+http://kinesiology.calpoly.edu/content/faculty/profiles/bob_dark
+http://kinesiology.calpoly.edu/content/faculty/index
+
+Issues:
+
+1) Exporting in column-major instead of row-major format
+2) w in quaternions might be actually x
+3) Bone-pose matrix might have to be multiplied by parent "bone-pose" matrix

@@ -228,7 +228,7 @@ static void loadMeshData(FILE *fp, Model * model) {
 
    char fieldType;
    while (fread(&fieldType, sizeof(char), 1, fp) > 0) {
-      printf("Encountered %d field\n", fieldType);
+      // printf("Encountered %d field\n", fieldType);
       switch(fieldType) {
          case POSITIONS:
             readPositions(fp, model);
@@ -297,6 +297,7 @@ Model * MB_build(const char * meshPath, const char * texPath) {
    fclose(fp);
 
    model->texID = MB_loadTexture(texPath);
+   printf("Loaded mesh %s with texture %s\n", meshPath, texPath);
 
    // printBoneTree(model->bones, model->boneCount);
    // printAnimations(model->animations, model->animationCount, model->boneCount);

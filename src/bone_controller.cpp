@@ -1,7 +1,5 @@
 
 #include <stdio.h>
-#include <assert.h>
-#include <math.h>
 
 #include "bone_controller.h"
 #include "glm/gtc/matrix_transform.hpp"
@@ -12,7 +10,6 @@ static void computeBoneTransform(glm::mat4 * transforms, glm::quat * rotations,
    Bone * bone = & tree[boneIndex];
 
    glm::mat4 rotationM = glm::toMat4(rotations[boneIndex]);
-
    glm::mat4 offsetM = bone->parentOffset;
    glm::mat4 bonePoseM = bone->invBonePose;
 

@@ -1,6 +1,11 @@
 CC=g++
-EXE=dae_to_ciab
+NAME=dae_to_ciab
+
+BINDIR=../bin
+OBJDIR=../obj
 LIBDIR=../lib
+
+EXE=$(BINDIR)/$(NAME)
 
 OPTLEVEL=-O1
 WARN=
@@ -10,7 +15,7 @@ INCLUDES=-Iinclude
 CFLAGS=-c $(INCLUDES) $(WARN) $(OPTLEVEL) -g
 
 SRC=dae_to_ciab.cpp
-OBJ=dae_to_ciab.o
+OBJ=$(OBJDIR)/dae_to_ciab.o
 LIBS=libassimp.3.1.1.dylib
 
 .PHONY: exe run clean
@@ -18,10 +23,11 @@ LIBS=libassimp.3.1.1.dylib
 exe: $(EXE)
 
 run: $(EXE)
-	./$(EXE) trex_roar.dae ../assets/models/trex.ciab
+	./$(EXE) ../modeling_files/exports/trex_idol.dae ../assets/models/trex.ciab
 
 clean:
-	rm -f $(EXE) $(OBJ)
+	rm -rf $(BINDIR)
+	rm -rf $(OBJDIR)
 
 $(EXE): $(OBJ)
 	$(CC) -o $(EXE) $(OBJ) $(LIBS)

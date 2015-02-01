@@ -23,7 +23,7 @@ void main(void) {
 
    vWorldPosition = vec3(modelAnimM * vec4(aVertexPosition, 1.0));
    vWorldNormal = vec3(modelAnimM * vec4(aVertexNormal, 0.0));
-   vVertexColor = aVertexColor;
+   vVertexColor = vec3(1.0,1.0,1.0); // aVertexColor
    vTextureCoord = aTextureCoord;
 
    gl_Position = uProjViewMatrix * vec4(vWorldPosition, 1.0);
