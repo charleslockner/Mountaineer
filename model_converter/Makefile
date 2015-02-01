@@ -23,7 +23,7 @@ LIBS=libassimp.3.1.1.dylib
 exe: $(EXE)
 
 run: $(EXE)
-	./$(EXE) ../modeling_files/exports/trex_idol.dae ../assets/models/trex.ciab
+	./$(EXE) ../modeling_files/exports/robot.dae ../assets/models/robot.ciab
 
 clean:
 	rm -rf $(BINDIR)

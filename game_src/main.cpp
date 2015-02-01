@@ -129,7 +129,7 @@ int main(void) {
 
    camera = new Camera(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
    setupWorldData();
-   cubeModel = MB_build("assets/models/trex.ciab",
+   cubeModel = MB_build("assets/models/robot.ciab",
                         "assets/textures/stones.bmp");
    cubeEnt = new Entity(glm::vec3(0,0,-15), cubeModel);
 

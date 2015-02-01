@@ -9,7 +9,6 @@
 #include "model_builder.h"
 
 #define MAX_INFLUENCES 4
-// TODO: write HAS_NORMALS, HAS_COLORS, HAS_TEXCOORDS, HAS_TANGENTANDBITANGENTS, HAS_BONES, HAS_ANIMATIONS
 
 typedef enum {
    POSITIONS = 1,
@@ -144,16 +143,16 @@ static void readAnimations(FILE *fp, Model * model) {
          animBone->translateKeys = (Vec3Key *)malloc(animBone->translateKeyCount * sizeof(Vec3Key));
          for (int k = 0; k < animBone->translateKeyCount; k++) {
             Vec3Key * key = & animBone->translateKeys[k];
-            fread(& key->time, sizeof(int), 1, fp);
-            fread(& key->value, sizeof(glm::vec3), 1, fp);
+            fread(& key->time, sizeof(float), 1, fp);
+            fread(& key->value, sizeof(float), 3, fp);
          }
 
          fread(& animBone->rotateKeyCount, sizeof(unsigned int), 1, fp);
          animBone->rotateKeys = (QuatKey *)malloc(animBone->rotateKeyCount * sizeof(QuatKey));
          for (int k = 0; k < animBone->rotateKeyCount; k++) {
             QuatKey * key = & animBone->rotateKeys[k];
-            fread(& key->time, sizeof(int), 1, fp);
-            fread(& key->value, sizeof(glm::quat), 1, fp);
+            fread(& key->time, sizeof(float), 1, fp);
+            fread(& key->value, sizeof(float), 4, fp);
             key->value = correctQuatW(key->value);
          }
 
@@ -161,8 +160,8 @@ static void readAnimations(FILE *fp, Model * model) {
          animBone->scaleKeys = (Vec3Key *)malloc(animBone->scaleKeyCount * sizeof(Vec3Key));
          for (int k = 0; k < animBone->scaleKeyCount; k++) {
             Vec3Key * key = & animBone->scaleKeys[k];
-            fread(& key->time, sizeof(int), 1, fp);
-            fread(& key->value, sizeof(glm::vec3), 1, fp);
+            fread(& key->time, sizeof(float), 1, fp);
+            fread(& key->value, sizeof(float), 3, fp);
          }
       }
    }
@@ -223,12 +222,37 @@ static void printAnimations(Animation * anims, short numAnims, short numBones) {
    }
 }
 
+static bool isFieldPresent(unsigned short flags, int field) {
+   return flags & (1 << (field-1));
+}
+
+static void checkPresentFields(Model * model, unsigned short flags) {
+   if (!isFieldPresent(flags, POSITIONS) || !isFieldPresent(flags, INDICES)) {
+      fprintf(stderr, "Model file does not have positions and/or indices\n");
+      exit(1);
+   }
+
+   model->hasNormals = isFieldPresent(flags, NORMALS);
+   model->hasColors = isFieldPresent(flags, COLORS);
+   model->hasTexCoords = isFieldPresent(flags, TEXCOORDS);
+   model->hasTansAndBitans = isFieldPresent(flags, TANGENTS) &&
+                             isFieldPresent(flags, BITANGENTS);
+   model->hasBones = isFieldPresent(flags, BONE_INDICES) &&
+                     isFieldPresent(flags, BONE_WEIGHTS) &&
+                     isFieldPresent(flags, BONE_TREE);
+   model->hasAnimations = isFieldPresent(flags, ANIMATIONS);
+   printf("PresentFields: %d %d %d %d %d %d\n", model->hasNormals, model->hasColors, model->hasTexCoords, model->hasTansAndBitans, model->hasBones, model->hasAnimations);
+}
+
 static void loadMeshData(FILE *fp, Model * model) {
    readHeader(fp, model);
 
    char fieldType;
+   unsigned short receivedFlags = 0;
+
    while (fread(&fieldType, sizeof(char), 1, fp) > 0) {
-      // printf("Encountered %d field\n", fieldType);
+      receivedFlags |= 1 << (fieldType-1);
+
       switch(fieldType) {
          case POSITIONS:
             readPositions(fp, model);
@@ -269,6 +293,8 @@ static void loadMeshData(FILE *fp, Model * model) {
             break;
       }
    }
+
+   checkPresentFields(model, receivedFlags);
 }
 
 FILE * safe_fopen(const char * path) {

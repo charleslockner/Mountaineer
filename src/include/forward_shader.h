@@ -17,6 +17,13 @@ public:
 private:
 	void setupHandles();
 
+   unsigned int h_uHasNormals;
+   unsigned int h_uHasColors;
+   unsigned int h_uHasTexCoords;
+   unsigned int h_uHasTansAndBitans;
+   unsigned int h_uHasBones;
+   unsigned int h_uHasAnimations;
+
 	unsigned int h_uModelMatrix;
    unsigned int h_uProjViewMatrix;
    unsigned int h_uCameraPosition;

@@ -1,4 +1,9 @@
 
+uniform bool uHasNormals;
+uniform bool uHasColors;
+uniform bool uHasTexCoords;
+uniform bool uHasTansAndBitans;
+
 uniform vec3 uLights[40]; // max 10 lights each with position, direction, color, attributes
 uniform vec3 uCameraPosition;
 uniform sampler2D uTexture;
@@ -10,40 +15,48 @@ varying vec3 vVertexColor;
 
 void main(void) {
    vec3 lightPosition, lightDirection, lightColor, lightAttr;
-   vec3 texColor, normal, reflection, view;
-   vec3 ambient, diffuse, specular, rColor;
+   vec3 skinColor, normal, reflection, view;
+   vec3 ambient, diffuse, specular, finColor;
    float specDot, lightStrength, lightAttenuation, lightRadius, lightDistance, illumination;
    float shine;
 
-   texColor = vec3(texture2D(uTexture, vec2(vTextureCoord.s, vTextureCoord.t))) * vVertexColor;
-   normal = normalize(vWorldNormal);
+   if (uHasColors && uHasTexCoords)
+      skinColor = vec3(texture2D(uTexture, vTextureCoord)) * vVertexColor;
+   else if (uHasColors)
+      skinColor = vVertexColor;
+   else if (uHasTexCoords)
+      skinColor = vec3(texture2D(uTexture, vTextureCoord));
+   else
+      skinColor = vec3(0.5, 0.5, 0.5);
 
-   view = normalize(vWorldPosition - uCameraPosition);
-   shine = 500.0;
+   if (!uHasNormals)
+      finColor = skinColor;
+   else {
+      normal = normalize(vWorldNormal);
+      view = normalize(vWorldPosition - uCameraPosition);
+      shine = 500.0;
 
-   ambient = texColor * 0.25;
-   rColor = vec3(0.0);
+      ambient = skinColor * 0.25;
+      finColor = vec3(0.0);
 
-   // loop through each light
-   for (int i = 0; i < 1; i++) {
-      lightPosition = uLights[4*i];
-      lightDirection = uLights[4*i+1];
-      lightColor = uLights[4*i+2];
-      lightAttr = uLights[4*i+3];
+      // loop through each light
+      for (int i = 0; i < 1; i++) {
+         lightPosition = uLights[4*i];
+         lightColor = uLights[4*i+2];
+         lightAttr = uLights[4*i+3];
+         lightStrength = lightAttr.x;
 
-      lightStrength = lightAttr.x;
-      lightAttenuation = lightAttr.y;
-      lightRadius = lightAttr.z;
+         lightDirection = normalize(vWorldPosition - lightPosition);
+         reflection = normalize(2.0 * normal * dot(normal, lightDirection) - lightDirection);
+         lightDistance = length(vWorldPosition - lightPosition);
+         illumination = lightStrength / (1.0 + 2.0*lightDistance + lightDistance*lightDistance);
 
-      lightDirection = normalize(vWorldPosition - lightPosition);
-      reflection = normalize(2.0 * normal * dot(normal, lightDirection) - lightDirection);
-      lightDistance = length(vWorldPosition - lightPosition);
-      illumination = lightStrength / (1.0 + 2.0*lightDistance + lightDistance*lightDistance);
-
-      diffuse = texColor * dot(normal, -lightDirection);
-      specular = texColor * pow(max(0.0, dot(reflection, view)), shine);
-      rColor += illumination * lightColor * (specular + diffuse + ambient);
+         diffuse = skinColor * dot(normal, -lightDirection);
+         specular = skinColor * pow(max(0.0, dot(reflection, view)), shine);
+         finColor += illumination * lightColor * (specular + diffuse + ambient);
+      }
    }
 
-   gl_FragColor = vec4(rColor, 1.0);
+
+   gl_FragColor = vec4(finColor, 1.0);
 }

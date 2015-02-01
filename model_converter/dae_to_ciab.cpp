@@ -234,14 +234,18 @@ int findRootBoneIndex(aiMesh& mesh, BoneMap * n2I, aiNode * root) {
    return -1;
 }
 
+BoneMap createName2IndexMap(aiMesh& mesh) {
+   BoneMap nameToIndexMap;
+   for (uint i = 0; i < mesh.mNumBones; i++)
+      nameToIndexMap.insert(BoneMap::value_type(mesh.mBones[i]->mName.C_Str(), i));
+   return nameToIndexMap;
+}
+
 void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
    std::cerr << "Writing bone tree...\n";
    writeTypeField(fp, BONE_TREE_TYPE);
 
-   // Fill in the name to index table
-   BoneMap nameToIndexMap;
-   for (uint i = 0; i < mesh.mNumBones; i++)
-      nameToIndexMap.insert(BoneMap::value_type(mesh.mBones[i]->mName.C_Str(), i));
+   BoneMap nameToIndexMap = createName2IndexMap(mesh);
 
    // write the bone root index
    writeShort(fp, findRootBoneIndex(mesh, & nameToIndexMap, root));
@@ -257,18 +261,16 @@ void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
          parentIndex = it->second;
       writeShort(fp, parentIndex);
 
-      // Write the number of children
+      // Write the children
       writeShort(fp, node->mNumChildren);
-      // Write each child index
       for (int j = 0; j < node->mNumChildren; j++) {
          BoneIterator it = nameToIndexMap.find(node->mChildren[j]->mName.C_Str());
          assert (it != nameToIndexMap.end());
          writeShort(fp, it->second);
       }
 
-      // Write the inverse bindPose matrix
+      // Write the inverse bindPose and parentBone transform matrices
       write4x4M(fp, mesh.mBones[i]->mOffsetMatrix);
-      // Write the parentBone transform matrix
       write4x4M(fp, node->mTransformation);
    }
 }
@@ -280,48 +282,62 @@ void writeBones(FILE * fp, aiMesh& mesh, aiNode * root) {
    }
 }
 
-void writeAnimations(FILE * fp, const aiScene * scene) {
+BoneMap createAnimName2IndexMap(aiAnimation * anim) {
+   BoneMap nameToIndexMap;
+   for (uint i = 0; i < anim->mNumChannels; i++)
+      nameToIndexMap.insert(BoneMap::value_type(anim->mChannels[i]->mNodeName.C_Str(), i));
+   return nameToIndexMap;
+}
+
+int getAnimIndexRoot(aiMesh& mesh, BoneMap * n2I) {
+   const char * rootName = mesh.mBones[0]->mName.C_Str();
+   return n2I->find(rootName)->second;
+}
+
+void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
    aiNode * root = scene->mRootNode;
    int numAnims = scene->mNumAnimations;
 
    if (numAnims > 0) {
-      std::cerr << "Writing " << numAnims << " animation" << (numAnims == 1 ? "...\n" : "s...\n");
+      std::cerr << "Writing " << numAnims << " animation" << (numAnims == 1 ? "" : "s") << "...\n";
       writeTypeField(fp, ANIMATIONS_TYPE);
-   }
 
-   for (int i = 0; i < scene->mNumAnimations; i++) {
-      aiAnimation * anim = scene->mAnimations[i];
-      assert(anim->mTicksPerSecond != 0);
+      for (int i = 0; i < numAnims; i++) {
+         aiAnimation * anim = scene->mAnimations[i];
+         BoneMap nameToIndexMap = createAnimName2IndexMap(anim);
+         int rootNdx = getAnimIndexRoot(mesh, & nameToIndexMap);
+         assert(anim->mTicksPerSecond != 0);
 
-      writeFloat(fp, anim->mDuration);
+         writeFloat(fp, anim->mDuration);
 
-      for (int j = 0; j < anim->mNumChannels; j++) {
-         aiNodeAnim * nodeAnim = anim->mChannels[j];
-         aiNode * node = root->FindNode(nodeAnim->mNodeName);
+         for (int j = rootNdx; j < anim->mNumChannels; j++) {
+            aiNodeAnim * nodeAnim = anim->mChannels[j];
+            aiNode * node = root->FindNode(nodeAnim->mNodeName);
 
-         aiVector3D sclPI;
-         aiQuaternion rotPI;
-         aiVector3D posPI;
+            // aiVector3D sclPI;
+            // aiQuaternion rotPI;
+            // aiVector3D posPI;
 
-         aiMatrix4x4 mPI = node->mTransformation.Inverse();
-         mPI.Decompose(sclPI, rotPI, posPI);
+            // aiMatrix4x4 mPI = node->mTransformation.Inverse();
+            // mPI.Decompose(sclPI, rotPI, posPI);
 
-         writeUInt(fp, nodeAnim->mNumPositionKeys);
-         for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
-            writeFloat(fp, nodeAnim->mPositionKeys[k].mTime);
-            writeVector3D(fp, nodeAnim->mPositionKeys[k].mValue);
-         }
+            writeUInt(fp, nodeAnim->mNumPositionKeys);
+            for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
+               writeFloat(fp, nodeAnim->mPositionKeys[k].mTime);
+               writeVector3D(fp, nodeAnim->mPositionKeys[k].mValue);
+            }
 
-         writeUInt(fp, nodeAnim->mNumRotationKeys);
-         for (int k = 0; k < nodeAnim->mNumRotationKeys; k++) {
-            writeFloat(fp, nodeAnim->mRotationKeys[k].mTime);
-            writeQuaternion(fp, nodeAnim->mRotationKeys[k].mValue);
-         }
+            writeUInt(fp, nodeAnim->mNumRotationKeys);
+            for (int k = 0; k < nodeAnim->mNumRotationKeys; k++) {
+               writeFloat(fp, nodeAnim->mRotationKeys[k].mTime);
+               writeQuaternion(fp, nodeAnim->mRotationKeys[k].mValue);
+            }
 
-         writeUInt(fp, nodeAnim->mNumScalingKeys);
-         for (int k = 0; k < nodeAnim->mNumScalingKeys; k++) {
-            writeFloat(fp, nodeAnim->mScalingKeys[k].mTime);
-            writeVector3D(fp, nodeAnim->mScalingKeys[k].mValue);
+            writeUInt(fp, nodeAnim->mNumScalingKeys);
+            for (int k = 0; k < nodeAnim->mNumScalingKeys; k++) {
+               writeFloat(fp, nodeAnim->mScalingKeys[k].mTime);
+               writeVector3D(fp, nodeAnim->mScalingKeys[k].mValue);
+            }
          }
       }
    }
@@ -356,7 +372,7 @@ int main(int argc, char** argv) {
    writeTangentsAndBitangents(outFile, mesh);
    writeIndices(outFile, mesh);
    writeBones(outFile, mesh, root);
-   writeAnimations(outFile, scene);
+   writeAnimations(outFile, scene, mesh);
 
    return 0;
 }

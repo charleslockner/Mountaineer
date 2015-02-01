@@ -49,6 +49,9 @@ typedef struct {
                 tanID, bitanID, indID,
                 texID, bIndID, bWeightID;
 
+   int hasNormals, hasColors, hasTexCoords,
+       hasTansAndBitans, hasBones, hasAnimations;
+
    short boneRoot;
    Bone * bones;
    Animation * animations;
