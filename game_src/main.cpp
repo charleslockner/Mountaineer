@@ -58,6 +58,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
+   if (lastScreenX == 0 && lastScreenY == 0) {
+      lastScreenX = x;
+      lastScreenY = y;
+   }
+
    camera->aim(x - lastScreenX, y - lastScreenY);
    lastScreenX = x;
    lastScreenY = y;
@@ -125,7 +130,6 @@ int main(void) {
    GLFWwindow * window = windowSetup();
 
    shader = new ForwardShader();
-   glfwGetCursorPos(window, & lastScreenX, & lastScreenY);
 
    camera = new Camera(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
    setupWorldData();

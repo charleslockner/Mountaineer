@@ -16,17 +16,19 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define POSITIONS_TYPE     1
-#define NORMALS_TYPE       2
-#define COLORS_TYPE        3
-#define TEXCOORDS_TYPE     4
-#define TANGENTS_TYPE      5
-#define BITANGENTS_TYPE    6
-#define INDICES_TYPE       7
-#define BONE_INDICES_TYPE  8
-#define BONE_WEIGHTS_TYPE  9
-#define BONE_TREE_TYPE     10
-#define ANIMATIONS_TYPE    11
+typedef enum {
+   POSITIONS = 1,
+   NORMALS = 2,
+   COLORS = 3,
+   TEXCOORDS = 4,
+   TANGENTS = 5,
+   BITANGENTS = 6,
+   INDICES = 7,
+   BONE_INDICES = 8,
+   BONE_WEIGHTS = 9,
+   BONE_TREE = 10,
+   ANIMATIONS = 11
+} modelFieldType;
 
 #define MAX_INFLUENCES 4
 
@@ -108,7 +110,7 @@ void writeHeader(FILE * fp, aiMesh& mesh, int animCount) {
 void writePositions(FILE * fp, aiMesh& mesh) {
    if (mesh.HasPositions()) {
       std::cerr << "Writing vertex positions...\n";
-      writeTypeField(fp, POSITIONS_TYPE);
+      writeTypeField(fp, POSITIONS);
 
       for (int i = 0; i < mesh.mNumVertices; i++)
          writeVector3D(fp, mesh.mVertices[i]);
@@ -118,7 +120,7 @@ void writePositions(FILE * fp, aiMesh& mesh) {
 void writeNormals(FILE * fp, aiMesh& mesh) {
    if (mesh.HasNormals()) {
       std::cerr << "Writing vertex normals...\n";
-      writeTypeField(fp, NORMALS_TYPE);
+      writeTypeField(fp, NORMALS);
 
       for (int i = 0; i < mesh.mNumVertices; i++)
          writeVector3D(fp, mesh.mNormals[i]);
@@ -128,7 +130,7 @@ void writeNormals(FILE * fp, aiMesh& mesh) {
 void writeColors(FILE * fp, aiMesh& mesh) {
    if (mesh.HasVertexColors(0)) {
       std::cerr << "Writing vertex colors...\n";
-      writeTypeField(fp, COLORS_TYPE);
+      writeTypeField(fp, COLORS);
 
       for (int i = 0; i < mesh.mNumVertices; i++) {
          writeFloat(fp, mesh.mColors[0][i].r);
@@ -141,7 +143,7 @@ void writeColors(FILE * fp, aiMesh& mesh) {
 void writeUVs(FILE * fp, aiMesh& mesh) {
    if (mesh.HasTextureCoords(0)) {
       std::cerr << "Writing texture coordinates...\n";
-      writeTypeField(fp, TEXCOORDS_TYPE);
+      writeTypeField(fp, TEXCOORDS);
 
       for (int i = 0; i < mesh.mNumVertices; i++) {
          writeFloat(fp, mesh.mTextureCoords[0][i].x);
@@ -153,13 +155,13 @@ void writeUVs(FILE * fp, aiMesh& mesh) {
 void writeTangentsAndBitangents(FILE * fp, aiMesh& mesh) {
    if (mesh.HasTangentsAndBitangents()) {
       std::cerr << "Writing tangents...\n";
-      writeTypeField(fp, TANGENTS_TYPE);
+      writeTypeField(fp, TANGENTS);
 
       for (int i = 0; i < mesh.mNumVertices; i++)
          writeVector3D(fp, mesh.mTangents[i]);
 
       std::cerr << "Writing bitangents...\n";
-      writeTypeField(fp, BITANGENTS_TYPE);
+      writeTypeField(fp, BITANGENTS);
 
       for (int i = 0; i < mesh.mNumVertices; i++)
          writeVector3D(fp, mesh.mBitangents[i]);
@@ -169,7 +171,7 @@ void writeTangentsAndBitangents(FILE * fp, aiMesh& mesh) {
 void writeIndices(FILE * fp, aiMesh& mesh) {
    if (mesh.HasFaces()) {
       std::cerr << "Writing indices...\n";
-      writeTypeField(fp, INDICES_TYPE);
+      writeTypeField(fp, INDICES);
 
       for (int i = 0; i < mesh.mNumFaces; i++) {
          writeUInt(fp, mesh.mFaces[i].mIndices[0]);
@@ -208,14 +210,14 @@ void writeBoneIndicesAndWeights(FILE * fp, aiMesh& mesh) {
    arrangeBoneWeights(mesh, verts);
 
    std::cerr << "Writing bone indices...\n";
-   writeTypeField(fp, BONE_INDICES_TYPE);
+   writeTypeField(fp, BONE_INDICES);
 
    for (uint i = 0; i < mesh.mNumVertices; i++)
       for (uint j = 0; j < MAX_INFLUENCES; j++)
          writeUShort(fp, j < verts[i].boneWeights.size() ? verts[i].boneWeights[j].index : 0);
 
    std::cerr << "Writing bone weights...\n";
-   writeTypeField(fp, BONE_WEIGHTS_TYPE);
+   writeTypeField(fp, BONE_WEIGHTS);
 
    for (uint i = 0; i < mesh.mNumVertices; i++)
       for (uint j = 0; j < MAX_INFLUENCES; j++)
@@ -243,7 +245,7 @@ BoneMap createName2IndexMap(aiMesh& mesh) {
 
 void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
    std::cerr << "Writing bone tree...\n";
-   writeTypeField(fp, BONE_TREE_TYPE);
+   writeTypeField(fp, BONE_TREE);
 
    BoneMap nameToIndexMap = createName2IndexMap(mesh);
 
@@ -300,7 +302,7 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
 
    if (numAnims > 0) {
       std::cerr << "Writing " << numAnims << " animation" << (numAnims == 1 ? "" : "s") << "...\n";
-      writeTypeField(fp, ANIMATIONS_TYPE);
+      writeTypeField(fp, ANIMATIONS);
 
       for (int i = 0; i < numAnims; i++) {
          aiAnimation * anim = scene->mAnimations[i];
