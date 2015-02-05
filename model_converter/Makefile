@@ -9,8 +9,7 @@ EXE=$(BINDIR)/$(NAME)
 
 OPTLEVEL=-O1
 WARN=
-INCLUDES=-Iinclude
-#-I$(LIBDIR)/include
+INCLUDES=-Iinclude -I$(LIBDIR)/include
 
 CFLAGS=-c $(INCLUDES) $(WARN) $(OPTLEVEL) -g
 
@@ -23,7 +22,7 @@ LIBS=libassimp.3.1.1.dylib
 exe: $(EXE)
 
 run: $(EXE)
-	./$(EXE) ../modeling_files/exports/robot.dae ../assets/models/robot.ciab
+	./$(EXE) ../modeling_files/exports/trex.dae ../assets/models/guy.ciab
 
 clean:
 	rm -rf $(BINDIR)

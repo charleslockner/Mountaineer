@@ -241,7 +241,7 @@ static void checkPresentFields(Model * model, unsigned short flags) {
                      isFieldPresent(flags, BONE_WEIGHTS) &&
                      isFieldPresent(flags, BONE_TREE);
    model->hasAnimations = isFieldPresent(flags, ANIMATIONS);
-   printf("PresentFields: %d %d %d %d %d %d\n", model->hasNormals, model->hasColors, model->hasTexCoords, model->hasTansAndBitans, model->hasBones, model->hasAnimations);
+   // printf("PresentFields: %d %d %d %d %d %d\n", model->hasNormals, model->hasColors, model->hasTexCoords, model->hasTansAndBitans, model->hasBones, model->hasAnimations);
 }
 
 static void loadMeshData(FILE *fp, Model * model) {

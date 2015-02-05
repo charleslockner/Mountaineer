@@ -133,8 +133,8 @@ int main(void) {
 
    camera = new Camera(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
    setupWorldData();
-   cubeModel = MB_build("assets/models/robot.ciab",
-                        "assets/textures/stones.bmp");
+   cubeModel = MB_build("assets/models/guy.ciab",
+                        "assets/textures/guy_tex.bmp");
    cubeEnt = new Entity(glm::vec3(0,0,-15), cubeModel);
 
    shader->sendCameraData(camera);

@@ -35,6 +35,10 @@ OBJS=$(GAMEOBJS) $(FOUNDOBJS)
 
 exe: $(EXE)
 
+model: $(EXE)
+	make -C model_converter run
+	./$(EXE)
+
 run: $(EXE)
 	./$(EXE)
 

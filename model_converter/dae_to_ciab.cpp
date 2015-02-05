@@ -16,6 +16,11 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define GLM_FORCE_RADIANS
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/quaternion.hpp"
+
 typedef enum {
    POSITIONS = 1,
    NORMALS = 2,
@@ -92,6 +97,10 @@ void write4x4M(FILE * fp, aiMatrix4x4 m) {
    for (int r = 0; r < 4; r++)
       for (int c = 0; c < 4; c++)
          writeFloat(fp, m[r][c]);
+}
+
+aiVector3D blend2oglVec3(aiVector3D v) {
+   return aiVector3D(v.y, v.z, v.x);
 }
 
 void writeHeader(FILE * fp, aiMesh& mesh, int animCount) {
@@ -284,6 +293,66 @@ void writeBones(FILE * fp, aiMesh& mesh, aiNode * root) {
    }
 }
 
+// glm::mat4 aiToGlmMat4(aiMatrix4x4 mat) {
+//    return glm::mat4(
+//       mat.a1, mat.b1, mat.c1, mat.d1,
+//       mat.a2, mat.b2, mat.c2, mat.d2,
+//       mat.a3, mat.b3, mat.c3, mat.d3,
+//       mat.a4, mat.b4, mat.c4, mat.d4 );
+// }
+
+// aiMatrix4x4 glmToAIMat4(glm::mat4 mat) {
+//    return aiMatrix4x4(
+//       mat[0][0], mat[1][0], mat[2][0], mat[3][0],
+//       mat[0][1], mat[1][1], mat[2][1], mat[3][1],
+//       mat[0][2], mat[1][2], mat[2][2], mat[3][2],
+//       mat[0][3], mat[1][3], mat[2][3], mat[3][3]);
+// }
+
+// glm::quat aiToGlmQuat(aiQuaternion quat) {
+//    return glm::quat(quat.w, quat.x, quat.y, quat.z);
+// }
+
+// glm::mat4 prsKeysToMat4(glm::vec3 t, glm::quat r, glm::vec3 s) {
+//    glm::mat4 transM = glm::translate(glm::mat4(1.0), t);
+//    glm::mat4 rotateM = glm::toMat4(r);
+//    glm::mat4 scaleM = glm::scale(glm::mat4(1.0), s);
+
+//    return transM * rotateM * scaleM;
+//    // return transM * scaleM * rotateM;
+// }
+
+// glm::vec3 aiToGlmVec3(aiVector3D vec) {
+//    return glm::vec3(vec.x, vec.y, vec.z);
+// }
+
+// void keysToBoneSpace(glm::mat4 invParentM, aiVector3D& p, aiQuaternion& r, aiVector3D& s) {
+//    glm::vec3 glmP = aiToGlmVec3(p);
+//    glm::quat glmR = aiToGlmQuat(r);
+//    glm::vec3 glmS = aiToGlmVec3(s);
+//    glm::mat4 keysM = prsKeysToMat4(glmP, glmR, glmS);
+//    glm::mat4 boneSpaceKeysM = invParentM * keysM;
+//    aiMatrix4x4 aiKeysM = glmToAIMat4(boneSpaceKeysM);
+//    aiKeysM.Decompose(s, r, p);
+// }
+
+// void animKeysToBoneSpace(aiNode * root, aiNodeAnim * nodeAnim) {
+//    aiNode * node = root->FindNode(nodeAnim->mNodeName);
+//    glm::mat4 invParentM = aiToGlmMat4(node->mTransformation.Inverse());
+//    assert(nodeAnim->mNumPositionKeys == nodeAnim->mNumRotationKeys &&
+//           nodeAnim->mNumPositionKeys == nodeAnim->mNumScalingKeys);
+
+//    for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
+//       assert(nodeAnim->mPositionKeys[k].mTime == nodeAnim->mRotationKeys[k].mTime &&
+//              nodeAnim->mPositionKeys[k].mTime == nodeAnim->mScalingKeys[k].mTime);
+
+//       aiVector3D& p = nodeAnim->mPositionKeys[k].mValue;
+//       aiQuaternion& r = nodeAnim->mRotationKeys[k].mValue;
+//       aiVector3D& s = nodeAnim->mScalingKeys[k].mValue;
+//       keysToBoneSpace(invParentM, p, r, s);
+//    }
+// }
+
 BoneMap createAnimName2IndexMap(aiAnimation * anim) {
    BoneMap nameToIndexMap;
    for (uint i = 0; i < anim->mNumChannels; i++)
@@ -310,19 +379,17 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
          int rootNdx = getAnimIndexRoot(mesh, & nameToIndexMap);
          assert(anim->mTicksPerSecond != 0);
 
+         // Write the duration of the animations
          writeFloat(fp, anim->mDuration);
 
+         // Write the animations for each bone
          for (int j = rootNdx; j < anim->mNumChannels; j++) {
             aiNodeAnim * nodeAnim = anim->mChannels[j];
-            aiNode * node = root->FindNode(nodeAnim->mNodeName);
 
-            // aiVector3D sclPI;
-            // aiQuaternion rotPI;
-            // aiVector3D posPI;
+            // Convert keys to bone space
+            // animKeysToBoneSpace(root, nodeAnim);
 
-            // aiMatrix4x4 mPI = node->mTransformation.Inverse();
-            // mPI.Decompose(sclPI, rotPI, posPI);
-
+            // Write the keys
             writeUInt(fp, nodeAnim->mNumPositionKeys);
             for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
                writeFloat(fp, nodeAnim->mPositionKeys[k].mTime);

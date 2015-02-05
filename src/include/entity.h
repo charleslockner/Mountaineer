@@ -2,7 +2,6 @@
 #define __ENTITY_H__
 
 #include "model.h"
-#include "animation.h"
 #include "shader.h"
 #include "bone_controller.h"
 
@@ -18,7 +17,6 @@ public:
    glm::vec3 scale;
 
    Model * model;
-   AnimationHandler * animHandler;
    BoneController * boneController;
 
    glm::mat4 boneTransforms[MAX_BONES];
