@@ -104,7 +104,6 @@ void BoneController::stopAnimation(int boneNum) {
    bonePlaying[boneNum] = false;
 }
 
-
 void BoneController::updateTransforms(float tickDelta) {
    for (int i = 0; i < model->boneCount; i++) {
       if (bonePlaying[i]) {
@@ -132,9 +131,9 @@ void BoneController::computeBoneTransform(int boneIndex, glm::mat4 parentM) {
    glm::mat4 bonePoseM = bone->invBonePose;
    glm::mat4 rotationM = glm::toMat4(boneRotations[boneIndex]);
 
-
-   // glm::mat4 animM = parentM * animPoseM * animKeysM; // use this for bind-space keys
+   // glm::mat4 animM = parentM * animPoseM * rotationM;
    glm::mat4 animM = parentM * animKeysM * rotationM;
+   // glm::mat4 animM = parentM * animPoseM * animKeysM * rotationM; // use this for bind-space keys
    boneTransforms[boneIndex] = animM * bonePoseM;
 
    for (int i = 0; i < bone->childCount; i++)

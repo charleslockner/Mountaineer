@@ -8,6 +8,5 @@ typedef struct Image {
 } Image;
 
 Image * Tl_createTexture(const char * path);
-void TL_destroyTexture(Image * image);
 
 #endif
