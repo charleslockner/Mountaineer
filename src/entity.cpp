@@ -19,7 +19,7 @@ Entity::~Entity() {
 
 void Entity::draw(EntityShader * shader, float timeDelta) {
    // boneController->rotateBone(13, -0.05, glm::normalize(glm::vec3(1,1,0)));
-   // boneController->rotateBone(9, 0.1, glm::normalize(glm::vec3(1,0,1)));
+   // boneController->rotateBone(3, 0.1, glm::normalize(glm::vec3(1,0,0)));
    boneController->updateTransforms(timeDelta);
 
    shader->sendEntityData(this);

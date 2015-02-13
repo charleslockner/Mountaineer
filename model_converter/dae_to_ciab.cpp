@@ -3,24 +3,16 @@
 #include <assimp/postprocess.h>     // Post processing flags
 
 #include <iostream>
-#include <string>
 #include <vector>
-#include <array>
-#include <queue>
 #include <map>
-
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <assert.h>
 
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/quaternion.hpp"
-#include <glm/gtc/type_ptr.hpp>
+
+#define ROT_BLEND aiMatrix4x4(0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,1)
+#define ROT_BLEND_INV aiMatrix4x4(0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,1)
 
 typedef enum {
    POSITIONS = 1,
@@ -50,13 +42,13 @@ typedef struct {
 typedef std::map<std::string, uint> BoneMap;
 typedef std::map<std::string, uint>::iterator BoneIterator;
 
-bool rotateAxis = false;
+bool blenderCorrect = false;
 
 FILE * safe_fopen(const char * path, const char * mode) {
    FILE * fp = fopen(path, mode);
 
    if (!fp) {
-      printf("Error opening %s:\n ", path);
+      std::cerr << "Error opening " << path << "\n";
       perror("");
       exit(EXIT_FAILURE);
    }
@@ -96,8 +88,6 @@ aiQuaternion glmToAIQuat(glm::quat q) {
    return aiQuaternion(q.w, q.x, q.y, q.z);
 }
 
-
-
 void printMat4(glm::mat4 m) {
    for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++)
@@ -107,35 +97,21 @@ void printMat4(glm::mat4 m) {
    printf("\n");
 }
 
-glm::mat4 rotAdjM() {
-   glm::mat4 R1 = glm::rotate(glm::mat4(1.0f), -(float)M_PI/2, glm::vec3(1,0,0));
-   glm::mat4 R2 = glm::rotate(glm::mat4(1.0f), -(float)M_PI/2, glm::vec3(0,1,0));
-
-   // printMat4(R2 * R1);
-   return R2 * R1;
+void printAIMat4(aiMatrix4x4 m) {
+   for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++)
+         printf("%f ", m[i][j]);
+      printf("\n");
+   }
+   printf("\n");
 }
 
 aiVector3D blend2oglVec3(aiVector3D v) {
-   return rotateAxis ? glmToAIVec3(glm::vec3(rotAdjM() * glm::vec4(aiToGlmVec3(v), 1))) : v;
-   // return rotateAxis ? aiVector3D(v.y, v.z, v.x) : v;
-}
-
-aiQuaternion blend2oglQuat(aiQuaternion q) {
-   if (rotateAxis) {
-      aiMatrix4x4 m = glmToAIMat4(rotAdjM() * glm::toMat4(aiToGlmQuat(q)));
-      aiVector3D t;
-      aiQuaternion r;
-      m.DecomposeNoScaling(r, t);
-      return r;
-   } else
-      return q;
-
-   // return rotateAxis ? aiQuaternion(q.w, q.y, q.z, q.x) : q;
+   return blenderCorrect ? aiVector3D(v.y, v.z, v.x) : v;
 }
 
 aiMatrix4x4 blend2oglMat4(aiMatrix4x4 m) {
-   glm::mat4 glmM = aiToGlmMat4(m);
-   return rotateAxis ? glmToAIMat4(glmM * rotAdjM()) : m;
+   return blenderCorrect ? ROT_BLEND * m * ROT_BLEND_INV : m;
 }
 
 void writeTypeField(FILE * fp, unsigned char type) {
@@ -252,7 +228,7 @@ void writeTangentsAndBitangents(FILE * fp, aiMesh& mesh) {
 
 void writeIndices(FILE * fp, aiMesh& mesh) {
    if (mesh.HasFaces()) {
-      std::cerr << "Writing indices...\n";
+      std::cerr << "Writing face indices...\n";
       writeTypeField(fp, INDICES);
 
       for (int i = 0; i < mesh.mNumFaces; i++) {
@@ -354,8 +330,10 @@ void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
       }
 
       // Write the inverse bindPose and parentBone transform matrices
-      write4x4M(fp, mesh.mBones[i]->mOffsetMatrix);
-      write4x4M(fp, node->mTransformation);
+      aiMatrix4x4 invBindPose = blend2oglMat4(mesh.mBones[i]->mOffsetMatrix);
+      aiMatrix4x4 parentTrans = blend2oglMat4(node->mTransformation);
+      write4x4M(fp, invBindPose);
+      write4x4M(fp, parentTrans);
    }
 }
 
@@ -381,14 +359,14 @@ aiMatrix4x4 keysToMatrix(aiVector3D& p, aiQuaternion& r, aiVector3D& s) {
 
 void animKeysToMatrices(aiNode * root, aiNodeAnim * nodeAnim, aiMatrix4x4 * mats) {
    aiNode * node = root->FindNode(nodeAnim->mNodeName);
-   aiMatrix4x4 invParentM = node->mTransformation.Inverse();
+   // aiMatrix4x4 invParentM = node->mTransformation.Inverse();
 
    for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
       aiVector3D& p = nodeAnim->mPositionKeys[k].mValue;
       aiQuaternion& r = nodeAnim->mRotationKeys[k].mValue;
       aiVector3D& s = nodeAnim->mScalingKeys[k].mValue;
 
-      mats[k] = rotateAxis ? invParentM * keysToMatrix(p, r, s) : keysToMatrix(p, r, s);
+      mats[k] = keysToMatrix(p, r, s);
    }
 }
 
@@ -417,6 +395,7 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
    aiNode * root = scene->mRootNode;
    int numAnims = scene->mNumAnimations;
 
+
    if (numAnims > 0) {
       std::cerr << "Writing " << numAnims << " animation" << (numAnims == 1 ? "" : "s") << "...\n";
       writeTypeField(fp, ANIMATIONS);
@@ -426,26 +405,27 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
          BoneMap nameToIndexMap = createAnimName2IndexMap(anim);
          int rootNdx = getAnimIndexRoot(mesh, & nameToIndexMap);
          assert(anim->mTicksPerSecond != 0);
+         assert(anim->mNumChannels > 0);
 
          // Write the duration of the animations
          writeFloat(fp, anim->mDuration);
-
          // Write the number of keys
-         unsigned int numKeys = anim->mChannels[0]->mNumPositionKeys;
+         unsigned int numKeys = anim->mChannels[rootNdx]->mNumPositionKeys;
          writeUInt(fp, numKeys);
+
+         aiMatrix4x4 * matKeys = (aiMatrix4x4 *)malloc(sizeof(aiMatrix4x4) * numKeys);
 
          // Write the animations for each bone
          for (int j = rootNdx; j < anim->mNumChannels; j++) {
             aiNodeAnim * nodeAnim = anim->mChannels[j];
-
             checkIfKeysAligned(nodeAnim);
 
-            aiMatrix4x4 * matKeys = (aiMatrix4x4 *)malloc(sizeof(aiMatrix4x4) * numKeys);
             animKeysToMatrices(root, nodeAnim, matKeys);
 
             for (int k = 0; k < numKeys; k++) {
                aiVector3D scl, pos;
                aiQuaternion rot;
+               matKeys[k] = blend2oglMat4(matKeys[k]);
                matKeys[k].Decompose(scl, rot, pos);
 
                writeFloat(fp, nodeAnim->mPositionKeys[k].mTime);
@@ -453,19 +433,33 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
                writeQuaternion(fp, rot);
                writeVector3D(fp, scl);
             }
-
-            free(matKeys);
          }
+
+         free(matKeys);
       }
    }
 }
 
 int main(int argc, char** argv) {
-   char * modelPath = argv[1];
-   char * outPath = argv[2];
+   char * modelPath, * outPath;
 
-   AI_CONFIG_PP_LBW_MAX_WEIGHTS;
+   // PARSE COMMAND LINE ARGS
+   if (argc < 3 || argc > 4) {
+      std::cerr << "Usage: [-b](opt) [dae_path] [ciab_path]\n";
+      exit(1);
+   } else if (argc == 3) {
+      modelPath = argv[1];
+      outPath = argv[2];
+   } else if (strcmp(argv[1], "-b") == 0) {
+      blenderCorrect = true;
+      modelPath = argv[2];
+      outPath = argv[3];
+   } else {
+      std::cerr << "\"-b\" option must be specified first if you want to correct for blender orientation\n";
+      exit(1);
+   }
 
+   // SETUP ASSIMP
    Assimp::Importer importer;
    const aiScene* scene = importer.ReadFile(modelPath,
       aiProcess_CalcTangentSpace       |
@@ -475,17 +469,17 @@ int main(int argc, char** argv) {
       aiProcess_LimitBoneWeights
    );
    if (!scene) {
-      printf("Error: %s\nNow exiting...\n", importer.GetErrorString());
+      std::cerr << "Error: " << importer.GetErrorString() << "\nNow exiting...\n";
       exit(1);
    }
 
    aiMesh& mesh = *scene->mMeshes[0];
-
    aiNode * root = scene->mRootNode;
    int numAnims = scene->mNumAnimations;
 
    FILE * outFile = safe_fopen(outPath, "wb");
 
+   // WRITE THE DATA
    writeHeader(outFile, mesh, numAnims);
    writePositions(outFile, mesh);
    writeNormals(outFile, mesh);

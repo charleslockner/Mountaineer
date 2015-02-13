@@ -102,6 +102,15 @@ void BoneController::updateTransforms(float tickDelta) {
    computeBoneTransform(model->boneRoot, glm::mat4(1.0f));
 }
 
+void printMat4(glm::mat4 m) {
+   for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++)
+         printf("%f ", m[i][j]);
+      printf("\n");
+   }
+   printf("\n");
+}
+
 void BoneController::computeBoneTransform(int boneIndex, glm::mat4 parentM) {
    int animNum = boneAnimNums[boneIndex];
    float tickTime = boneTimes[boneIndex];
@@ -112,13 +121,13 @@ void BoneController::computeBoneTransform(int boneIndex, glm::mat4 parentM) {
    int keyCount = animation->keyCount;
 
    glm::mat4 animKeysM = computeAnimTransform(animBone, keyCount, tickTime);
-   glm::mat4 animPoseM = bone->parentOffset;
+   glm::mat4 animParentM = bone->parentOffset;
    glm::mat4 bonePoseM = bone->invBonePose;
    glm::mat4 rotationM = glm::toMat4(boneRotations[boneIndex]);
 
-   // glm::mat4 animM = parentM * animPoseM * rotationM;
+   // glm::mat4 animM = parentM * animParentM * rotationM;
    glm::mat4 animM = parentM * animKeysM * rotationM;
-   // glm::mat4 animM = parentM * animPoseM * animKeysM * rotationM; // use this for bind-space keys
+   // glm::mat4 animM = parentM * animParentM * animKeysM * rotationM; // use this for bind-space keys
    boneTransforms[boneIndex] = animM * bonePoseM;
 
    for (int i = 0; i < bone->childCount; i++)
