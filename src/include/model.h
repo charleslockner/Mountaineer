@@ -9,25 +9,18 @@
 
 typedef struct {
    float time;
-   glm::quat value;
-} QuatKey;
+   glm::vec3 position;
+   glm::quat rotation;
+   glm::vec3 scale;
+} Key;
 
 typedef struct {
-   float time;
-   glm::vec3 value;
-} Vec3Key;
-
-typedef struct {
-   unsigned int translateKeyCount;
-   Vec3Key * translateKeys;
-   unsigned int rotateKeyCount;
-   QuatKey * rotateKeys;
-   unsigned int scaleKeyCount;
-   Vec3Key * scaleKeys;
+   Key * keys;
 } AnimBone;
 
 typedef struct {
    float duration;
+   unsigned keyCount;
    AnimBone * animBones;
 } Animation;
 

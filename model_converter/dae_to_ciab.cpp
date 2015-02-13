@@ -50,7 +50,7 @@ typedef struct {
 typedef std::map<std::string, uint> BoneMap;
 typedef std::map<std::string, uint>::iterator BoneIterator;
 
-bool rotateAxis = true;
+bool rotateAxis = false;
 
 FILE * safe_fopen(const char * path, const char * mode) {
    FILE * fp = fopen(path, mode);
@@ -62,26 +62,6 @@ FILE * safe_fopen(const char * path, const char * mode) {
    }
 
    return fp;
-}
-
-void writeTypeField(FILE * fp, unsigned char type) {
-   fwrite(& type, sizeof(unsigned char), 1, fp);
-}
-
-void writeFloat(FILE * fp, float f) {
-   fwrite(& f, sizeof(float), 1, fp);
-}
-
-void writeUInt(FILE * fp, unsigned int i) {
-   fwrite(& i, sizeof(unsigned int), 1, fp);
-}
-
-void writeShort(FILE * fp, short i) {
-   fwrite(& i, sizeof(short), 1, fp);
-}
-
-void writeUShort(FILE * fp, unsigned short i) {
-   fwrite(& i, sizeof(unsigned short), 1, fp);
 }
 
 glm::mat4 aiToGlmMat4(aiMatrix4x4 mat) {
@@ -141,7 +121,6 @@ aiVector3D blend2oglVec3(aiVector3D v) {
 }
 
 aiQuaternion blend2oglQuat(aiQuaternion q) {
-
    if (rotateAxis) {
       aiMatrix4x4 m = glmToAIMat4(rotAdjM() * glm::toMat4(aiToGlmQuat(q)));
       aiVector3D t;
@@ -159,16 +138,36 @@ aiMatrix4x4 blend2oglMat4(aiMatrix4x4 m) {
    return rotateAxis ? glmToAIMat4(glmM * rotAdjM()) : m;
 }
 
+void writeTypeField(FILE * fp, unsigned char type) {
+   fwrite(& type, sizeof(unsigned char), 1, fp);
+}
+
+void writeFloat(FILE * fp, float f) {
+   fwrite(& f, sizeof(float), 1, fp);
+}
+
+void writeUInt(FILE * fp, unsigned int i) {
+   fwrite(& i, sizeof(unsigned int), 1, fp);
+}
+
+void writeShort(FILE * fp, short i) {
+   fwrite(& i, sizeof(short), 1, fp);
+}
+
+void writeUShort(FILE * fp, unsigned short i) {
+   fwrite(& i, sizeof(unsigned short), 1, fp);
+}
+
 void writeVector3D(FILE * fp, aiVector3D v) {
    for (int i = 0; i < 3; i++)
       writeFloat(fp, v[i]);
 }
 
 void writeQuaternion(FILE * fp, aiQuaternion q) {
-   writeFloat(fp, q.w);
    writeFloat(fp, q.x);
    writeFloat(fp, q.y);
    writeFloat(fp, q.z);
+   writeFloat(fp, q.w);
 }
 
 void write4x4M(FILE * fp, aiMatrix4x4 m) {
@@ -376,30 +375,20 @@ glm::mat4 prsKeysToMat4(glm::vec3 t, glm::quat r, glm::vec3 s) {
    // return transM * scaleM * rotateM;
 }
 
-void keysToBoneSpace(glm::mat4 invParentM, aiVector3D& p, aiQuaternion& r, aiVector3D& s) {
-   glm::vec3 glmP = aiToGlmVec3(p);
-   glm::quat glmR = aiToGlmQuat(r);
-   glm::vec3 glmS = aiToGlmVec3(s);
-   glm::mat4 keysM = prsKeysToMat4(glmP, glmR, glmS);
-   glm::mat4 boneSpaceKeysM = invParentM * keysM;
-   aiMatrix4x4 aiKeysM = glmToAIMat4(boneSpaceKeysM);
-   aiKeysM.Decompose(s, r, p);
+aiMatrix4x4 keysToMatrix(aiVector3D& p, aiQuaternion& r, aiVector3D& s) {
+   return glmToAIMat4(prsKeysToMat4(aiToGlmVec3(p), aiToGlmQuat(r), aiToGlmVec3(s)));
 }
 
-void animKeysToBoneSpace(aiNode * root, aiNodeAnim * nodeAnim) {
+void animKeysToMatrices(aiNode * root, aiNodeAnim * nodeAnim, aiMatrix4x4 * mats) {
    aiNode * node = root->FindNode(nodeAnim->mNodeName);
-   glm::mat4 invParentM = aiToGlmMat4(node->mTransformation.Inverse());
-   assert(nodeAnim->mNumPositionKeys == nodeAnim->mNumRotationKeys &&
-          nodeAnim->mNumPositionKeys == nodeAnim->mNumScalingKeys);
+   aiMatrix4x4 invParentM = node->mTransformation.Inverse();
 
    for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
-      assert(nodeAnim->mPositionKeys[k].mTime == nodeAnim->mRotationKeys[k].mTime &&
-             nodeAnim->mPositionKeys[k].mTime == nodeAnim->mScalingKeys[k].mTime);
-
       aiVector3D& p = nodeAnim->mPositionKeys[k].mValue;
       aiQuaternion& r = nodeAnim->mRotationKeys[k].mValue;
       aiVector3D& s = nodeAnim->mScalingKeys[k].mValue;
-      keysToBoneSpace(invParentM, p, r, s);
+
+      mats[k] = rotateAxis ? invParentM * keysToMatrix(p, r, s) : keysToMatrix(p, r, s);
    }
 }
 
@@ -413,6 +402,15 @@ BoneMap createAnimName2IndexMap(aiAnimation * anim) {
 int getAnimIndexRoot(aiMesh& mesh, BoneMap * n2I) {
    const char * rootName = mesh.mBones[0]->mName.C_Str();
    return n2I->find(rootName)->second;
+}
+
+void checkIfKeysAligned(aiNodeAnim * nodeAnim) {
+   assert(nodeAnim->mNumPositionKeys == nodeAnim->mNumRotationKeys &&
+          nodeAnim->mNumPositionKeys == nodeAnim->mNumScalingKeys);
+
+   for (int k = 0; k < nodeAnim->mNumPositionKeys; k++)
+      assert(nodeAnim->mPositionKeys[k].mTime == nodeAnim->mRotationKeys[k].mTime &&
+             nodeAnim->mPositionKeys[k].mTime == nodeAnim->mScalingKeys[k].mTime);
 }
 
 void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
@@ -432,31 +430,31 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
          // Write the duration of the animations
          writeFloat(fp, anim->mDuration);
 
+         // Write the number of keys
+         unsigned int numKeys = anim->mChannels[0]->mNumPositionKeys;
+         writeUInt(fp, numKeys);
+
          // Write the animations for each bone
          for (int j = rootNdx; j < anim->mNumChannels; j++) {
             aiNodeAnim * nodeAnim = anim->mChannels[j];
 
-            // Convert keys to bone space
-            // animKeysToBoneSpace(root, nodeAnim);
+            checkIfKeysAligned(nodeAnim);
 
-            // Write the keys
-            writeUInt(fp, nodeAnim->mNumPositionKeys);
-            for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
+            aiMatrix4x4 * matKeys = (aiMatrix4x4 *)malloc(sizeof(aiMatrix4x4) * numKeys);
+            animKeysToMatrices(root, nodeAnim, matKeys);
+
+            for (int k = 0; k < numKeys; k++) {
+               aiVector3D scl, pos;
+               aiQuaternion rot;
+               matKeys[k].Decompose(scl, rot, pos);
+
                writeFloat(fp, nodeAnim->mPositionKeys[k].mTime);
-               writeVector3D(fp, nodeAnim->mPositionKeys[k].mValue);
+               writeVector3D(fp, pos);
+               writeQuaternion(fp, rot);
+               writeVector3D(fp, scl);
             }
 
-            writeUInt(fp, nodeAnim->mNumRotationKeys);
-            for (int k = 0; k < nodeAnim->mNumRotationKeys; k++) {
-               writeFloat(fp, nodeAnim->mRotationKeys[k].mTime);
-               writeQuaternion(fp, nodeAnim->mRotationKeys[k].mValue);
-            }
-
-            writeUInt(fp, nodeAnim->mNumScalingKeys);
-            for (int k = 0; k < nodeAnim->mNumScalingKeys; k++) {
-               writeFloat(fp, nodeAnim->mScalingKeys[k].mTime);
-               writeVector3D(fp, nodeAnim->mScalingKeys[k].mValue);
-            }
+            free(matKeys);
          }
       }
    }

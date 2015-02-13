@@ -22,7 +22,7 @@ LIBS=libassimp.3.1.1.dylib
 exe: $(EXE)
 
 run: $(EXE)
-	./$(EXE) ../modeling_files/exports/robot.dae ../assets/models/guy.ciab
+	./$(EXE) ../modeling_files/exports/guy.dae ../assets/models/guy.ciab
 
 clean:
 	rm -rf $(BINDIR)

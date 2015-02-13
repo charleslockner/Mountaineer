@@ -1,5 +1,9 @@
 Format specification for the ciab model file (CIAB = Charles is a Boss):
 
+IMPORTANT:
+1) The matrices (ie: mat_inv_bone_pos and mat_parent_transform) are in column major format
+2) The quaternions (ie: rot x,y,z,w) are formated such that the w value (angle) is last instead of first
+
 [] denotes a data field
 {} denotes a collection of data fields to which () and <> applies to each [] within it
 () denotes the number of repetitions
@@ -27,17 +31,19 @@ animation_field ---> 11
 [ vert_index_field ]<uint8> (index_count)[index]<uint32>
 [ bone_index_field ]<uint8> (vert_count){[bone_1_index] [bone_2_index] [bone_3_index]}<uint16>
 [ bone_weight_field ]<uint8> (vert_count){[bone_1_weight] [bone_2_weight] [bone_3_weight]}<float32>
-[ bone_tree_field ]<uint8> [bone_root_index]<int16> (bone_count){[parent]<int16> [children_count]<int16> (children_count)[child_index]<int16>
-   (16)[mat_bone_pose]<float32>] (16)[mat_parent_transform]<float32>]}
+[ bone_tree_field ]<uint8> [bone_root_index]<int16> (bone_count){[parent]<int16>
+   [children_count]<int16> (children_count)[child_index]<int16>
+   (16)[mat_inv_bone_pose]<float32>] (16)[mat_parent_transform]<float32>]}
 [ animation_field ]<uint8>
-(animation_count){
-   [duration]<float32>
-   (bone_count){
-      [pos_key_count]<uint32>
-      (pos_key_count){[time]<float> {[posX] [posY] [posZ]}<float32>}
-      [rot_key_count]<uint32>
-      (rot_key_count){[time]<float> {[rotW] [rotX] [rotY] [rotZ]}<float32>}
-      [scl_key_count]<uint32>
-      (scl_key_count){[time]<float> {[sclX] [sclY] [sclZ]}<float32>}
+   (animation_count){
+      [duration]<float32>
+      [key_count]<uint32>
+      (bone_count){
+         (key_count){
+            [time]<float>
+            {[posX] [posY] [posZ]}<float32>
+            {[rotX] [rotY] [rotZ] [rotW]}<float32>
+            {[sclX] [sclY] [sclZ]}<float32>
+         }
+      }
    }
-}

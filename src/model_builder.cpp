@@ -122,11 +122,6 @@ static void readBoneTree(FILE *fp, Model * model) {
    }
 }
 
-// for some reason glm assumes w is the last entry, not the first as the data is usually given
-static glm::quat correctQuatW(glm::quat q) {
-   return glm::quat(q.x, q.y, q.z, q.w);
-}
-
 static void readAnimations(FILE *fp, Model * model) {
    model->animations = (Animation *)malloc(model->animationCount * sizeof(Animation));
 
@@ -134,34 +129,20 @@ static void readAnimations(FILE *fp, Model * model) {
       Animation * anim = & model->animations[i];
 
       fread(& anim->duration, sizeof(float), 1, fp);
-      anim->animBones = (AnimBone *)malloc(model->boneCount * sizeof(AnimBone));
+      fread(& anim->keyCount, sizeof(unsigned int), 1, fp);
 
+      anim->animBones = (AnimBone *)malloc(model->boneCount * sizeof(AnimBone));
       for (int j = 0; j < model->boneCount; j++) {
          AnimBone * animBone = & anim->animBones[j];
 
-         fread(& animBone->translateKeyCount, sizeof(unsigned int), 1, fp);
-         animBone->translateKeys = (Vec3Key *)malloc(animBone->translateKeyCount * sizeof(Vec3Key));
-         for (int k = 0; k < animBone->translateKeyCount; k++) {
-            Vec3Key * key = & animBone->translateKeys[k];
-            fread(& key->time, sizeof(float), 1, fp);
-            fread(& key->value, sizeof(float), 3, fp);
-         }
+         animBone->keys = (Key *)malloc(anim->keyCount * sizeof(Key));
+         for (int k = 0; k < anim->keyCount; k++) {
+            Key * key = & animBone->keys[k];
 
-         fread(& animBone->rotateKeyCount, sizeof(unsigned int), 1, fp);
-         animBone->rotateKeys = (QuatKey *)malloc(animBone->rotateKeyCount * sizeof(QuatKey));
-         for (int k = 0; k < animBone->rotateKeyCount; k++) {
-            QuatKey * key = & animBone->rotateKeys[k];
             fread(& key->time, sizeof(float), 1, fp);
-            fread(& key->value, sizeof(float), 4, fp);
-            key->value = correctQuatW(key->value);
-         }
-
-         fread(& animBone->scaleKeyCount, sizeof(unsigned int), 1, fp);
-         animBone->scaleKeys = (Vec3Key *)malloc(animBone->scaleKeyCount * sizeof(Vec3Key));
-         for (int k = 0; k < animBone->scaleKeyCount; k++) {
-            Vec3Key * key = & animBone->scaleKeys[k];
-            fread(& key->time, sizeof(float), 1, fp);
-            fread(& key->value, sizeof(float), 3, fp);
+            fread(& key->position, sizeof(float), 3, fp);
+            fread(& key->rotation, sizeof(float), 4, fp);
+            fread(& key->scale, sizeof(float), 3, fp);
          }
       }
    }
@@ -196,27 +177,18 @@ static void printAnimations(Animation * anims, short numAnims, short numBones) {
 
       printf("Animation %d:\n", i);
       printf("duration %f\n", anim->duration);
+      printf("keyCount %d\n", anim->keyCount);
 
       for (int j = 0; j < numBones; j++) {
          AnimBone * animBone = & anim->animBones[j];
          printf("  AnimBone %d:\n", j);
 
-         printf("  translateKeyCount %d\n", animBone->translateKeyCount);
-         for (int k = 0; k < animBone->translateKeyCount; k++) {
-            Vec3Key * key = & animBone->translateKeys[k];
-            printf("    translateKey: frame %d: (%.2f, %.2f, %.2f)\n", k, key->value.x, key->value.y, key->value.z);
-         }
-
-         printf("  rotateKeyCount %d\n", animBone->rotateKeyCount);
-         for (int k = 0; k < animBone->rotateKeyCount; k++) {
-            QuatKey * key = & animBone->rotateKeys[k];
-            printf("    rotateKey: frame %d: (%.2f, %.2f, %.2f, %.2f)\n", k, key->value.w, key->value.x, key->value.y, key->value.z);
-         }
-
-         printf("  scaleKeyCount %d\n", animBone->scaleKeyCount);
-         for (int k = 0; k < animBone->scaleKeyCount; k++) {
-            Vec3Key * key = & animBone->scaleKeys[k];
-            printf("    scaleKey: frame %d: (%.2f, %.2f, %.2f)\n", k, key->value.x, key->value.y, key->value.z);
+         for (int k = 0; k < anim->keyCount; k++) {
+            Key * key = & animBone->keys[k];
+            printf("    key %d at time %f:\n", k, key->time);
+            printf("      trans: %.2f %.2f %.2f\n", key->position.x, key->position.y, key->position.z);
+            printf("      rotate: %.2f %.2f %.2f %.2f\n", key->rotation.w, key->rotation.x, key->rotation.y, key->rotation.z);
+            printf("      scale: %.2f %.2f %.2f\n", key->scale.x, key->scale.y, key->scale.z);
          }
       }
    }
@@ -338,9 +310,7 @@ void MB_destroy(Model * model) {
 
    for (int i = 0; i < model->animationCount; i++) {
       for (int j = 0; j < model->boneCount; j++) {
-         free(model->animations[i].animBones[j].translateKeys);
-         free(model->animations[i].animBones[j].rotateKeys);
-         free(model->animations[i].animBones[j].scaleKeys);
+         free(model->animations[i].animBones[j].keys);
       }
       free(model->animations[i].animBones);
    }

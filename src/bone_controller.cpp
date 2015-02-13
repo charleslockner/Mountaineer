@@ -12,65 +12,48 @@ static glm::vec3 lerpVec3(glm::vec3 begin, glm::vec3 end, float ratio) {
 }
 
 // should improve this to constant tickTime somehow (instead of log(keyCount))
-static int findEarlyVec3KeyIndex(Vec3Key * keys, int keyCount, float tickTime) {
+static int findEarlyKeyIndex(Key * keys, int keyCount, float tickTime) {
+   assert(keyCount >= 1);
    if (keyCount <= 2)
       return 0;
 
    int halfCount = keyCount / 2;
 
    if (tickTime < keys[halfCount].time)
-      return findEarlyVec3KeyIndex(keys, halfCount + 1, tickTime);
+      return findEarlyKeyIndex(keys, halfCount + 1, tickTime);
    else
-      return halfCount + findEarlyVec3KeyIndex(keys + halfCount, keyCount - halfCount, tickTime);
+      return halfCount + findEarlyKeyIndex(keys + halfCount, keyCount - halfCount, tickTime);
 }
 
-// should improve this to constant tickTime somehow (instead of log(keyCount))
-static int findEarlyQuatKeyIndex(QuatKey * keys, int keyCount, float tickTime) {
-   if (keyCount <= 2)
-      return 0;
-
-   int halfCount = keyCount / 2;
-
-   if (tickTime < keys[halfCount].time)
-      return findEarlyQuatKeyIndex(keys, halfCount + 1, tickTime);
-   else
-      return halfCount + findEarlyQuatKeyIndex(keys + halfCount, keyCount - halfCount, tickTime);
+static Key interpolateKeys(Key earlyKey, Key lateKey, float ratio) {
+   Key key;
+   key.position = lerpVec3(earlyKey.position, lateKey.position, ratio);
+   key.rotation = glm::slerp(earlyKey.rotation, lateKey.rotation, ratio);
+   key.scale = lerpVec3(earlyKey.scale, lateKey.scale, ratio);
+   return key;
 }
 
-static glm::vec3 interpolateVec3(Vec3Key * keys, int keyCount, float tickTime) {
-   // we need at least two values to interpolate...
-   if (keyCount == 1)
-      return keys[0].value;
+static glm::mat4 computeAnimTransform(AnimBone * animBone, int keyCount, float tickTime) {
+   Key * keys = animBone->keys;
 
-   int earlyNdx = findEarlyVec3KeyIndex(keys, keyCount, tickTime);
+   int earlyNdx = findEarlyKeyIndex(animBone->keys, keyCount, tickTime);
    int lateNdx = earlyNdx + 1;
-   float ratio = (tickTime - keys[earlyNdx].time) / (keys[lateNdx].time - keys[earlyNdx].time);
 
-   return lerpVec3(keys[earlyNdx].value, keys[lateNdx].value, ratio);
-}
+   Key earlyKey = keys[earlyNdx];
+   Key lateKey = keys[lateNdx];
+   Key interpKey;
 
-static glm::quat interpolateQuat(QuatKey * keys, int keyCount, float tickTime) {
-   // we need at least two values to interpolate...
    if (keyCount == 1)
-      return keys[0].value;
+      interpKey = earlyKey;
+   else {
+      float ratio = (tickTime - earlyKey.time) / (lateKey.time - earlyKey.time);
+      interpKey = interpolateKeys(earlyKey, lateKey, ratio);
+   }
 
-   int earlyNdx = findEarlyQuatKeyIndex(keys, keyCount, tickTime);
-   int lateNdx = earlyNdx + 1;
-   float ratio = (tickTime - keys[earlyNdx].time) / (keys[lateNdx].time - keys[earlyNdx].time);
+   glm::mat4 transM = glm::translate(glm::mat4(1.0), interpKey.position);
+   glm::mat4 rotateM = glm::toMat4(interpKey.rotation);
+   glm::mat4 scaleM = glm::scale(glm::mat4(1.0), interpKey.scale);
 
-   return glm::slerp(keys[earlyNdx].value, keys[lateNdx].value, ratio);
-}
-
-static glm::mat4 computeAnimTransform(AnimBone * animBone, float tickTime) {
-   glm::vec3 scaleVec = interpolateVec3(animBone->scaleKeys, animBone->scaleKeyCount, tickTime);
-   glm::quat rotateQuat = interpolateQuat(animBone->rotateKeys, animBone->rotateKeyCount, tickTime);
-   glm::vec3 transVec = interpolateVec3(animBone->translateKeys, animBone->translateKeyCount, tickTime);
-
-   glm::mat4 scaleM = glm::scale(glm::mat4(1.0), scaleVec);
-   glm::mat4 rotateM = glm::toMat4(rotateQuat);
-   glm::mat4 transM = glm::translate(glm::mat4(1.0), transVec);
-
-   // return translateM;
    return transM * rotateM * scaleM;
 }
 
@@ -124,9 +107,11 @@ void BoneController::computeBoneTransform(int boneIndex, glm::mat4 parentM) {
    float tickTime = boneTimes[boneIndex];
 
    Bone * bone = & model->bones[boneIndex];
-   AnimBone * animBone = & model->animations[animNum].animBones[boneIndex];
+   Animation * animation = & model->animations[animNum];
+   AnimBone * animBone = & animation->animBones[boneIndex];
+   int keyCount = animation->keyCount;
 
-   glm::mat4 animKeysM = computeAnimTransform(animBone, tickTime);
+   glm::mat4 animKeysM = computeAnimTransform(animBone, keyCount, tickTime);
    glm::mat4 animPoseM = bone->parentOffset;
    glm::mat4 bonePoseM = bone->invBonePose;
    glm::mat4 rotationM = glm::toMat4(boneRotations[boneIndex]);
