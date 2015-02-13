@@ -88,24 +88,6 @@ aiQuaternion glmToAIQuat(glm::quat q) {
    return aiQuaternion(q.w, q.x, q.y, q.z);
 }
 
-void printMat4(glm::mat4 m) {
-   for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++)
-         printf("%f ", m[i][j]);
-      printf("\n");
-   }
-   printf("\n");
-}
-
-void printAIMat4(aiMatrix4x4 m) {
-   for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++)
-         printf("%f ", m[i][j]);
-      printf("\n");
-   }
-   printf("\n");
-}
-
 aiVector3D blend2oglVec3(aiVector3D v) {
    return blenderCorrect ? aiVector3D(v.y, v.z, v.x) : v;
 }
@@ -147,8 +129,8 @@ void writeQuaternion(FILE * fp, aiQuaternion q) {
 }
 
 void write4x4M(FILE * fp, aiMatrix4x4 m) {
-   for (int r = 0; r < 4; r++)
-      for (int c = 0; c < 4; c++)
+   for (int c = 0; c < 4; c++)
+      for (int r = 0; r < 4; r++)
          writeFloat(fp, m[r][c]);
 }
 
@@ -349,8 +331,7 @@ glm::mat4 prsKeysToMat4(glm::vec3 t, glm::quat r, glm::vec3 s) {
    glm::mat4 rotateM = glm::toMat4(r);
    glm::mat4 scaleM = glm::scale(glm::mat4(1.0), s);
 
-   return transM * rotateM * scaleM;
-   // return transM * scaleM * rotateM;
+   return transM * scaleM * rotateM;
 }
 
 aiMatrix4x4 keysToMatrix(aiVector3D& p, aiQuaternion& r, aiVector3D& s) {
@@ -358,7 +339,7 @@ aiMatrix4x4 keysToMatrix(aiVector3D& p, aiQuaternion& r, aiVector3D& s) {
 }
 
 void animKeysToMatrices(aiNode * root, aiNodeAnim * nodeAnim, aiMatrix4x4 * mats) {
-   aiNode * node = root->FindNode(nodeAnim->mNodeName);
+   // aiNode * node = root->FindNode(nodeAnim->mNodeName);
    // aiMatrix4x4 invParentM = node->mTransformation.Inverse();
 
    for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {

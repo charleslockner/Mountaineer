@@ -116,9 +116,7 @@ static void readBoneTree(FILE *fp, Model * model) {
       for (int j = 0; j < bone->childCount; j++)
          fread(& bone->childIndices[j], sizeof(short), 1, fp);
       fread(& bone->invBonePose, sizeof(glm::mat4), 1, fp);
-      bone->invBonePose = glm::transpose(bone->invBonePose);
       fread(& bone->parentOffset, sizeof(glm::mat4), 1, fp);
-      bone->parentOffset = glm::transpose(bone->parentOffset);
    }
 }
 
