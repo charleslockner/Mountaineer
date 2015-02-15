@@ -1,9 +1,10 @@
 
 uniform bool uHasBones;
+uniform bool uHasAnimations;
 
 uniform mat4 uModelMatrix;
 uniform mat4 uProjViewMatrix;
-uniform mat4 uBoneTransforms[100];
+uniform mat4 uBoneMatrices[100];
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexColor;
@@ -18,11 +19,17 @@ varying vec3 vVertexColor;
 varying vec2 vTextureCoord;
 
 void main(void) {
-   mat4 animMatrix = mat4(0.0);
-   for (int i = 0; i < 4; i++)
-      animMatrix += aBoneWeights[i] * uBoneTransforms[int(aBoneIndices[i])];
+   mat4 animMatrix;
 
-   mat4 modelM = uHasBones ? (uModelMatrix * animMatrix) : uModelMatrix;
+   // if (uHasBones && uHasAnimations) {
+   //    animMatrix = mat4(0.0);
+   //    for (int i = 0; i < 4; i++)
+   //       animMatrix += aBoneWeights[i] * uBoneMatrices[int(aBoneIndices[i])];
+   // }
+   // else
+      animMatrix = mat4(1.0);
+
+   mat4 modelM = uModelMatrix * animMatrix;
 
    vWorldPosition = vec3(modelM * vec4(aVertexPosition, 1.0));
    vWorldNormal = vec3(modelM * vec4(aVertexNormal, 0.0));

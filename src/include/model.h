@@ -5,6 +5,8 @@
 #include "glm/glm.hpp"
 #include "glm/gtx/quaternion.hpp"
 
+#include "stdio.h"
+
 #define MAX_BONES 100
 
 typedef struct {
@@ -33,7 +35,20 @@ typedef struct {
    glm::mat4 parentOffset;
 } Bone;
 
-typedef struct {
+class Model {
+public:
+   Model();
+   ~Model();
+
+   void loadCIAB(const char * path);
+   void loadTexture(const char * path);
+   void loadOBJ(const char * path);
+   void loadSkinningPIN(const char * path);
+   void loadAnimationPIN(const char * path);
+
+   void printBoneTree();
+   void printAnimations();
+
    unsigned int vertexCount;
    unsigned int indexCount;
    unsigned int boneCount;
@@ -49,6 +64,6 @@ typedef struct {
    short boneRoot;
    Bone * bones;
    Animation * animations;
-} Model;
+};
 
 #endif // __MODEL_H__

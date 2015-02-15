@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include "forward_shader.h"
-#include "model_builder.h"
+#include "model.h"
 
 #define WIN_HEIGHT 600
 #define WIN_WIDTH  1000
@@ -12,7 +12,7 @@
 
 World worldData;
 Camera * camera;
-Model * cubeModel;
+Model * model;
 Entity * cubeEnt;
 
 EntityShader * shader;
@@ -133,13 +133,19 @@ int main(void) {
 
    camera = new Camera(glm::vec3(0,0,15), glm::vec3(0,0,-1), glm::vec3(0,1,0));
    setupWorldData();
-   cubeModel = MB_build("assets/models/guy.ciab",
-                        "assets/textures/guy_tex.bmp");
-   cubeEnt = new Entity(glm::vec3(0,0,0), cubeModel);
+
+   model = new Model();
+   // model->loadCIAB("assets/models/guy.ciab");
+   // model->loadTexture("assets/textures/brick.bmp");
+   model->loadOBJ("assets/cheb/cheb2.obj");
+   // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   // model->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
+
+   cubeEnt = new Entity(glm::vec3(0,0,0), model);
 
    shader->sendCameraData(camera);
    shader->sendWorldData(&worldData);
-   shader->sendModelData(cubeModel);
+   shader->sendModelData(model);
 
    camera->lookAt(cubeEnt->position);
 

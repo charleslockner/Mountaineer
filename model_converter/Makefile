@@ -1,15 +1,12 @@
 CC=g++
 NAME=dae_to_ciab
+EXE=$(NAME)
 
-BINDIR=../bin
-OBJDIR=../obj
-LIBDIR=../lib
-
-EXE=$(BINDIR)/$(NAME)
+OBJDIR=obj
 
 OPTLEVEL=-O1
 WARN=
-INCLUDES=-Iinclude -I$(LIBDIR)/include
+INCLUDES=-Iinclude
 
 CFLAGS=-c $(INCLUDES) $(WARN) $(OPTLEVEL) -g
 
@@ -25,11 +22,13 @@ run: $(EXE)
 	./$(EXE) ../modeling_files/exports/guy.dae ../assets/models/guy.ciab
 
 clean:
-	rm -rf $(BINDIR)
+	rm -rf $(EXE)
 	rm -rf $(OBJDIR)
 
 $(EXE): $(OBJ)
+	@mkdir -p $(@D)
 	$(CC) -o $(EXE) $(OBJ) $(LIBS)
 
 $(OBJ): $(SRC)
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -o $@ $<

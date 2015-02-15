@@ -1,7 +1,7 @@
 
 uniform bool uHasNormals;
 uniform bool uHasColors;
-uniform bool uHasTexCoords;
+uniform bool uHasTextures;
 uniform bool uHasTansAndBitans;
 
 uniform vec3 uLights[40]; // max 10 lights each with position, direction, color, attributes
@@ -20,11 +20,11 @@ void main(void) {
    float specDot, lightStrength, lightAttenuation, lightRadius, lightDistance, illumination;
    float shine;
 
-   if (uHasColors && uHasTexCoords)
+   if (uHasColors && uHasTextures)
       skinColor = vec3(texture2D(uTexture, vTextureCoord)) * vVertexColor;
    else if (uHasColors)
       skinColor = vVertexColor;
-   else if (uHasTexCoords)
+   else if (uHasTextures)
       skinColor = vec3(texture2D(uTexture, vTextureCoord));
    else
       skinColor = vec3(0.5, 0.5, 0.5);

@@ -19,7 +19,7 @@ private:
 
    unsigned int h_uHasNormals;
    unsigned int h_uHasColors;
-   unsigned int h_uHasTexCoords;
+   unsigned int h_uHasTextures;
    unsigned int h_uHasTansAndBitans;
    unsigned int h_uHasBones;
    unsigned int h_uHasAnimations;
@@ -29,7 +29,7 @@ private:
    unsigned int h_uCameraPosition;
    unsigned int h_uLights;
    unsigned int h_uTexture;
-   unsigned int h_uBoneTransforms;
+   unsigned int h_uBoneMatrices;
 
    unsigned int h_aVertexPosition;
    unsigned int h_aVertexColor;

@@ -12,7 +12,7 @@ EXE=$(BINDIR)/$(EXENAME)
 
 OPTLEVEL=-O1
 WARN=
-INCLUDES=-I$(SRCDIR)/include -I$(LIBDIR)/include
+INCLUDES=-I$(SRCDIR)/include -I$(LIBDIR)/include -I$(LIBDIR)/eigen
 
 FRAME_FWS=-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
 AUDIO_FWS=-framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreServices
@@ -30,7 +30,6 @@ GAMEOBJS=$(patsubst %.cpp,$(GAME_OBJDIR)/%.o,$(GAMESRCS))
 
 OBJS=$(GAMEOBJS) $(FOUNDOBJS)
 
--include $(OBJS:.o=.d)
 .PHONY: exe run clean
 
 exe: $(EXE)
@@ -45,6 +44,8 @@ run: $(EXE)
 clean:
 	rm -rf $(BINDIR)
 	rm -rf $(OBJDIR)
+
+-include $(OBJS:.o=.d)
 
 $(EXE): $(OBJS)
 	mkdir -p $(@D)
