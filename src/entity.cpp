@@ -7,7 +7,7 @@ Entity::Entity(glm::vec3 position, Model * model) {
    this->scale = glm::vec3(1.0f);
    this->model = model;
 
-   for (int i = 0; i < model->boneCount; i++)
+   for (int i = 0; i < MAX_BONES; i++)
       this->boneTransforms[i] = glm::mat4(1.0f);
 
    this->boneController = new BoneController(model, boneTransforms);

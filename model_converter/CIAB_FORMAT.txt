@@ -1,0 +1,54 @@
+Format specification for the ciab model file (CIAB = Charles is a Boss):
+
+IMPORTANT:
+1) The matrices (ie: mat_inv_bone_pos and mat_parent_transform) are in column major format
+2) The quaternions (ie: rot x,y,z,w) are formated such that the w value (angle) is last instead of first
+
+[] denotes a data field
+{} denotes a collection of data fields to which () and <> applies to each [] within it
+() denotes the number of repetitions
+<> denotes the data type
+
+vert_pos_type -----> 1
+vert_norm_field ---> 2
+vert_color_field --> 3
+vert_uv_field -----> 4
+vert_tang_field ---> 5
+vert_bitan_field --> 6
+vert_index_field --> 7
+bone_index_field --> 8
+bone_weight_field -> 9
+bone_tree_field ---> 10
+animation_field ---> 11
+
+[vert_count]<int32> [index_count]<int32> [bone_count]<int32> [animation_count]<int32>
+[ vert_pos_type ]<uint8>     (vert_count){[posX]    [posY]    [posZ]}<float32>
+[ vert_norm_field ]<uint8>   (vert_count){[normX]   [normY]   [normZ]}<float32>
+[ vert_color_field ]<uint8>  (vert_count){[red]     [green]   [blue]}<float32>
+[ vert_uv_field ]<uint8>     (vert_count){[u_coord] [v_coord]}<float32>
+[ vert_tang_field ]<uint8>   (vert_count){[tanX]    [tanY]    [tanZ]}<float32>
+[ vert_bitan_field ]<uint8>  (vert_count){[bitanX]  [bitanY]  [bitanZ]}<float32>
+[ vert_index_field ]<uint8>  (index_count)[index]<uint32>
+[ bone_index_field ]<uint8>  (vert_count){[index1]  [index2]  [index3], [index4]}<uint16>
+[ bone_weight_field ]<uint8> (vert_count){[weight1] [weight2] [weight3] [weight4]}<float32>
+
+[ bone_tree_field ]<uint8> [bone_root_index]<int16> (bone_count){
+   [parent]<int16>
+   [num_children]<int16>
+   (num_children)[child_index]<int16>
+   (16)[mat_inv_bone_pose]<float32>]
+   (16)[mat_parent_transform]<float32>
+}
+
+[ animation_field ]<uint8> (animation_count){
+   [fps]<uint32>
+   [key_count]<uint32>
+   (bone_count){
+      (key_count){
+         [time]<float>
+         {[posX] [posY] [posZ]}<float32>
+         {[rotX] [rotY] [rotZ] [rotW]}<float32>
+         {[sclX] [sclY] [sclZ]}<float32>
+      }
+   }
+}

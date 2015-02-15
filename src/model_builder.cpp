@@ -30,6 +30,9 @@ static void readHeader(FILE *fp, Model * model) {
    fread(& model->boneCount, sizeof(unsigned int), 1, fp);
    fread(& model->animationCount, sizeof(unsigned int), 1, fp);
 
+   printf("verts: %d, indices: %d, bones: %d, anims: %d\n",
+      model->vertexCount, model->indexCount, model->boneCount, model->animationCount);
+
    if (model->boneCount > MAX_BONES) {
       printf("There are %d bones and the max is %d\n", model->boneCount, MAX_BONES);
       exit(1);
@@ -51,6 +54,18 @@ static unsigned int createVBO(FILE *fp, int count, int size) {
 }
 
 static void readPositions(FILE *fp, Model * model) {
+   // float * data = (float *)malloc(3 * model->vertexCount * sizeof(float));
+   // fread(data, sizeof(float), 3 * model->vertexCount, fp);
+
+   // for (int i = 0 ; i < model->vertexCount; i++)
+   //    printf("pos: %f %f %f\n", data[3*i], data[3*i+1], data[3*i+2]);
+
+   // glGenBuffers(1, & model->posID);
+   // glBindBuffer(GL_ARRAY_BUFFER, model->posID);
+   // glBufferData(GL_ARRAY_BUFFER, 3 * model->vertexCount * sizeof(float), data, GL_STATIC_DRAW);
+
+   // free(data);
+
    model->posID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
 }
 
@@ -75,6 +90,18 @@ static void readBitangents(FILE *fp, Model * model) {
 }
 
 static void readIndices(FILE *fp, Model * model) {
+   // unsigned int * data = (unsigned int *)malloc(model->indexCount * sizeof(unsigned int));
+   // fread(data, sizeof(unsigned int), model->indexCount, fp);
+
+   // for (int i = 0 ; i < model->indexCount / 3; i++)
+   //    printf("indices: %d %d %d\n", data[3*i], data[3*i+1], data[3*i+2]);
+
+   // glGenBuffers(1, & model->posID);
+   // glBindBuffer(GL_ARRAY_BUFFER, model->posID);
+   // glBufferData(GL_ARRAY_BUFFER, model->indexCount * sizeof(unsigned int), data, GL_STATIC_DRAW);
+
+   // free(data);
+
    model->indID = createVBO(fp, model->indexCount, sizeof(unsigned int));
 }
 
@@ -126,8 +153,9 @@ static void readAnimations(FILE *fp, Model * model) {
    for (int i = 0; i < model->animationCount; i++) {
       Animation * anim = & model->animations[i];
 
-      fread(& anim->duration, sizeof(float), 1, fp);
+      fread(& anim->fps, sizeof(unsigned int), 1, fp);
       fread(& anim->keyCount, sizeof(unsigned int), 1, fp);
+      anim->duration = 1.0 * (anim->keyCount-1) / anim->fps;
 
       anim->animBones = (AnimBone *)malloc(model->boneCount * sizeof(AnimBone));
       for (int j = 0; j < model->boneCount; j++) {
@@ -174,7 +202,7 @@ static void printAnimations(Animation * anims, short numAnims, short numBones) {
       Animation * anim = & anims[i];
 
       printf("Animation %d:\n", i);
-      printf("duration %f\n", anim->duration);
+      printf("fps %d\n", anim->fps);
       printf("keyCount %d\n", anim->keyCount);
 
       for (int j = 0; j < numBones; j++) {
@@ -211,7 +239,7 @@ static void checkPresentFields(Model * model, unsigned short flags) {
                      isFieldPresent(flags, BONE_WEIGHTS) &&
                      isFieldPresent(flags, BONE_TREE);
    model->hasAnimations = isFieldPresent(flags, ANIMATIONS);
-   // printf("PresentFields: %d %d %d %d %d %d\n", model->hasNormals, model->hasColors, model->hasTexCoords, model->hasTansAndBitans, model->hasBones, model->hasAnimations);
+   printf("PresentFields: %d %d %d %d %d %d\n", model->hasNormals, model->hasColors, model->hasTexCoords, model->hasTansAndBitans, model->hasBones, model->hasAnimations);
 }
 
 static void loadMeshData(FILE *fp, Model * model) {
@@ -262,6 +290,8 @@ static void loadMeshData(FILE *fp, Model * model) {
             exit(1);
             break;
       }
+
+      printf("Loading field %d\n", fieldType);
    }
 
    checkPresentFields(model, receivedFlags);
@@ -307,9 +337,8 @@ void MB_destroy(Model * model) {
    free(model->bones);
 
    for (int i = 0; i < model->animationCount; i++) {
-      for (int j = 0; j < model->boneCount; j++) {
+      for (int j = 0; j < model->boneCount; j++)
          free(model->animations[i].animBones[j].keys);
-      }
       free(model->animations[i].animBones);
    }
    free(model->animations);

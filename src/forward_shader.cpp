@@ -39,7 +39,7 @@ void ForwardShader::setupHandles() {
 
    h_aVertexPosition = glGetAttribLocation(program, "aVertexPosition");
    h_aVertexNormal = glGetAttribLocation(program, "aVertexNormal");
-   // h_aVertexColor = glGetAttribLocation(program, "aVertexColor");
+   h_aVertexColor = glGetAttribLocation(program, "aVertexColor");
    h_aTextureCoord = glGetAttribLocation(program, "aTextureCoord");
    h_aBoneIndices = glGetAttribLocation(program, "aBoneIndices");
    h_aBoneWeights = glGetAttribLocation(program, "aBoneWeights");
@@ -65,17 +65,19 @@ void ForwardShader::sendCameraData(Camera * camera) {
 void ForwardShader::sendModelData(Model * model) {
    glUseProgram(program);
 
+   glUniform1i(h_uHasNormals, model->hasNormals);
+   glUniform1i(h_uHasColors, model->hasColors);
+   glUniform1i(h_uHasTexCoords, model->hasTexCoords);
+   glUniform1i(h_uHasBones, model->hasBones);
+
    sendVertexAttribArray(h_aVertexPosition, model->posID, 3, GL_FLOAT);
 
-   glUniform1i(h_uHasNormals, model->hasNormals);
    if (model->hasNormals)
       sendVertexAttribArray(h_aVertexNormal, model->normID, 3, GL_FLOAT);
 
-   glUniform1i(h_uHasColors, model->hasColors);
    if (model->hasColors)
       sendVertexAttribArray(h_aVertexColor, model->colorID, 3, GL_FLOAT);
 
-   glUniform1i(h_uHasTexCoords, model->hasTexCoords);
    if (model->hasTexCoords) {
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, model->texID);
@@ -83,7 +85,6 @@ void ForwardShader::sendModelData(Model * model) {
       sendVertexAttribArray(h_aTextureCoord, model->uvID, 2, GL_FLOAT);
    }
 
-   glUniform1i(h_uHasBones, model->hasBones);
    if (model->hasBones) {
       sendVertexAttribArray(h_aBoneIndices, model->bIndID, 4, GL_FLOAT);
       sendVertexAttribArray(h_aBoneWeights, model->bWeightID, 4, GL_FLOAT);
@@ -99,7 +100,7 @@ void ForwardShader::sendEntityData(Entity * entity) {
    glm::mat4 transM = glm::translate(glm::mat4(1.0f), entity->position);
    glm::mat4 scaleM = glm::scale(glm::mat4(1.0f), entity->scale);
    glm::mat4 rotateM = glm::rotate(glm::mat4(1.0f), entity->rotation, glm::vec3(0,1,0));
-   glm::mat4 modelM = transM * scaleM * rotateM;
+   glm::mat4 modelM = transM * rotateM * scaleM;
    glUniformMatrix4fv(h_uModelMatrix, 1, GL_FALSE, glm::value_ptr(modelM));
 
    if (entity->model->hasBones) {

@@ -18,17 +18,11 @@ varying vec3 vVertexColor;
 varying vec2 vTextureCoord;
 
 void main(void) {
-   mat4 animMatrix;
-   mat4 modelM;
+   mat4 animMatrix = mat4(0.0);
+   for (int i = 0; i < 4; i++)
+      animMatrix += aBoneWeights[i] * uBoneTransforms[int(aBoneIndices[i])];
 
-   if (!uHasBones)
-      modelM = uModelMatrix;
-   else {
-      animMatrix = mat4(0.0);
-      for (int i = 0; i < 4; i++)
-         animMatrix += aBoneWeights[i] * uBoneTransforms[int(aBoneIndices[i])];
-      modelM = uModelMatrix * animMatrix;
-   }
+   mat4 modelM = uHasBones ? (uModelMatrix * animMatrix) : uModelMatrix;
 
    vWorldPosition = vec3(modelM * vec4(aVertexPosition, 1.0));
    vWorldNormal = vec3(modelM * vec4(aVertexNormal, 0.0));

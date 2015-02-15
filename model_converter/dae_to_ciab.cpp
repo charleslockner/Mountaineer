@@ -11,9 +11,6 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/quaternion.hpp"
 
-#define ROT_BLEND aiMatrix4x4(0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,1)
-#define ROT_BLEND_INV aiMatrix4x4(0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,1)
-
 typedef enum {
    POSITIONS = 1,
    NORMALS = 2,
@@ -93,7 +90,10 @@ aiVector3D blend2oglVec3(aiVector3D v) {
 }
 
 aiMatrix4x4 blend2oglMat4(aiMatrix4x4 m) {
-   return blenderCorrect ? ROT_BLEND * m * ROT_BLEND_INV : m;
+   return blenderCorrect ? aiMatrix4x4(m.b2, m.b3, m.b1, m.b4,
+                                       m.c2, m.c3, m.c1, m.c4,
+                                       m.a2, m.a3, m.a1, m.a4,
+                                       m.d2, m.d3, m.d1, m.d4) : m;
 }
 
 void writeTypeField(FILE * fp, unsigned char type) {
@@ -376,7 +376,6 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
    aiNode * root = scene->mRootNode;
    int numAnims = scene->mNumAnimations;
 
-
    if (numAnims > 0) {
       std::cerr << "Writing " << numAnims << " animation" << (numAnims == 1 ? "" : "s") << "...\n";
       writeTypeField(fp, ANIMATIONS);
@@ -388,10 +387,10 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
          assert(anim->mTicksPerSecond != 0);
          assert(anim->mNumChannels > 0);
 
-         // Write the duration of the animations
-         writeFloat(fp, anim->mDuration);
-         // Write the number of keys
          unsigned int numKeys = anim->mChannels[rootNdx]->mNumPositionKeys;
+         unsigned int fps = numKeys / anim->mDuration;
+
+         writeUInt(fp, fps);
          writeUInt(fp, numKeys);
 
          aiMatrix4x4 * matKeys = (aiMatrix4x4 *)malloc(sizeof(aiMatrix4x4) * numKeys);

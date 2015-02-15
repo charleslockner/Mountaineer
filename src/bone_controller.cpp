@@ -12,7 +12,7 @@ static glm::vec3 lerpVec3(glm::vec3 begin, glm::vec3 end, float ratio) {
 }
 
 // should improve this to constant tickTime somehow (instead of log(keyCount))
-static int findEarlyKeyIndex(Key * keys, int keyCount, float tickTime) {
+static int findEarlyKeyIndex(Key * keys, int keyCount, float tickTime, float duration) {
    assert(keyCount >= 1);
    if (keyCount <= 2)
       return 0;
@@ -20,9 +20,13 @@ static int findEarlyKeyIndex(Key * keys, int keyCount, float tickTime) {
    int halfCount = keyCount / 2;
 
    if (tickTime < keys[halfCount].time)
-      return findEarlyKeyIndex(keys, halfCount + 1, tickTime);
+      return findEarlyKeyIndex(keys, halfCount + 1, tickTime, duration);
    else
-      return halfCount + findEarlyKeyIndex(keys + halfCount, keyCount - halfCount, tickTime);
+      return halfCount + findEarlyKeyIndex(keys + halfCount, keyCount - halfCount, tickTime, duration);
+
+   // assert(keyCount >= 1);
+   // int index = int((keyCount-1) * tickTime / duration);
+   // return index < keyCount ? index : keyCount - 1;
 }
 
 static Key interpolateKeys(Key earlyKey, Key lateKey, float ratio) {
@@ -33,10 +37,10 @@ static Key interpolateKeys(Key earlyKey, Key lateKey, float ratio) {
    return key;
 }
 
-static glm::mat4 computeAnimTransform(AnimBone * animBone, int keyCount, float tickTime) {
+static glm::mat4 computeAnimTransform(AnimBone * animBone, int keyCount, float tickTime, float duration) {
    Key * keys = animBone->keys;
 
-   int earlyNdx = findEarlyKeyIndex(animBone->keys, keyCount, tickTime);
+   int earlyNdx = findEarlyKeyIndex(animBone->keys, keyCount, tickTime, duration);
    int lateNdx = earlyNdx + 1;
 
    Key earlyKey = keys[earlyNdx];
@@ -118,9 +122,10 @@ void BoneController::computeBoneTransform(int boneIndex, glm::mat4 parentM) {
    Bone * bone = & model->bones[boneIndex];
    Animation * animation = & model->animations[animNum];
    AnimBone * animBone = & animation->animBones[boneIndex];
+   float duration = animation->duration;
    int keyCount = animation->keyCount;
 
-   glm::mat4 animKeysM = computeAnimTransform(animBone, keyCount, tickTime);
+   glm::mat4 animKeysM = computeAnimTransform(animBone, keyCount, tickTime, duration);
    glm::mat4 animParentM = bone->parentOffset;
    glm::mat4 bonePoseM = bone->invBonePose;
    glm::mat4 rotationM = glm::toMat4(boneRotations[boneIndex]);

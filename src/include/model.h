@@ -19,8 +19,9 @@ typedef struct {
 } AnimBone;
 
 typedef struct {
+   unsigned int fps;
+   unsigned int keyCount;
    float duration;
-   unsigned keyCount;
    AnimBone * animBones;
 } Animation;
 

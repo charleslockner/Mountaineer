@@ -8,7 +8,7 @@ import math
 import operator
 import struct
 
-MAX_INFLUENCES = 3
+MAX_INFLUENCES = 4
 
 # #####################################################
 # Utils
@@ -34,45 +34,14 @@ def flatten_mat4( m ):
             m[0][2],m[1][2],m[2][2],m[3][2],
             m[0][3],m[1][3],m[2][3],m[3][3]]
 
-def rToLVec3( v ):
-    return mathutils.Vector((v.x, v.z, v.y))
+def transpose( m ):
+    n = m.copy()
+    for i in range(0, 4):
+        for j in range(0, 4):
+            n[i][j] = m[j][i]
+    return n
 
-def rToLQuat( q ):
-    return mathutils.Quaternion((-q.w, q.x, q.z, q.y))
-
-def rToLMat4( m ):
-    nm = m.copy()
-
-    nm[0][1] = m[0][2]
-    nm[0][2] = m[0][1]
-
-    nm[1][0] = m[2][0]
-    nm[2][0] = m[1][0]
-
-    nm[1][1] = m[2][2]
-    nm[2][2] = m[1][1]
-
-    nm[1][2] = m[2][1]
-    nm[2][1] = m[1][2]
-
-    nm[3][1] = m[3][2]
-    nm[3][2] = m[3][1]
-
-    nm[1][3] = m[2][3]
-    nm[2][3] = m[1][3]
-
-    return nm
-
-# def rToLMat4( m ):
-
-# def transpose( m ):
-#     n = m.copy()
-#     for i in range(0, 4):
-#         for j in range(0, 4):
-#             n[i][j] = m[j][i]
-#     return n
-
-# def swap_xy_mat4( m ):
+# def blend2oglMat4( m ):
 #     yTemp = m[1].copy()
 #     m[1] = m[2].copy()
 #     m[2] = yTemp
@@ -125,9 +94,6 @@ def get_action_state( action, bone, frame ):
     rot = bone.matrix_local.to_quaternion() * rot
     rot.normalize()
 
-    pos = rToLVec3(pos)
-    rot = rToLQuat(rot)
-
     return pos, rot, scl
 
 
@@ -142,30 +108,24 @@ def get_animations():
     for action in bpy.data.actions:
         end_frame = int( action.frame_range[1] )
         start_frame = int( action.frame_range[0] )
-        frame_length = int( end_frame - start_frame )
+        key_count = int( end_frame - start_frame )
 
         # action.name
-        animation = struct.pack('=ii', fps, frame_length)
+        animation = struct.pack('=II', fps, key_count)
 
         for bone in armature.bones:
-            scale_key_count = rotate_key_count = translate_key_count = frame_length
+            for frame_number in range( key_count ):
+                time = 1.0 * frame_number / fps
 
-            translate_keys = struct.pack('=i', translate_key_count)
-            rotate_keys = struct.pack('=i', rotate_key_count)
-            scale_keys = struct.pack('=i', scale_key_count)
-
-            for frame_number in range( frame_length ):
                 pos, rot, scl = get_action_state( action, bone, frame_number )
-
                 px, py, pz = pos.x, pos.y, pos.z
-                rw, rx, ry, rz = rot.w, rot.x, rot.y, rot.z
+                rw, rx, ry, rz = rot.x, rot.y, rot.z, rot.w
                 sx, sy, sz = scl.x, scl.y, scl.z
 
-                translate_keys += struct.pack('=i3f', frame_number, px, py, pz)
-                rotate_keys += struct.pack('=i4f', frame_number, rw, rx, ry, rz)
-                scale_keys += struct.pack('=i3f', frame_number, sx, sy, sz)
-
-            animation += translate_keys + rotate_keys + scale_keys
+                animation += struct.pack('=f', time)
+                animation += struct.pack('=3f', px, py, pz)
+                animation += struct.pack('=4f', rx, ry, rz, rw)
+                animation += struct.pack('=3f', sx, sy, sz)
 
         animations += animation
 
@@ -191,15 +151,13 @@ def get_mesh_data( obj ):
 
             vertex_number += 1
 
-            v_co = rToLVec3(obj.data.vertices[vertex_index].co)
-            vertices.append( v_co.x )
-            vertices.append( v_co.y )
-            vertices.append( v_co.z )
+            vertices.append( obj.data.vertices[vertex_index].co.x )
+            vertices.append( obj.data.vertices[vertex_index].co.y )
+            vertices.append( obj.data.vertices[vertex_index].co.z )
 
-            v_normal = rToLVec3(obj.data.vertices[vertex_index].normal)
-            normals.append( v_normal.x )
-            normals.append( v_normal.y )
-            normals.append( v_normal.z )
+            normals.append( obj.data.vertices[vertex_index].normal.x )
+            normals.append( obj.data.vertices[vertex_index].normal.y )
+            normals.append( obj.data.vertices[vertex_index].normal.z )
 
             indices.append( vertex_number )
 
@@ -301,38 +259,45 @@ def get_mesh_data( obj ):
                 if int( boneIndex ) == bone_id:
                     weight += float( boneWeights[j] )
 
-            # name = bone.name
-            bindPose = rToLMat4(bone.matrix_local.inverted())
+            if weight > 0:
+                skinned = "true"
+
+            if bone.use_inherit_rotation:
+                inheritRotation = "true"
+
+            if bone.use_inherit_scale:
+                inheritScale = "true"
+
+            bindPose = flatten_mat4(bone.matrix_local.inverted())
 
             numChildren = len(childIndices)
-
-            bones.append(struct.pack('=hh%sh16f'%numChildren, parent_index, numChildren, *(childIndices+flatten_mat4(bindPose))))
+            bones.append(struct.pack('=hh%sh16f16f'%numChildren, parent_index, numChildren, *(childIndices+bindPose+bindPose)))
 
     numVertices = int(len(vertices)/3)
     numIndices = len(indices)
     numBones = len(bones)
     numAnimations = len(bpy.data.actions)
 
-    buf  = struct.pack('=iiii', numVertices, numIndices, numBones, numAnimations)
+    buf  = struct.pack('=IIII', numVertices, numIndices, numBones, numAnimations)
     buf += struct.pack('=b%sf'%len(vertices), 1, *vertices)
-    buf += struct.pack('=b%sf'%len(normals), 2, *normals)
-
+    if len(normals) > 0:
+        buf += struct.pack('=b%sf'%len(normals), 2, *normals)
     if len(colors) > 0:
         buf += struct.pack('=b%sf'%len(colors), 3, *colors)
     if len(uvs) > 0:
         buf += struct.pack('=b%sf'%len(uvs), 4, *uvs)
 
-    buf += struct.pack('=b%sI'%len(indices), 5, *indices)
+    buf += struct.pack('=b%sI'%len(indices), 7, *indices)
 
     if len(bpy.data.armatures) > 0:
-        buf += struct.pack('=b%sI'%len(boneIndices), 6, *boneIndices)
-        buf += struct.pack('=b%sf'%len(boneWeights), 7, *boneWeights)
-        buf += struct.pack('=b', 8)
+        buf += struct.pack('=b%sH'%len(boneIndices), 8, *boneIndices)
+        buf += struct.pack('=b%sf'%len(boneWeights), 9, *boneWeights)
+        buf += struct.pack('=bh', 10, 0) # 0 -> boneRootNdx
         for bone_buf in bones:
             buf += bone_buf
 
     if len(bpy.data.actions) > 0:
-        buf += struct.pack('=b', 9)
+        buf += struct.pack('=b', 11)
         buf += get_animations()
 
     return buf

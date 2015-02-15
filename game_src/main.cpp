@@ -131,11 +131,11 @@ int main(void) {
 
    shader = new ForwardShader();
 
-   camera = new Camera(glm::vec3(0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
+   camera = new Camera(glm::vec3(0,0,15), glm::vec3(0,0,-1), glm::vec3(0,1,0));
    setupWorldData();
    cubeModel = MB_build("assets/models/guy.ciab",
                         "assets/textures/guy_tex.bmp");
-   cubeEnt = new Entity(glm::vec3(0,0,-15), cubeModel);
+   cubeEnt = new Entity(glm::vec3(0,0,0), cubeModel);
 
    shader->sendCameraData(camera);
    shader->sendWorldData(&worldData);
