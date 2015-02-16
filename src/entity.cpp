@@ -10,7 +10,7 @@ Entity::Entity(glm::vec3 position, Model * model) {
    for (int i = 0; i < MAX_BONES; i++)
       this->boneTransforms[i] = glm::mat4(1.0f);
 
-   this->boneController = new BoneController(model, boneTransforms);
+   this->boneController = new BoneController(model, boneTransforms, !model->hasBoneTree);
 }
 
 Entity::~Entity() {
@@ -18,11 +18,11 @@ Entity::~Entity() {
 }
 
 void Entity::draw(EntityShader * shader, float timeDelta) {
-   if (model->hasBones) {
-      // boneController->rotateBone(13, -0.05, glm::normalize(glm::vec3(1,1,0)));
-      boneController->rotateBone(3, 0.1, glm::normalize(glm::vec3(1,0,0)));
-      boneController->updateTransforms(timeDelta);
-   }
+   // if (model->hasBoneTree) {
+   //    // boneController->rotateBone(13, -0.05, glm::normalize(glm::vec3(1,1,0)));
+   //    // boneController->rotateBone(3, 0.1, glm::normalize(glm::vec3(1,0,0)));
+   // }
+   boneController->updateTransforms(timeDelta);
 
    shader->renderEntity(this);
 }

@@ -138,8 +138,8 @@ int main(void) {
    // model->loadCIAB("assets/models/guy.ciab");
    // model->loadTexture("assets/textures/guy_tex.bmp");
    model->loadOBJ("assets/cheb/cheb2.obj");
-   // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   // model->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
+   model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   model->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
 
    entity = new Entity(glm::vec3(0,0,0), model);
 

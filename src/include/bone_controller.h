@@ -8,7 +8,7 @@
 
 class BoneController {
 public:
-   BoneController(Model * model, glm::mat4 * boneTransforms);
+   BoneController(Model * model, glm::mat4 * boneTransforms, bool isFlat);
    ~BoneController();
 
    void rotateBone(int boneNum, float angle, glm::vec3 axis);
@@ -19,13 +19,15 @@ public:
 private:
    Model * model;
    glm::mat4 * boneTransforms;
+   bool isFlat;
 
    glm::quat boneRotations[MAX_BONES];
    int boneAnimNums[MAX_BONES];
    float boneTimes[MAX_BONES];
    bool bonePlaying[MAX_BONES];
 
-   void computeBoneTransform(int boneIndex, glm::mat4 parentM);
+   void computeFlatTransforms();
+   void computeRecursiveTransforms(int boneIndex, glm::mat4 parentM);
 };
 
 #endif // __BONE_CONTROLLER_H__

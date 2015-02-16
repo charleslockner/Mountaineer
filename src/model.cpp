@@ -7,13 +7,15 @@ Model::Model() {
    hasTexCoords = false;
    hasTextures = false;
    hasTansAndBitans = false;
-   hasBones = false;
+   hasBoneWeights = false;
+   hasBoneTree = false;
    hasAnimations = false;
 }
 
 Model::~Model() {
-   for (int i = 0; i < boneCount; i++)
-      free(bones[i].childIndices);
+   if (hasBoneTree)
+      for (int i = 0; i < boneCount; i++)
+         free(bones[i].childIndices);
    free(bones);
 
    for (int i = 0; i < animationCount; i++) {

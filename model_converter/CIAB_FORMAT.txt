@@ -18,8 +18,9 @@ vert_bitan_field --> 6
 vert_index_field --> 7
 bone_index_field --> 8
 bone_weight_field -> 9
-bone_tree_field ---> 10
-animation_field ---> 11
+bone_numInf_field -> 10
+bone_tree_field ---> 11
+animation_field ---> 12
 
 [vert_count]<int32> [index_count]<int32> [bone_count]<int32> [animation_count]<int32>
 [ vert_pos_type ]<uint8>     (vert_count){[posX]    [posY]    [posZ]}<float32>
@@ -31,6 +32,7 @@ animation_field ---> 11
 [ vert_index_field ]<uint8>  (index_count)[index]<uint32>
 [ bone_index_field ]<uint8>  (vert_count){[index1]  [index2]  [index3], [index4]}<uint16>
 [ bone_weight_field ]<uint8> (vert_count){[weight1] [weight2] [weight3] [weight4]}<float32>
+[ bone_numInf_field ]<uint8> (vert_count)[numInf]<uint16>
 
 [ bone_tree_field ]<uint8> [bone_root_index]<int16> (bone_count){
    [parent]<int16>

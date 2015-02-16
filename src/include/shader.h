@@ -22,7 +22,10 @@ public:
 	virtual void renderEntity(Entity * entity) {};
 
 protected:
-   void sendVertexAttribArray(unsigned int handle, unsigned int vbo, int size, int type);
+   void sendVertexAttribArray(unsigned int handle, unsigned int vbo, int size);
+   void sendLargeVertexAttribArray(unsigned int handle0, unsigned int handle1,
+                                   unsigned int handle2, unsigned int handle3,
+                                   unsigned int vbo, int numAttribs);
    void sendTexture(unsigned int handle, unsigned int id, GLenum texture);
 };
 
@@ -44,7 +47,6 @@ private:
    unsigned int h_uHasColors;
    unsigned int h_uHasTextures;
    unsigned int h_uHasTansAndBitans;
-   unsigned int h_uHasBones;
    unsigned int h_uHasAnimations;
 
    unsigned int h_uModelMatrix;
@@ -60,6 +62,16 @@ private:
    unsigned int h_aVertexUV;
    unsigned int h_aBoneIndices;
    unsigned int h_aBoneWeights;
+
+   unsigned int h_aBoneIndices0;
+   unsigned int h_aBoneIndices1;
+   unsigned int h_aBoneIndices2;
+   unsigned int h_aBoneIndices3;
+   unsigned int h_aBoneWeights0;
+   unsigned int h_aBoneWeights1;
+   unsigned int h_aBoneWeights2;
+   unsigned int h_aBoneWeights3;
+   unsigned int h_aNumInfluences;
 
    unsigned int program;
    unsigned int indexCount;

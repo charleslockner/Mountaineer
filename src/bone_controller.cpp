@@ -61,9 +61,10 @@ static glm::mat4 computeAnimTransform(AnimBone * animBone, int keyCount, float t
    return transM * rotateM * scaleM;
 }
 
-BoneController::BoneController(Model * model, glm::mat4 * boneTransforms) {
+BoneController::BoneController(Model * model, glm::mat4 * boneTransforms, bool isFlat) {
    this->model = model;
    this->boneTransforms = boneTransforms;
+   this->isFlat = isFlat;
 
    for (int i = 0; i < model->boneCount; i++) {
       this->boneRotations[i] = glm::quat(1, glm::vec3(0,0,0));
@@ -102,8 +103,9 @@ void BoneController::updateTransforms(float tickDelta) {
       }
    }
 
-   // recursively fill in bone transforms
-   computeBoneTransform(model->boneRoot, glm::mat4(1.0f));
+   isFlat ?
+      computeFlatTransforms() :
+      computeRecursiveTransforms(model->boneRoot, glm::mat4(1.0f));
 }
 
 void printMat4(glm::mat4 m) {
@@ -115,17 +117,33 @@ void printMat4(glm::mat4 m) {
    printf("\n");
 }
 
-void BoneController::computeBoneTransform(int boneIndex, glm::mat4 parentM) {
+void BoneController::computeFlatTransforms() {
+   for (int boneIndex = 0; boneIndex < model->boneCount; boneIndex++) {
+      int animNum = boneAnimNums[boneIndex];
+      float tickTime = boneTimes[boneIndex];
+
+      Bone * bone = & model->bones[boneIndex];
+      Animation * anim = & model->animations[animNum];
+      AnimBone * animBone = & anim->animBones[boneIndex];
+
+      glm::mat4 animKeysM = computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
+      glm::mat4 animParentM = bone->parentOffset;
+      glm::mat4 bonePoseM = bone->invBonePose;
+      glm::mat4 rotationM = glm::toMat4(boneRotations[boneIndex]);
+
+      boneTransforms[boneIndex] = animKeysM * bonePoseM;
+   }
+}
+
+void BoneController::computeRecursiveTransforms(int boneIndex, glm::mat4 parentM) {
    int animNum = boneAnimNums[boneIndex];
    float tickTime = boneTimes[boneIndex];
 
    Bone * bone = & model->bones[boneIndex];
-   Animation * animation = & model->animations[animNum];
-   AnimBone * animBone = & animation->animBones[boneIndex];
-   float duration = animation->duration;
-   int keyCount = animation->keyCount;
+   Animation * anim = & model->animations[animNum];
+   AnimBone * animBone = & anim->animBones[boneIndex];
 
-   glm::mat4 animKeysM = computeAnimTransform(animBone, keyCount, tickTime, duration);
+   glm::mat4 animKeysM = computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
    glm::mat4 animParentM = bone->parentOffset;
    glm::mat4 bonePoseM = bone->invBonePose;
    glm::mat4 rotationM = glm::toMat4(boneRotations[boneIndex]);
@@ -136,5 +154,7 @@ void BoneController::computeBoneTransform(int boneIndex, glm::mat4 parentM) {
    boneTransforms[boneIndex] = animM * bonePoseM;
 
    for (int i = 0; i < bone->childCount; i++)
-      computeBoneTransform(bone->childIndices[i], animM);
+      computeRecursiveTransforms(bone->childIndices[i], animM);
 }
+
+

@@ -21,8 +21,9 @@ typedef enum {
    INDICES = 7,
    BONE_INDICES = 8,
    BONE_WEIGHTS = 9,
-   BONE_TREE = 10,
-   ANIMATIONS = 11
+   BONE_NUM_INF = 10,
+   BONE_TREE = 11,
+   ANIMATIONS = 12
 } modelFieldType;
 
 #define MAX_INFLUENCES 4
@@ -244,9 +245,28 @@ void arrangeBoneWeights(aiMesh& mesh, Vertex * verts) {
       std::sort(verts[i].boneWeights.begin(), verts[i].boneWeights.end(), weightCompare);
 }
 
-void writeBoneIndicesAndWeights(FILE * fp, aiMesh& mesh) {
+void normalizeBoneWeights(Vertex * verts, int numVerts) {
+   // Make sum of each vertex's weights equal to 1
+   for (int i = 0; i < numVerts; i++) {
+      float preSum = 0;
+      for (int j = 0; j < MAX_INFLUENCES; j++)
+         preSum += verts[i].boneWeights[j].weight;
+      // printf("preSum = %f\n", preSum);
+
+      for (int j = 0; j < MAX_INFLUENCES; j++)
+         verts[i].boneWeights[j].weight = verts[i].boneWeights[j].weight / preSum;
+
+      // float postSum = 0;
+      // for (int j = 0; j < MAX_INFLUENCES; j++)
+      //    postSum += verts[i].boneWeights[j].weight;
+      // printf("postSum = %f\n", postSum);
+   }
+}
+
+void writeBoneWeights(FILE * fp, aiMesh& mesh) {
    Vertex * verts = new Vertex[mesh.mNumVertices];
    arrangeBoneWeights(mesh, verts);
+   // normalizeBoneWeights(verts, mesh.mNumVertices);
 
    std::cerr << "Writing bone indices...\n";
    writeTypeField(fp, BONE_INDICES);
@@ -261,6 +281,23 @@ void writeBoneIndicesAndWeights(FILE * fp, aiMesh& mesh) {
    for (uint i = 0; i < mesh.mNumVertices; i++)
       for (uint j = 0; j < MAX_INFLUENCES; j++)
          writeFloat(fp, j < verts[i].boneWeights.size() ? verts[i].boneWeights[j].weight : 0);
+
+   std::cerr << "Writing bone influences...\n";
+   writeTypeField(fp, BONE_NUM_INF);
+
+   for (uint i = 0; i < mesh.mNumVertices; i++) {
+      bool foundNum = false;
+
+      for (int j = 0; j < MAX_INFLUENCES; j++)
+         if (verts[i].boneWeights[j].weight <= 0.0f) {
+            writeUShort(fp, j);
+            foundNum = true;
+            break;
+         }
+
+      if (!foundNum)
+         writeUShort(fp, MAX_INFLUENCES);
+   }
 }
 
 int findRootBoneIndex(aiMesh& mesh, BoneMap * n2I, aiNode * root) {
@@ -320,7 +357,7 @@ void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
 
 void writeBones(FILE * fp, aiMesh& mesh, aiNode * root) {
    if (mesh.HasBones()) {
-      writeBoneIndicesAndWeights(fp, mesh);
+      writeBoneWeights(fp, mesh);
       writeBoneTree(fp, mesh, root);
    }
 }

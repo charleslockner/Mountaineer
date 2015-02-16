@@ -53,13 +53,14 @@ public:
    unsigned int faceCount;
    unsigned int boneCount;
    unsigned int animationCount;
+   unsigned int maxInfluences;
 
    unsigned int posID, normID, colorID, uvID,
                 tanID, bitanID, indID,
-                texID, bIndID, bWeightID;
+                texID, bIndID, bWeightID, bNumInfID;
 
-   int hasNormals, hasColors, hasTexCoords, hasTextures,
-       hasTansAndBitans, hasBones, hasAnimations;
+   bool hasNormals, hasColors, hasTexCoords, hasTextures,
+       hasTansAndBitans, hasBoneWeights, hasBoneTree, hasAnimations;
 
    short boneRoot;
    Bone * bones;

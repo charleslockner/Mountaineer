@@ -21,8 +21,9 @@ typedef enum {
    INDICES = 7,
    BONE_INDICES = 8,
    BONE_WEIGHTS = 9,
-   BONE_TREE = 10,
-   ANIMATIONS = 11
+   BONE_NUM_INF = 10,
+   BONE_TREE = 11,
+   ANIMATIONS = 12
 } modelFieldType;
 
 static void readHeader(FILE *fp, Model * model) {
@@ -107,6 +108,27 @@ static void readBoneWeights(FILE *fp, Model * model) {
    model->bWeightID = createVBO(fp, MAX_INFLUENCES * model->vertexCount, sizeof(float));
 }
 
+static void readBoneInfluences(FILE *fp, Model * model) {
+   int count = model->vertexCount;
+
+   unsigned short * ushortData = (unsigned short *)malloc(count * sizeof(unsigned short));
+   fread(ushortData, sizeof(unsigned short), count, fp);
+
+   // convert the data from unsigned shorts to floats
+   float * floatData = (float *)malloc(count * sizeof(float));
+   for (int i = 0; i < count; i++)
+      floatData[i] = ushortData[i];
+
+   // generate the buffer
+   glGenBuffers(1, & model->bNumInfID);
+   glBindBuffer(GL_ARRAY_BUFFER, model->bNumInfID);
+   glBufferData(GL_ARRAY_BUFFER, count * sizeof(float), floatData, GL_STATIC_DRAW);
+
+   // free the data blocks
+   free(ushortData);
+   free(floatData);
+}
+
 static void readBoneTree(FILE *fp, Model * model) {
    fread(& model->boneRoot, sizeof(short), 1, fp);
 
@@ -166,11 +188,11 @@ static void checkPresentFields(Model * model, unsigned short flags) {
    model->hasTexCoords = isFieldPresent(flags, TEXCOORDS);
    model->hasTansAndBitans = isFieldPresent(flags, TANGENTS) &&
                              isFieldPresent(flags, BITANGENTS);
-   model->hasBones = isFieldPresent(flags, BONE_INDICES) &&
-                     isFieldPresent(flags, BONE_WEIGHTS) &&
-                     isFieldPresent(flags, BONE_TREE);
+   model->hasBoneWeights = isFieldPresent(flags, BONE_INDICES) &&
+                           isFieldPresent(flags, BONE_WEIGHTS);
+   model->hasBoneTree = isFieldPresent(flags, BONE_TREE);
    model->hasAnimations = isFieldPresent(flags, ANIMATIONS);
-   printf("PresentFields: %d %d %d %d %d %d\n", model->hasNormals, model->hasColors, model->hasTexCoords, model->hasTansAndBitans, model->hasBones, model->hasAnimations);
+   // printf("PresentFields: %d %d %d %d %d %d\n", model->hasNormals, model->hasColors, model->hasTexCoords, model->hasTansAndBitans, model->hasBones, model->hasAnimations);
 }
 
 static void loadMeshData(FILE *fp, Model * model) {
@@ -210,6 +232,9 @@ static void loadMeshData(FILE *fp, Model * model) {
          case BONE_WEIGHTS:
             readBoneWeights(fp, model);
             break;
+         case BONE_NUM_INF:
+            readBoneInfluences(fp, model);
+            break;
          case BONE_TREE:
             readBoneTree(fp, model);
             break;
@@ -226,6 +251,7 @@ static void loadMeshData(FILE *fp, Model * model) {
    }
 
    checkPresentFields(model, receivedFlags);
+   model->maxInfluences = MAX_INFLUENCES;
 
    checkOpenGLError();
 }
