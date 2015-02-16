@@ -7,7 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "forward_shader.h"
+#include "shader.h"
 #include "shader_builder.h"
 #include "safe_gl.h"
 
@@ -81,21 +81,18 @@ void ForwardShader::sendModelData(Model * model) {
       sendVertexAttribArray(h_aVertexColor, model->colorID, 3, GL_FLOAT);
    if (model->hasTexCoords)
       sendVertexAttribArray(h_aVertexUV, model->uvID, 2, GL_FLOAT);
-   if (model->hasTextures) {
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, model->texID);
-      glUniform1i(h_uTexture, 0);
-   }
+   if (model->hasTextures)
+      sendTexture(h_uTexture, model->texID, GL_TEXTURE0);
    if (model->hasBones) {
       sendVertexAttribArray(h_aBoneIndices, model->bIndID, 4, GL_FLOAT);
       sendVertexAttribArray(h_aBoneWeights, model->bWeightID, 4, GL_FLOAT);
    }
 
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indID);
-   indexCount = model->indexCount;
+   indexCount = 3 * model->faceCount;
 }
 
-void ForwardShader::sendEntityData(Entity * entity) {
+void ForwardShader::renderEntity(Entity * entity) {
    glUseProgram(program);
 
    glm::mat4 transM = glm::translate(glm::mat4(1.0f), entity->position);
@@ -106,12 +103,10 @@ void ForwardShader::sendEntityData(Entity * entity) {
 
    if (entity->model->hasBones)
       glUniformMatrix4fv(h_uBoneMatrices, MAX_BONES, GL_FALSE, (GLfloat *)(entity->boneTransforms));
-}
 
-void ForwardShader::render() {
-   glUseProgram(program);
-
-   glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+   glDrawElements(GL_TRIANGLES, 3 * entity->model->faceCount, GL_UNSIGNED_INT, 0);
    checkOpenGLError();
 }
+
+
 

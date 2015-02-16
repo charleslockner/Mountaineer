@@ -50,7 +50,7 @@ public:
    void printAnimations();
 
    unsigned int vertexCount;
-   unsigned int indexCount;
+   unsigned int faceCount;
    unsigned int boneCount;
    unsigned int animationCount;
 

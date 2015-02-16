@@ -27,12 +27,12 @@ typedef enum {
 
 static void readHeader(FILE *fp, Model * model) {
    fread(& model->vertexCount, sizeof(unsigned int), 1, fp);
-   fread(& model->indexCount, sizeof(unsigned int), 1, fp);
+   fread(& model->faceCount, sizeof(unsigned int), 1, fp);
    fread(& model->boneCount, sizeof(unsigned int), 1, fp);
    fread(& model->animationCount, sizeof(unsigned int), 1, fp);
 
-   printf("verts: %d, indices: %d, bones: %d, anims: %d\n",
-      model->vertexCount, model->indexCount, model->boneCount, model->animationCount);
+   printf("verts: %d, faces: %d, bones: %d, anims: %d\n",
+      model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
 
    if (model->boneCount > MAX_BONES) {
       printf("There are %d bones and the max is %d\n", model->boneCount, MAX_BONES);
@@ -79,7 +79,7 @@ static void readBitangents(FILE *fp, Model * model) {
 }
 
 static void readIndices(FILE *fp, Model * model) {
-   model->indID = createVBO(fp, model->indexCount, sizeof(unsigned int));
+   model->indID = createVBO(fp, 3 * model->faceCount, sizeof(unsigned int));
 }
 
 static void readBoneIndices(FILE *fp, Model * model) {

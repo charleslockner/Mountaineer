@@ -23,13 +23,10 @@ void Model::loadOBJ(const char * path)
    const std::vector<unsigned int> &indBuf = shapes[0].mesh.indices;
 
    this->hasNormals = !norBuf.empty();
-   this->hasTexCoords = false;
-   this->hasColors = false;
-   this->hasTansAndBitans = false;
-   this->hasBones = false;
+   this->hasTexCoords = !texBuf.empty();
 
    this->vertexCount = posBuf.size() / 3;
-   this->indexCount = indBuf.size();
+   this->faceCount = indBuf.size();
    this->boneCount = 0;
    this->animationCount = 0;
 

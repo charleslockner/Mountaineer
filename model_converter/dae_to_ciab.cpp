@@ -136,15 +136,14 @@ void write4x4M(FILE * fp, aiMatrix4x4 m) {
 
 void writeHeader(FILE * fp, aiMesh& mesh, int animCount) {
    std::cerr << "Writing header...\n";
-   int numIndices = mesh.mNumFaces * 3;
 
    fwrite(& mesh.mNumVertices, sizeof(int), 1, fp);
-   fwrite(& numIndices, sizeof(int), 1, fp);
+   fwrite(& mesh.mNumFaces, sizeof(int), 1, fp);
    fwrite(& mesh.mNumBones, sizeof(int), 1, fp);
    fwrite(& animCount, sizeof(int), 1, fp);
 
-   std::cerr << "verts: " << mesh.mNumVertices << ", indices: " <<
-      numIndices << ", bones: " << mesh.mNumBones << ", anims: " << animCount << "\n";
+   std::cerr << "verts: " << mesh.mNumVertices << ", faces: " <<
+      mesh.mNumFaces << ", bones: " << mesh.mNumBones << ", anims: " << animCount << "\n";
 }
 
 void writePositions(FILE * fp, aiMesh& mesh) {

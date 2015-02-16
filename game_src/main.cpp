@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
 
-#include "forward_shader.h"
+#include "shader.h"
 #include "model.h"
 
 #define WIN_HEIGHT 600
@@ -136,7 +136,7 @@ int main(void) {
 
    model = new Model();
    // model->loadCIAB("assets/models/guy.ciab");
-   // model->loadTexture("assets/textures/brick.bmp");
+   // model->loadTexture("assets/textures/guy_tex.bmp");
    model->loadOBJ("assets/cheb/cheb2.obj");
    // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
    // model->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
