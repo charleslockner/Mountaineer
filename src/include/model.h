@@ -58,7 +58,7 @@ public:
                 tanID, bitanID, indID,
                 texID, bIndID, bWeightID;
 
-   int hasNormals, hasColors, hasTexCoords,
+   int hasNormals, hasColors, hasTexCoords, hasTextures,
        hasTansAndBitans, hasBones, hasAnimations;
 
    short boneRoot;

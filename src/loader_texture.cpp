@@ -49,5 +49,6 @@ void Model::loadTexture(const char * filename) {
    // Free image, since the data is now on the GPU
    stbi_image_free(data);
 
+   this->hasTextures = true;
    std::cerr << "Loaded texture: " << filename << "\n";
 }

@@ -1,7 +1,15 @@
 #include "model.h"
 #include "stdio.h"
 
-Model::Model() {}
+Model::Model() {
+   hasNormals = false;
+   hasColors = false;
+   hasTexCoords = false;
+   hasTextures = false;
+   hasTansAndBitans = false;
+   hasBones = false;
+   hasAnimations = false;
+}
 
 Model::~Model() {
    for (int i = 0; i < boneCount; i++)

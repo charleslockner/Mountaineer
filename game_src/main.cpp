@@ -10,10 +10,10 @@
 
 #define CAMERA_SPEED 5.0
 
-World worldData;
+World world;
 Camera * camera;
 Model * model;
-Entity * cubeEnt;
+Entity * entity;
 
 EntityShader * shader;
 
@@ -30,7 +30,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
    if (action == GLFW_PRESS) {
       switch (key) {
          case GLFW_KEY_T:
-            camera->lookAt(cubeEnt->position);
+            camera->lookAt(entity->position);
             break;
          case GLFW_KEY_ESCAPE:
             glfwSetWindowShouldClose(window, GL_TRUE);
@@ -69,13 +69,13 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 }
 
 void setupWorldData() {
-   worldData.lights[0].position = glm::vec3(10.0, 10.0, -10.0);
-   worldData.lights[0].direction = glm::vec3(1.0, 0.0, 0.0);
-   worldData.lights[0].color = glm::vec3(1.0, 1.0, 1.0);
-   worldData.lights[0].strength = 200;
-   worldData.lights[0].attenuation = 50.0;
-   worldData.lights[0].spread = 15;
-   worldData.numLights = 1;
+    world.lights[0].position = glm::vec3(10.0, 10.0, -10.0);
+    world.lights[0].direction = glm::vec3(1.0, 0.0, 0.0);
+    world.lights[0].color = glm::vec3(1.0, 1.0, 1.0);
+    world.lights[0].strength = 200;
+    world.lights[0].attenuation = 50.0;
+    world.lights[0].spread = 15;
+    world.numLights = 1;
 }
 
 
@@ -131,7 +131,7 @@ int main(void) {
 
    shader = new ForwardShader();
 
-   camera = new Camera(glm::vec3(0,0,15), glm::vec3(0,0,-1), glm::vec3(0,1,0));
+   camera = new Camera(glm::vec3(0,0,2), glm::vec3(0,0,-1), glm::vec3(0,1,0));
    setupWorldData();
 
    model = new Model();
@@ -141,13 +141,13 @@ int main(void) {
    // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
    // model->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
 
-   cubeEnt = new Entity(glm::vec3(0,0,0), model);
+   entity = new Entity(glm::vec3(0,0,0), model);
+
+   camera->lookAt(entity->position);
 
    shader->sendCameraData(camera);
-   shader->sendWorldData(&worldData);
+   shader->sendWorldData(& world);
    shader->sendModelData(model);
-
-   camera->lookAt(cubeEnt->position);
 
    double timePassed = 0;
    unsigned int numFrames = 0;
@@ -163,7 +163,7 @@ int main(void) {
       updateCameraPosition(deltaTime);
 
       shader->sendCameraData(camera);
-      cubeEnt->draw(shader, deltaTime);
+      entity->draw(shader, deltaTime);
 
       glfwSwapBuffers(window);
       glfwPollEvents();

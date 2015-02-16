@@ -1,4 +1,5 @@
 
+uniform bool uHasTextures;
 uniform bool uHasBones;
 uniform bool uHasAnimations;
 
@@ -7,8 +8,8 @@ uniform mat4 uProjViewMatrix;
 uniform mat4 uBoneMatrices[100];
 
 attribute vec3 aVertexPosition;
-attribute vec3 aVertexColor;
 attribute vec3 aVertexNormal;
+attribute vec3 aVertexColor;
 attribute vec2 aTextureCoord;
 attribute vec4 aBoneIndices;
 attribute vec4 aBoneWeights;
@@ -34,7 +35,8 @@ void main(void) {
    vWorldPosition = vec3(modelM * vec4(aVertexPosition, 1.0));
    vWorldNormal = vec3(modelM * vec4(aVertexNormal, 0.0));
    vVertexColor = aVertexColor;
-   vTextureCoord = aTextureCoord;
+   vTextureCoord = vec2(0.1, 0.2);
+   // vTextureCoord = aTextureCoord;
 
    gl_Position = uProjViewMatrix * vec4(vWorldPosition, 1.0);
 }

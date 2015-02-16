@@ -227,7 +227,7 @@ static void loadMeshData(FILE *fp, Model * model) {
 
    checkPresentFields(model, receivedFlags);
 
-   checkOglError(__FILE__, __LINE__);
+   checkOpenGLError();
 }
 
 static FILE * safe_fopen(const char * path) {
@@ -251,9 +251,6 @@ void Model::loadCIAB(const char * path) {
    FILE * fp = safe_fopen(path);
    loadMeshData(fp, this);
    fclose(fp);
-
-   this->hasBones = false;
-
 
    // printBoneTree();
    // printAnimations();

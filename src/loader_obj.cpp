@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "tiny_obj_loader.h"
+#include "safe_gl.h"
 #include "model.h"
 
 void Model::loadOBJ(const char * path)
@@ -21,7 +22,7 @@ void Model::loadOBJ(const char * path)
    const std::vector<float> &texBuf = shapes[0].mesh.texcoords;
    const std::vector<unsigned int> &indBuf = shapes[0].mesh.indices;
 
-   this->hasNormals = !texBuf.empty();
+   this->hasNormals = !norBuf.empty();
    this->hasTexCoords = false;
    this->hasColors = false;
    this->hasTansAndBitans = false;
@@ -42,8 +43,6 @@ void Model::loadOBJ(const char * path)
       glGenBuffers(1, & this->normID);
       glBindBuffer(GL_ARRAY_BUFFER, this->normID);
       glBufferData(GL_ARRAY_BUFFER, norBuf.size()*sizeof(float), &norBuf[0], GL_STATIC_DRAW);
-   } else {
-      this->normID = 0;
    }
 
    // Send the texture coordinates array (if it exists) to the GPU
@@ -51,8 +50,6 @@ void Model::loadOBJ(const char * path)
       glGenBuffers(1, & this->uvID);
       glBindBuffer(GL_ARRAY_BUFFER, this->uvID);
       glBufferData(GL_ARRAY_BUFFER, texBuf.size()*sizeof(float), &texBuf[0], GL_STATIC_DRAW);
-   } else {
-      this->uvID = 0;
    }
 
    // Send the index array to the GPU
@@ -64,5 +61,5 @@ void Model::loadOBJ(const char * path)
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-   assert(glGetError() == GL_NO_ERROR);
+   checkOpenGLError();
 }
