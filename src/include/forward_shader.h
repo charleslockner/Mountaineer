@@ -32,9 +32,9 @@ private:
    unsigned int h_uBoneMatrices;
 
    unsigned int h_aVertexPosition;
-   unsigned int h_aVertexColor;
    unsigned int h_aVertexNormal;
-   unsigned int h_aTextureCoord;
+   unsigned int h_aVertexColor;
+   unsigned int h_aVertexUV;
    unsigned int h_aBoneIndices;
    unsigned int h_aBoneWeights;
 

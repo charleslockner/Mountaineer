@@ -42,9 +42,9 @@ void ForwardShader::setupHandles() {
    h_aVertexPosition = glGetAttribLocation(program, "aVertexPosition");
    h_aVertexNormal = glGetAttribLocation(program, "aVertexNormal");
    h_aVertexColor = glGetAttribLocation(program, "aVertexColor");
-   h_aTextureCoord = glGetAttribLocation(program, "aTextureCoord");
-   // h_aBoneIndices = glGetAttribLocation(program, "aBoneIndices");
-   // h_aBoneWeights = glGetAttribLocation(program, "aBoneWeights");
+   h_aVertexUV = glGetAttribLocation(program, "aVertexUV");
+   h_aBoneIndices = glGetAttribLocation(program, "aVertexBoneIndices");
+   h_aBoneWeights = glGetAttribLocation(program, "aVertexBoneWeights");
 }
 
 void ForwardShader::sendWorldData(World * world) {
@@ -67,35 +67,29 @@ void ForwardShader::sendCameraData(Camera * camera) {
 void ForwardShader::sendModelData(Model * model) {
    glUseProgram(program);
 
-   int hasTextures = model->hasTexCoords && model->hasTextures;
-
    glUniform1i(h_uHasNormals, model->hasNormals);
    glUniform1i(h_uHasColors, model->hasColors);
-   glUniform1i(h_uHasTextures, hasTextures);
+   glUniform1i(h_uHasTextures, model->hasTexCoords && model->hasTextures);
    glUniform1i(h_uHasTansAndBitans, model->hasTansAndBitans);
    glUniform1i(h_uHasBones, model->hasBones);
    glUniform1i(h_uHasAnimations, model->hasAnimations);
 
    sendVertexAttribArray(h_aVertexPosition, model->posID, 3, GL_FLOAT);
-
    if (model->hasNormals)
       sendVertexAttribArray(h_aVertexNormal, model->normID, 3, GL_FLOAT);
-
    if (model->hasColors)
       sendVertexAttribArray(h_aVertexColor, model->colorID, 3, GL_FLOAT);
-
-   if (hasTextures) {
-      sendVertexAttribArray(h_aTextureCoord, model->uvID, 2, GL_FLOAT);
-
+   if (model->hasTexCoords)
+      sendVertexAttribArray(h_aVertexUV, model->uvID, 2, GL_FLOAT);
+   if (model->hasTextures) {
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, model->texID);
       glUniform1i(h_uTexture, 0);
    }
-
-   // if (model->hasBones) {
-   //    sendVertexAttribArray(h_aBoneIndices, model->bIndID, 4, GL_FLOAT);
-   //    sendVertexAttribArray(h_aBoneWeights, model->bWeightID, 4, GL_FLOAT);
-   // }
+   if (model->hasBones) {
+      sendVertexAttribArray(h_aBoneIndices, model->bIndID, 4, GL_FLOAT);
+      sendVertexAttribArray(h_aBoneWeights, model->bWeightID, 4, GL_FLOAT);
+   }
 
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indID);
    indexCount = model->indexCount;
@@ -110,8 +104,8 @@ void ForwardShader::sendEntityData(Entity * entity) {
    glm::mat4 modelM = transM * rotateM * scaleM;
    glUniformMatrix4fv(h_uModelMatrix, 1, GL_FALSE, glm::value_ptr(modelM));
 
-   // if (entity->model->hasBones)
-   //    glUniformMatrix4fv(h_uBoneMatrices, MAX_BONES, GL_FALSE, (GLfloat *)(entity->boneTransforms));
+   if (entity->model->hasBones)
+      glUniformMatrix4fv(h_uBoneMatrices, MAX_BONES, GL_FALSE, (GLfloat *)(entity->boneTransforms));
 }
 
 void ForwardShader::render() {
