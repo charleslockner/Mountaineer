@@ -25,7 +25,7 @@ public:
    Entity(glm::vec3 pos, Model * model);
    ~Entity();
 
-   void draw(EntityShader * shader, float time);
+   void update(float time);
 };
 
 #endif // __ENTITY_H__

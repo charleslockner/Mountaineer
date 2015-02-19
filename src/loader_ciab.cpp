@@ -32,8 +32,8 @@ static void readHeader(FILE *fp, Model * model) {
    fread(& model->boneCount, sizeof(unsigned int), 1, fp);
    fread(& model->animationCount, sizeof(unsigned int), 1, fp);
 
-   printf("verts: %d, faces: %d, bones: %d, anims: %d\n",
-      model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
+   // printf("verts: %d, faces: %d, bones: %d, anims: %d\n",
+      // model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
 
    if (model->boneCount > MAX_BONES) {
       printf("There are %d bones and the max is %d\n", model->boneCount, MAX_BONES);
@@ -192,7 +192,6 @@ static void checkPresentFields(Model * model, unsigned short flags) {
                            isFieldPresent(flags, BONE_WEIGHTS);
    model->hasBoneTree = isFieldPresent(flags, BONE_TREE);
    model->hasAnimations = isFieldPresent(flags, ANIMATIONS);
-   // printf("PresentFields: %d %d %d %d %d %d\n", model->hasNormals, model->hasColors, model->hasTexCoords, model->hasTansAndBitans, model->hasBones, model->hasAnimations);
 }
 
 static void loadMeshData(FILE *fp, Model * model) {
@@ -247,7 +246,7 @@ static void loadMeshData(FILE *fp, Model * model) {
             break;
       }
 
-      printf("Loading field %d\n", fieldType);
+      // printf("Loading field %d\n", fieldType);
    }
 
    checkPresentFields(model, receivedFlags);

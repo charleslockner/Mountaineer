@@ -11,15 +11,15 @@ attribute vec3 aVertexNormal;
 attribute vec3 aVertexColor;
 attribute vec2 aVertexUV;
 
-attribute vec4 aVertexBoneIndices0;
-attribute vec4 aVertexBoneIndices1;
-attribute vec4 aVertexBoneIndices2;
-attribute vec4 aVertexBoneIndices3;
-attribute vec4 aVertexBoneWeights0;
-attribute vec4 aVertexBoneWeights1;
-attribute vec4 aVertexBoneWeights2;
-attribute vec4 aVertexBoneWeights3;
-attribute float aNumInfluences;
+attribute vec4 bIndices0;
+attribute vec4 bIndices1;
+attribute vec4 bIndices2;
+attribute vec4 bIndices3;
+attribute vec4 bWeights0;
+attribute vec4 bWeights1;
+attribute vec4 bWeights2;
+attribute vec4 bWeights3;
+attribute float aInfluences;
 
 varying vec3 vWorldPosition;
 varying vec3 vWorldNormal;
@@ -31,29 +31,30 @@ void main(void) {
    int index, numInfluences;
    float weight;
 
-   if (uHasAnimations) {
+   if (!uHasAnimations)
+      animMatrix = mat4(1.0);
+   else {
       animMatrix = mat4(0.0);
-      numInfluences = int(aNumInfluences);
+      numInfluences = int(aInfluences);
 
       for (int i = 0; i < numInfluences; i++) {
          if (i < 4) {
-            index = int(aVertexBoneIndices0[i]);
-            weight = aVertexBoneWeights0[i];
+            index = int(bIndices0[i]);
+            weight = bWeights0[i];
          } else if (i < 8) {
-            index = int(aVertexBoneIndices1[i-4]);
-            weight = aVertexBoneWeights1[i-4];
+            index = int(bIndices1[i-4]);
+            weight = bWeights1[i-4];
          } else if (i < 12) {
-            index = int(aVertexBoneIndices2[i-8]);
-            weight = aVertexBoneWeights2[i-8];
+            index = int(bIndices2[i-8]);
+            weight = bWeights2[i-8];
          } else {
-            index = int(aVertexBoneIndices3[i-12]);
-            weight = aVertexBoneWeights3[i-12];
+            index = int(bIndices3[i-12]);
+            weight = bWeights3[i-12];
          }
 
          animMatrix += weight * uBoneMatrices[index];
       }
-   } else
-      animMatrix = mat4(1.0);
+   }
 
    mat4 modelM = uModelMatrix * animMatrix;
 

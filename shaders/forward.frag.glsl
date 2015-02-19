@@ -27,7 +27,7 @@ void main(void) {
    else if (uHasTextures)
       skinColor = vec3(texture2D(uTexture, vVertexUV));
    else
-      skinColor = vec3(0.2, 0.7, 0.3);
+      skinColor = vec3(0.8, 0.7, 0.3);
 
    if (!uHasNormals)
       finColor = skinColor;

@@ -43,15 +43,15 @@ void ForwardShader::setupHandles() {
    h_aVertexColor = glGetAttribLocation(program, "aVertexColor");
    h_aVertexUV = glGetAttribLocation(program, "aVertexUV");
 
-   h_aBoneIndices0 = glGetAttribLocation(program, "aVertexBoneIndices0");
-   h_aBoneIndices1 = glGetAttribLocation(program, "aVertexBoneIndices1");
-   h_aBoneIndices2 = glGetAttribLocation(program, "aVertexBoneIndices2");
-   h_aBoneIndices3 = glGetAttribLocation(program, "aVertexBoneIndices3");
-   h_aBoneWeights0 = glGetAttribLocation(program, "aVertexBoneWeights0");
-   h_aBoneWeights1 = glGetAttribLocation(program, "aVertexBoneWeights1");
-   h_aBoneWeights2 = glGetAttribLocation(program, "aVertexBoneWeights2");
-   h_aBoneWeights3 = glGetAttribLocation(program, "aVertexBoneWeights3");
-   h_aNumInfluences = glGetAttribLocation(program, "aNumInfluences");
+   h_aBoneIndices0 = glGetAttribLocation(program, "bIndices0");
+   h_aBoneIndices1 = glGetAttribLocation(program, "bIndices1");
+   h_aBoneIndices2 = glGetAttribLocation(program, "bIndices2");
+   h_aBoneIndices3 = glGetAttribLocation(program, "bIndices3");
+   h_aBoneWeights0 = glGetAttribLocation(program, "bWeights0");
+   h_aBoneWeights1 = glGetAttribLocation(program, "bWeights1");
+   h_aBoneWeights2 = glGetAttribLocation(program, "bWeights2");
+   h_aBoneWeights3 = glGetAttribLocation(program, "bWeights3");
+   h_aNumInfluences = glGetAttribLocation(program, "aInfluences");
 }
 
 void ForwardShader::sendWorldData(World * world) {
@@ -78,7 +78,7 @@ void ForwardShader::sendModelData(Model * model) {
    glUniform1i(h_uHasColors, model->hasColors);
    glUniform1i(h_uHasTextures, model->hasTexCoords && model->hasTextures);
    glUniform1i(h_uHasTansAndBitans, model->hasTansAndBitans);
-   glUniform1i(h_uHasAnimations, model->hasAnimations);
+   glUniform1i(h_uHasAnimations, model->hasBoneWeights && model->hasAnimations);
 
    sendVertexAttribArray(h_aVertexPosition, model->posID, 3);
    if (model->hasNormals)
@@ -89,7 +89,7 @@ void ForwardShader::sendModelData(Model * model) {
       sendVertexAttribArray(h_aVertexUV, model->uvID, 2);
    if (model->hasTextures)
       sendTexture(h_uTexture, model->texID, GL_TEXTURE0);
-   if (model->hasBoneWeights && model->hasAnimations) {
+   if (model->hasBoneWeights) {
       sendLargeVertexAttribArray(h_aBoneIndices0, h_aBoneIndices1,
                                  h_aBoneIndices2, h_aBoneIndices3,
                                  model->bIndID, model->maxInfluences);

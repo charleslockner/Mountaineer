@@ -110,7 +110,7 @@ static void setBindPoseMatrices(Model * model, std::vector<float> & inBindPoses,
 
    for (int i = 0; i < numBones; i++) {
       glm::vec3 tns = glm::vec3(inBindPoses[7*i+4], inBindPoses[7*i+5], inBindPoses[7*i+6]);
-      glm::quat rot = glm::quat(inBindPoses[7*i], inBindPoses[7*i+1], inBindPoses[7*i+2], inBindPoses[7*i+3]);
+      glm::quat rot = glm::quat(inBindPoses[7*i+3], inBindPoses[7*i], inBindPoses[7*i+1], inBindPoses[7*i+2]);
 
       glm::mat4 tnsM = glm::translate(glm::mat4(1.0), tns);
       glm::mat4 rotM = glm::toMat4(rot);
@@ -124,27 +124,27 @@ static void setAnimFrames(Model * model, std::vector<float> & inFrames, int numB
    model->animations = (Animation *)malloc(sizeof(Animation) * 1);
    Animation * anim = & model->animations[0];
 
-   int frameCount = inFrames.size() / (7 * numBones);
+   int keyCount = inFrames.size() / (7 * numBones);
    int fps = 60;
 
    anim->fps = fps;
-   anim->keyCount = frameCount;
-   anim->duration = 1.0 * (anim->keyCount-1) / anim->fps;
+   anim->keyCount = keyCount;
+   anim->duration = 1.0 * (keyCount-1) / fps;
 
    anim->animBones = (AnimBone *)malloc(sizeof(AnimBone) * numBones);
 
    for (int boneNdx = 0; boneNdx < numBones; boneNdx++) {
       AnimBone * animBone = & anim->animBones[boneNdx];
 
-      animBone->keys = (Key *)malloc(sizeof(Key) * frameCount);
-      for (int frameNdx = 0; frameNdx < frameCount; frameNdx++) {
-         Key * key = & animBone->keys[frameNdx];
+      animBone->keys = (Key *)malloc(sizeof(Key) * keyCount);
+      for (int keyNdx = 0; keyNdx < keyCount; keyNdx++) {
+         Key * key = & animBone->keys[keyNdx];
 
-         int inNdx = (7 * numBones * frameNdx) + (7 * boneNdx);
+         int inNdx = (7 * numBones * keyNdx) + (7 * boneNdx);
 
-         key->time = 1.0 * frameNdx / fps;
+         key->time = 1.0 * keyNdx / fps;
          key->position = glm::vec3(inFrames[inNdx+4], inFrames[inNdx+5], inFrames[inNdx+6]);
-         key->rotation = glm::quat(inFrames[inNdx], inFrames[inNdx+1], inFrames[inNdx+2], inFrames[inNdx+3]);
+         key->rotation = glm::quat(inFrames[inNdx+3], inFrames[inNdx], inFrames[inNdx+1], inFrames[inNdx+2]);
          key->scale = glm::vec3(1, 1, 1);
       }
    }

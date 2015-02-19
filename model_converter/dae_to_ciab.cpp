@@ -54,6 +54,8 @@ FILE * safe_fopen(const char * path, const char * mode) {
    return fp;
 }
 
+// CONVERTING HELPER FUNCTIONS
+
 glm::mat4 aiToGlmMat4(aiMatrix4x4 mat) {
    return glm::mat4(
       mat.a1, mat.b1, mat.c1, mat.d1,
@@ -97,6 +99,48 @@ aiMatrix4x4 blend2oglMat4(aiMatrix4x4 m) {
                                        m.d2, m.d3, m.d1, m.d4) : m;
 }
 
+// NAME TO INDEX HELPER FUNCTIONS FOR BONES AND CHANNELS
+
+int findRootBoneIndex(aiMesh& mesh, BoneMap * n2I, aiNode * root) {
+   for (uint i = 0; i < mesh.mNumBones; i++) {
+      aiNode * node = root->FindNode(mesh.mBones[i]->mName);
+      BoneIterator it = n2I->find(node->mParent->mName.C_Str());
+      if (it == n2I->end())
+         return i;
+   }
+
+   assert(false); // didn't find the root bone
+   return -1;
+}
+
+BoneMap createBoneName2IndexMap(aiMesh& mesh) {
+   BoneMap nameToIndexMap;
+   for (uint i = 0; i < mesh.mNumBones; i++)
+      nameToIndexMap.insert(BoneMap::value_type(mesh.mBones[i]->mName.C_Str(), i));
+   return nameToIndexMap;
+}
+
+BoneMap createChannelName2IndexMap(aiAnimation * anim) {
+   BoneMap nameToIndexMap;
+   for (uint i = 0; i < anim->mNumChannels; i++)
+      nameToIndexMap.insert(BoneMap::value_type(anim->mChannels[i]->mNodeName.C_Str(), i));
+   return nameToIndexMap;
+}
+
+int getAnimIndexRoot(aiMesh& mesh, aiAnimation * anim) {
+   BoneMap n2I = createChannelName2IndexMap(anim);
+
+   const char * rootName = mesh.mBones[0]->mName.C_Str();
+   return n2I.find(rootName)->second;
+}
+
+bool isInMap(const char * name, BoneMap & map) {
+   BoneIterator it = map.find(name);
+   return it != map.end();
+}
+
+// WRITING HELPER FUNCTIONS
+
 void writeTypeField(FILE * fp, unsigned char type) {
    fwrite(& type, sizeof(unsigned char), 1, fp);
 }
@@ -134,6 +178,8 @@ void write4x4M(FILE * fp, aiMatrix4x4 m) {
       for (int r = 0; r < 4; r++)
          writeFloat(fp, m[r][c]);
 }
+
+// ACTUAL WRITE FUNCTIONS
 
 void writeHeader(FILE * fp, aiMesh& mesh, int animCount) {
    std::cerr << "Writing header...\n";
@@ -300,30 +346,11 @@ void writeBoneWeights(FILE * fp, aiMesh& mesh) {
    }
 }
 
-int findRootBoneIndex(aiMesh& mesh, BoneMap * n2I, aiNode * root) {
-   for (uint i = 0; i < mesh.mNumBones; i++) {
-      aiNode * node = root->FindNode(mesh.mBones[i]->mName);
-      BoneIterator it = n2I->find(node->mParent->mName.C_Str());
-      if (it == n2I->end())
-         return i;
-   }
-
-   assert(false); // didn't find the root bone
-   return -1;
-}
-
-BoneMap createName2IndexMap(aiMesh& mesh) {
-   BoneMap nameToIndexMap;
-   for (uint i = 0; i < mesh.mNumBones; i++)
-      nameToIndexMap.insert(BoneMap::value_type(mesh.mBones[i]->mName.C_Str(), i));
-   return nameToIndexMap;
-}
-
 void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
    std::cerr << "Writing bone tree...\n";
    writeTypeField(fp, BONE_TREE);
 
-   BoneMap nameToIndexMap = createName2IndexMap(mesh);
+   BoneMap nameToIndexMap = createBoneName2IndexMap(mesh);
 
    // write the bone root index
    writeShort(fp, findRootBoneIndex(mesh, & nameToIndexMap, root));
@@ -362,7 +389,7 @@ void writeBones(FILE * fp, aiMesh& mesh, aiNode * root) {
    }
 }
 
-glm::mat4 prsKeysToMat4(glm::vec3 t, glm::quat r, glm::vec3 s) {
+glm::mat4 trsKeysToMat4(glm::vec3 t, glm::quat r, glm::vec3 s) {
    glm::mat4 transM = glm::translate(glm::mat4(1.0), t);
    glm::mat4 rotateM = glm::toMat4(r);
    glm::mat4 scaleM = glm::scale(glm::mat4(1.0), s);
@@ -370,33 +397,14 @@ glm::mat4 prsKeysToMat4(glm::vec3 t, glm::quat r, glm::vec3 s) {
    return transM * scaleM * rotateM;
 }
 
-aiMatrix4x4 keysToMatrix(aiVector3D& p, aiQuaternion& r, aiVector3D& s) {
-   return glmToAIMat4(prsKeysToMat4(aiToGlmVec3(p), aiToGlmQuat(r), aiToGlmVec3(s)));
-}
-
-void animKeysToMatrices(aiNode * root, aiNodeAnim * nodeAnim, aiMatrix4x4 * mats) {
-   // aiNode * node = root->FindNode(nodeAnim->mNodeName);
-   // aiMatrix4x4 invParentM = node->mTransformation.Inverse();
-
+void animKeysToMatrices(aiNodeAnim * nodeAnim, aiMatrix4x4 * mats) {
    for (int k = 0; k < nodeAnim->mNumPositionKeys; k++) {
-      aiVector3D& p = nodeAnim->mPositionKeys[k].mValue;
-      aiQuaternion& r = nodeAnim->mRotationKeys[k].mValue;
-      aiVector3D& s = nodeAnim->mScalingKeys[k].mValue;
+      glm::vec3 p = aiToGlmVec3(nodeAnim->mPositionKeys[k].mValue);
+      glm::quat r = aiToGlmQuat(nodeAnim->mRotationKeys[k].mValue);
+      glm::vec3 s = aiToGlmVec3(nodeAnim->mScalingKeys[k].mValue);
 
-      mats[k] = keysToMatrix(p, r, s);
+      mats[k] = glmToAIMat4(trsKeysToMat4(p, r, s));
    }
-}
-
-BoneMap createAnimName2IndexMap(aiAnimation * anim) {
-   BoneMap nameToIndexMap;
-   for (uint i = 0; i < anim->mNumChannels; i++)
-      nameToIndexMap.insert(BoneMap::value_type(anim->mChannels[i]->mNodeName.C_Str(), i));
-   return nameToIndexMap;
-}
-
-int getAnimIndexRoot(aiMesh& mesh, BoneMap * n2I) {
-   const char * rootName = mesh.mBones[0]->mName.C_Str();
-   return n2I->find(rootName)->second;
 }
 
 void checkIfKeysAligned(aiNodeAnim * nodeAnim) {
@@ -409,7 +417,6 @@ void checkIfKeysAligned(aiNodeAnim * nodeAnim) {
 }
 
 void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
-   aiNode * root = scene->mRootNode;
    int numAnims = scene->mNumAnimations;
 
    if (numAnims > 0) {
@@ -418,13 +425,15 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
 
       for (int i = 0; i < numAnims; i++) {
          aiAnimation * anim = scene->mAnimations[i];
-         BoneMap nameToIndexMap = createAnimName2IndexMap(anim);
-         int rootNdx = getAnimIndexRoot(mesh, & nameToIndexMap);
+         BoneMap boneMap = createBoneName2IndexMap(mesh);
+         int rootNdx = getAnimIndexRoot(mesh, anim);
+
          assert(anim->mTicksPerSecond != 0);
          assert(anim->mNumChannels > 0);
 
          unsigned int numKeys = anim->mChannels[rootNdx]->mNumPositionKeys;
-         unsigned int fps = numKeys / anim->mDuration;
+         float duration = anim->mDuration;
+         unsigned int fps = (numKeys-1) / duration;
 
          writeUInt(fp, fps);
          writeUInt(fp, numKeys);
@@ -432,22 +441,27 @@ void writeAnimations(FILE * fp, const aiScene * scene, aiMesh& mesh) {
          aiMatrix4x4 * matKeys = (aiMatrix4x4 *)malloc(sizeof(aiMatrix4x4) * numKeys);
 
          // Write the animations for each bone
-         for (int j = rootNdx; j < anim->mNumChannels; j++) {
-            aiNodeAnim * nodeAnim = anim->mChannels[j];
-            checkIfKeysAligned(nodeAnim);
+         for (int chanNdx = 0; chanNdx < anim->mNumChannels; chanNdx++) {
+            const char * chanName = anim->mChannels[chanNdx]->mNodeName.C_Str();
 
-            animKeysToMatrices(root, nodeAnim, matKeys);
+            if (isInMap(chanName, boneMap)) {
+               aiNodeAnim * nodeAnim = anim->mChannels[chanNdx];
 
-            for (int k = 0; k < numKeys; k++) {
-               aiVector3D scl, pos;
-               aiQuaternion rot;
-               matKeys[k] = blend2oglMat4(matKeys[k]);
-               matKeys[k].Decompose(scl, rot, pos);
+               checkIfKeysAligned(nodeAnim);
+               animKeysToMatrices(nodeAnim, matKeys);
 
-               writeFloat(fp, nodeAnim->mPositionKeys[k].mTime);
-               writeVector3D(fp, pos);
-               writeQuaternion(fp, rot);
-               writeVector3D(fp, scl);
+               for (int keyNdx = 0; keyNdx < numKeys; keyNdx++) {
+                  aiVector3D scl, pos;
+                  aiQuaternion rot;
+                  matKeys[keyNdx] = blend2oglMat4(matKeys[keyNdx]);
+                  matKeys[keyNdx].Decompose(scl, rot, pos);
+
+                  float time = 1.0 * keyNdx / fps;
+                  writeFloat(fp, time);
+                  writeVector3D(fp, pos);
+                  writeQuaternion(fp, rot);
+                  writeVector3D(fp, scl);
+               }
             }
          }
 
@@ -461,7 +475,7 @@ int main(int argc, char** argv) {
 
    // PARSE COMMAND LINE ARGS
    if (argc < 3 || argc > 4) {
-      std::cerr << "Usage: [-b](opt) [dae_path] [ciab_path]\n";
+      std::cerr << "Usage: [-b](optional) [dae_path] [ciab_path]\n";
       exit(1);
    } else if (argc == 3) {
       modelPath = argv[1];

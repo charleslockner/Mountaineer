@@ -17,12 +17,13 @@ Entity::~Entity() {
    delete boneController;
 }
 
-void Entity::draw(EntityShader * shader, float timeDelta) {
+void Entity::update(float timeDelta) {
    // if (model->hasBoneTree) {
    //    // boneController->rotateBone(13, -0.05, glm::normalize(glm::vec3(1,1,0)));
    //    // boneController->rotateBone(3, 0.1, glm::normalize(glm::vec3(1,0,0)));
    // }
-   boneController->updateTransforms(timeDelta);
 
-   shader->renderEntity(this);
+   // printf("hasAnimations %d\n", model->hasAnimations);
+   if (model->hasAnimations)
+      boneController->updateTransforms(timeDelta);
 }

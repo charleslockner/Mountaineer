@@ -1,4 +1,4 @@
-Format specification for the ciab model file (CIAB = Charles is a Boss):
+Format specification for the ciab model file (CIAB == Charles is a Boss):
 
 IMPORTANT:
 1) The matrices (ie: mat_inv_bone_pos and mat_parent_transform) are in column major format

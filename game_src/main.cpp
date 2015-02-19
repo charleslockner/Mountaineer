@@ -69,13 +69,13 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 }
 
 void setupWorldData() {
-    world.lights[0].position = glm::vec3(10.0, 10.0, -10.0);
-    world.lights[0].direction = glm::vec3(1.0, 0.0, 0.0);
-    world.lights[0].color = glm::vec3(1.0, 1.0, 1.0);
-    world.lights[0].strength = 200;
-    world.lights[0].attenuation = 50.0;
-    world.lights[0].spread = 15;
-    world.numLights = 1;
+   world.lights[0].position = glm::vec3(10.0, 10.0, -10.0);
+   world.lights[0].direction = glm::vec3(1.0, 0.0, 0.0);
+   world.lights[0].color = glm::vec3(1.0, 1.0, 1.0);
+   world.lights[0].strength = 200;
+   world.lights[0].attenuation = 50.0;
+   world.lights[0].spread = 15;
+   world.numLights = 1;
 }
 
 
@@ -126,20 +126,22 @@ void updateCameraPosition(double timePassed) {
       camera->moveDown(distTraveled);
 }
 
-int main(void) {
+int main(int argc, char ** argv) {
    GLFWwindow * window = windowSetup();
 
    shader = new ForwardShader();
-
    camera = new Camera(glm::vec3(0,0,2), glm::vec3(0,0,-1), glm::vec3(0,1,0));
    setupWorldData();
 
    model = new Model();
+   // model->loadCIAB("assets/models/robot.ciab");
    // model->loadCIAB("assets/models/guy.ciab");
-   // model->loadTexture("assets/textures/guy_tex.bmp");
-   model->loadOBJ("assets/cheb/cheb2.obj");
-   model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   model->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
+   model->loadCIAB("assets/models/trex.ciab");
+   model->loadTexture("assets/textures/masonry.png");
+   // model->loadOBJ("assets/cheb/cheb2.obj");
+   // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   // // model->loadAnimationPIN("assets/cheb/cheb_skel_wakeUpSequence.txt");
+   // model->loadAnimationPIN("assets/cheb/cheb_skel_walk.txt");
 
    entity = new Entity(glm::vec3(0,0,0), model);
 
@@ -161,9 +163,10 @@ int main(void) {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       updateCameraPosition(deltaTime);
+      entity->update(deltaTime);
 
       shader->sendCameraData(camera);
-      entity->draw(shader, deltaTime);
+      shader->renderEntity(entity);
 
       glfwSwapBuffers(window);
       glfwPollEvents();

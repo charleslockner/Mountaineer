@@ -11,25 +11,15 @@ static glm::vec3 lerpVec3(glm::vec3 begin, glm::vec3 end, float ratio) {
    return begin + ratio * (end - begin);
 }
 
-// should improve this to constant tickTime somehow (instead of log(keyCount))
-static int findEarlyKeyIndex(Key * keys, int keyCount, float tickTime, float duration) {
-   assert(keyCount >= 1);
-   if (keyCount <= 2)
-      return 0;
-
-   int halfCount = keyCount / 2;
-
-   if (tickTime < keys[halfCount].time)
-      return findEarlyKeyIndex(keys, halfCount + 1, tickTime, duration);
-   else
-      return halfCount + findEarlyKeyIndex(keys + halfCount, keyCount - halfCount, tickTime, duration);
-
-   // assert(keyCount >= 1);
-   // int index = int((keyCount-1) * tickTime / duration);
-   // return index < keyCount ? index : keyCount - 1;
+static int findEarlyKeyIndex(int keyCount, float tickTime, float duration) {
+   int index = tickTime * (keyCount-1) / duration;
+   return index < keyCount-1 ? index : keyCount - 2;
 }
 
-static Key interpolateKeys(Key earlyKey, Key lateKey, float ratio) {
+static Key interpolateKeys(Key earlyKey, Key lateKey, float tickTime) {
+   assert(earlyKey.time < tickTime && tickTime < lateKey.time);
+
+   float ratio = (tickTime - earlyKey.time) / (lateKey.time - earlyKey.time);
    Key key;
    key.position = lerpVec3(earlyKey.position, lateKey.position, ratio);
    key.rotation = glm::slerp(earlyKey.rotation, lateKey.rotation, ratio);
@@ -39,20 +29,13 @@ static Key interpolateKeys(Key earlyKey, Key lateKey, float ratio) {
 
 static glm::mat4 computeAnimTransform(AnimBone * animBone, int keyCount, float tickTime, float duration) {
    Key * keys = animBone->keys;
+   assert(keyCount >= 1);
 
-   int earlyNdx = findEarlyKeyIndex(animBone->keys, keyCount, tickTime, duration);
+   int earlyNdx = findEarlyKeyIndex(keyCount, tickTime, duration);
    int lateNdx = earlyNdx + 1;
 
-   Key earlyKey = keys[earlyNdx];
-   Key lateKey = keys[lateNdx];
-   Key interpKey;
-
-   if (keyCount == 1)
-      interpKey = earlyKey;
-   else {
-      float ratio = (tickTime - earlyKey.time) / (lateKey.time - earlyKey.time);
-      interpKey = interpolateKeys(earlyKey, lateKey, ratio);
-   }
+   Key interpKey = (keyCount == 1) ? keys[earlyNdx] :
+      interpolateKeys(keys[earlyNdx], keys[lateNdx], tickTime);
 
    glm::mat4 transM = glm::translate(glm::mat4(1.0), interpKey.position);
    glm::mat4 rotateM = glm::toMat4(interpKey.rotation);
@@ -106,15 +89,6 @@ void BoneController::updateTransforms(float tickDelta) {
    isFlat ?
       computeFlatTransforms() :
       computeRecursiveTransforms(model->boneRoot, glm::mat4(1.0f));
-}
-
-void printMat4(glm::mat4 m) {
-   for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++)
-         printf("%f ", m[i][j]);
-      printf("\n");
-   }
-   printf("\n");
 }
 
 void BoneController::computeFlatTransforms() {
