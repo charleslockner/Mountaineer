@@ -26,9 +26,12 @@ public:
    void moveDown(float dist);
    void lookAt(glm::vec3 pnt);
    void aim(double deltaX, double deltaY);
+   glm::mat4 generateProjViewM();
 
 private:
    void boundPitch();
+
+   glm::mat4 projectionM;
 };
 
 #endif // __CAMERA__

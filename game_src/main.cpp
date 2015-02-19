@@ -3,19 +3,19 @@
 #include <GLFW/glfw3.h>
 
 #include "shader.h"
+#include "light.h"
 #include "model.h"
+#include "entity.h"
+
+#include <vector>
 
 #define WIN_HEIGHT 600
 #define WIN_WIDTH  1000
 
 #define CAMERA_SPEED 5.0
 
-World world;
+LightData lightData;
 Camera * camera;
-Model * model;
-Entity * entity;
-
-EntityShader * shader;
 
 double lastScreenX;
 double lastScreenY;
@@ -29,9 +29,9 @@ static void error_callback(int error, const char* description) {
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
    if (action == GLFW_PRESS) {
       switch (key) {
-         case GLFW_KEY_T:
-            camera->lookAt(entity->position);
-            break;
+         // case GLFW_KEY_T:
+         //    camera->lookAt(entity->position);
+         //    break;
          case GLFW_KEY_ESCAPE:
             glfwSetWindowShouldClose(window, GL_TRUE);
             break;
@@ -68,14 +68,14 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
    lastScreenY = y;
 }
 
-void setupWorldData() {
-   world.lights[0].position = glm::vec3(10.0, 10.0, -10.0);
-   world.lights[0].direction = glm::vec3(1.0, 0.0, 0.0);
-   world.lights[0].color = glm::vec3(1.0, 1.0, 1.0);
-   world.lights[0].strength = 200;
-   world.lights[0].attenuation = 50.0;
-   world.lights[0].spread = 15;
-   world.numLights = 1;
+void setupLights() {
+   lightData.lights[0].position = glm::vec3(10.0, 10.0, -10.0);
+   lightData.lights[0].direction = glm::vec3(1.0, 0.0, 0.0);
+   lightData.lights[0].color = glm::vec3(1.0, 1.0, 1.0);
+   lightData.lights[0].strength = 200;
+   lightData.lights[0].attenuation = 50.0;
+   lightData.lights[0].spread = 15;
+   lightData.numLights = 1;
 }
 
 
@@ -129,27 +129,29 @@ void updateCameraPosition(double timePassed) {
 int main(int argc, char ** argv) {
    GLFWwindow * window = windowSetup();
 
-   shader = new ForwardShader();
+   EntityShader * shader = new ForwardShader();
    camera = new Camera(glm::vec3(0,0,2), glm::vec3(0,0,-1), glm::vec3(0,1,0));
-   setupWorldData();
+   setupLights();
 
-   model = new Model();
-   // model->loadCIAB("assets/models/robot.ciab");
-   // model->loadCIAB("assets/models/guy.ciab");
-   model->loadCIAB("assets/models/trex.ciab");
-   model->loadTexture("assets/textures/masonry.png");
-   // model->loadOBJ("assets/cheb/cheb2.obj");
-   // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   // // model->loadAnimationPIN("assets/cheb/cheb_skel_wakeUpSequence.txt");
-   // model->loadAnimationPIN("assets/cheb/cheb_skel_walk.txt");
+   Model * chebModel1 = new Model();
+   chebModel1->loadOBJ("assets/cheb/cheb2.obj");
+   chebModel1->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   chebModel1->loadAnimationPIN("assets/cheb/cheb_skel_wakeUpSequence.txt");
+   Model * chebModel2 = new Model();
+   chebModel2->loadOBJ("assets/cheb/cheb2.obj");
+   chebModel2->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   chebModel2->loadAnimationPIN("assets/cheb/cheb_skel_walk.txt");
+   Model * robotModel1 = new Model();
+   robotModel1->loadCIAB("assets/models/robot.ciab");
+   Model * guyModel = new Model();
+   guyModel->loadCIAB("assets/models/guy.ciab");
+   guyModel->loadTexture("assets/textures/masonry.png");
 
-   entity = new Entity(glm::vec3(0,0,0), model);
+   std::vector<Entity *> chebs;
+   for (int i = 0; i < 10; i++)
+      chebs.push_back(new Entity(glm::vec3(3*i-15, 0, 0), chebModel2));
+   Entity * robotEntity1 = new Entity(glm::vec3(0,0,5), robotModel1);
 
-   camera->lookAt(entity->position);
-
-   shader->sendCameraData(camera);
-   shader->sendWorldData(& world);
-   shader->sendModelData(model);
 
    double timePassed = 0;
    unsigned int numFrames = 0;
@@ -163,10 +165,14 @@ int main(int argc, char ** argv) {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       updateCameraPosition(deltaTime);
-      entity->update(deltaTime);
 
-      shader->sendCameraData(camera);
-      shader->renderEntity(entity);
+      for (int i = 0; i < chebs.size(); i++)
+         chebs[i]->update(deltaTime);
+      robotEntity1->update(deltaTime);
+
+      for (int i = 0; i < chebs.size(); i++)
+         shader->render(camera, & lightData, chebs[i]);
+      shader->render(camera, & lightData, robotEntity1);
 
       glfwSwapBuffers(window);
       glfwPollEvents();

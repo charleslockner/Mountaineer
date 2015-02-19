@@ -10,10 +10,10 @@ GAME_OBJ_DIR=$(OBJ_DIR)/game
 
 EXE=$(BIN_DIR)/$(EXENAME)
 
-INC=-I$(SRC_DIR)/include -I$(LIB_DIR)/include -I$(LIB_DIR)/eigen -I$(LIB_DIR)/include/ceres/internal/miniglog
+INC=-I$(SRC_DIR)/include -I$(LIB_DIR)/include -I$(LIB_DIR)/include/eigen -I$(LIB_DIR)/include/ceres/internal/miniglog
 HEADER=-DMACOSX -MMD
 DEBUG=-g
-OPT=-O1
+OPT=-O3
 WARN=
 
 FRAME_FWS=-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
@@ -22,7 +22,7 @@ AUDIO_FWS=-framework CoreAudio -framework AudioToolbox -framework AudioUnit -fra
 CFLAGS=-c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER)
 LFLAGS=$(FRAME_FWS) $(AUDIO_FWS)
 
-LIB=$(patsubst %,$(LIB_DIR)/%,$(shell find $(LIB_DIR) -type f -maxdepth 1 -name "*.a" -exec basename {} .po \;))
+LIB=-L$(LIB_DIR) -lglfw3 -lceres
 SRC=$(shell find $(SRC_DIR) -type f -maxdepth 1 -name "*.cpp" -exec basename {} .po \;)
 OBJ=$(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
 
@@ -31,7 +31,7 @@ GAME_OBJ=$(patsubst %.cpp,$(GAME_OBJ_DIR)/%.o,$(GAME_SRC))
 
 OBJS=$(GAME_OBJ) $(OBJ)
 
-.PHONY: exe run clean
+.PHONY: exe model run clean
 
 exe: $(EXE)
 

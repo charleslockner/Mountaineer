@@ -10,6 +10,7 @@ Model::Model() {
    hasBoneWeights = false;
    hasBoneTree = false;
    hasAnimations = false;
+   isAnimated = false;
 }
 
 Model::~Model() {

@@ -251,6 +251,7 @@ static void loadMeshData(FILE *fp, Model * model) {
 
    checkPresentFields(model, receivedFlags);
    model->maxInfluences = MAX_INFLUENCES;
+   model->isAnimated = model->hasBoneWeights && model->hasAnimations;
 
    checkOpenGLError();
 }

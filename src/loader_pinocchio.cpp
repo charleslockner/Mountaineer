@@ -159,6 +159,8 @@ void Model::loadSkinningPIN(const char * path) {
 
    PIN_loadWeights(boneWeights, numBones, path);
    bindBoneWeights(this, boneWeights, numBones);
+
+   isAnimated = hasBoneWeights && hasAnimations;
 }
 
 void Model::loadAnimationPIN(const char * path) {
@@ -169,4 +171,6 @@ void Model::loadAnimationPIN(const char * path) {
    PIN_loadSkeleton(frames, bindPoses, numBones, path);
    setBindPoseMatrices(this, bindPoses, numBones);
    setAnimFrames(this, frames, numBones);
+
+   isAnimated = hasBoneWeights && hasAnimations;
 }

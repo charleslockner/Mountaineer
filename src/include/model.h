@@ -49,18 +49,13 @@ public:
    void printBoneTree();
    void printAnimations();
 
-   unsigned int vertexCount;
-   unsigned int faceCount;
-   unsigned int boneCount;
-   unsigned int animationCount;
-   unsigned int maxInfluences;
+   unsigned int vertexCount, faceCount, boneCount, animationCount, maxInfluences;
 
-   unsigned int posID, normID, colorID, uvID,
-                tanID, bitanID, indID,
-                texID, bIndID, bWeightID, bNumInfID;
+   unsigned int posID, normID, colorID, uvID, tanID, bitanID,
+                indID, texID, bIndID, bWeightID, bNumInfID;
 
-   bool hasNormals, hasColors, hasTexCoords, hasTextures,
-       hasTansAndBitans, hasBoneWeights, hasBoneTree, hasAnimations;
+   bool hasNormals, hasColors, hasTexCoords, hasTextures, hasTansAndBitans,
+        hasBoneWeights, hasBoneTree, hasAnimations, isAnimated;
 
    short boneRoot;
    Bone * bones;

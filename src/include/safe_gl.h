@@ -53,13 +53,13 @@ inline void checkOglError(const char * file, int line) {
 inline GLint safe_glGetAttribLocation(const GLuint program, const char varname[]) {
    GLint r = glGetAttribLocation(program, varname);
    if (r < 0)
-      printf("WARN: %s does not exist. glAttrib calls will silently ignore it.\n\n", varname);
+      printf("WARN: %s does not exist. glAttrib calls will silently ignore it.\n", varname);
    return r;
 }
 inline GLint safe_glGetUniformLocation(const GLuint program, const char varname[]) {
    GLint r = glGetUniformLocation(program, varname);
    if (r < 0)
-      printf("WARN: %s does not exist. glUniform calls will silently ignore it.\n\n", varname);
+      printf("WARN: %s does not exist. glUniform calls will silently ignore it.\n", varname);
    return r;
 }
 

@@ -11,111 +11,112 @@
 #include "shader_builder.h"
 #include "safe_gl.h"
 
-#define HFOV   M_PI/4.0
-#define ASPECT 4.0 / 3.0
-#define NEAR   0.1
-#define FAR    1000.0
-
 ForwardShader::ForwardShader() {
-   program = SB_buildFromPaths("shaders/forward.vert.glsl", "shaders/forward.frag.glsl");
-   setupHandles();
-   projectionMatrix = glm::perspective(HFOV, ASPECT, NEAR, FAR);
+   statProg = SB_buildFromPaths("shaders/forward_static.vert.glsl", "shaders/forward.frag.glsl");
+   animProg = SB_buildFromPaths("shaders/forward_animated.vert.glsl", "shaders/forward.frag.glsl");
+   fillHandleTable(& animTable, animProg, true);
+   fillHandleTable(& statTable, statProg, false);
 };
 
 ForwardShader::~ForwardShader() {};
 
-void ForwardShader::setupHandles() {
-   h_uHasNormals = glGetUniformLocation(program, "uHasNormals");
-   h_uHasColors = glGetUniformLocation(program, "uHasColors");
-   h_uHasTextures = glGetUniformLocation(program, "uHasTextures");
-   h_uHasTansAndBitans = glGetUniformLocation(program, "uHasTansAndBitans");
-   h_uHasAnimations = glGetUniformLocation(program, "uHasAnimations");
+void ForwardShader::fillHandleTable(HandleTable * table, unsigned int program, bool animated) {
+   table->uHasNormals = glGetUniformLocation(program, "uHasNormals");
+   table->uHasColors = glGetUniformLocation(program, "uHasColors");
+   table->uHasTextures = glGetUniformLocation(program, "uHasTextures");
+   table->uHasTansAndBitans = glGetUniformLocation(program, "uHasTansAndBitans");
 
-   h_uModelMatrix = glGetUniformLocation(program, "uModelMatrix");
-   h_uProjViewMatrix = glGetUniformLocation(program, "uProjViewMatrix");
-   h_uCameraPosition = glGetUniformLocation(program, "uCameraPosition");
-   h_uLights = glGetUniformLocation(program, "uLights");
-   h_uTexture = glGetUniformLocation(program, "uTexture");
-   h_uBoneMatrices = glGetUniformLocation(program, "uBoneMatrices");
+   table->uModelM = glGetUniformLocation(program, "uModelM");
+   table->uProjViewM = glGetUniformLocation(program, "uProjViewM");
+   table->uCameraPosition = glGetUniformLocation(program, "uCameraPosition");
+   table->uLights = glGetUniformLocation(program, "uLights");
+   table->uTexture = glGetUniformLocation(program, "uTexture");
 
-   h_aVertexPosition = glGetAttribLocation(program, "aVertexPosition");
-   h_aVertexNormal = glGetAttribLocation(program, "aVertexNormal");
-   h_aVertexColor = glGetAttribLocation(program, "aVertexColor");
-   h_aVertexUV = glGetAttribLocation(program, "aVertexUV");
+   table->aPosition = glGetAttribLocation(program, "aPosition");
+   table->aNormal = glGetAttribLocation(program, "aNormal");
+   table->aColor = glGetAttribLocation(program, "aColor");
+   table->aUV = glGetAttribLocation(program, "aUV");
 
-   h_aBoneIndices0 = glGetAttribLocation(program, "bIndices0");
-   h_aBoneIndices1 = glGetAttribLocation(program, "bIndices1");
-   h_aBoneIndices2 = glGetAttribLocation(program, "bIndices2");
-   h_aBoneIndices3 = glGetAttribLocation(program, "bIndices3");
-   h_aBoneWeights0 = glGetAttribLocation(program, "bWeights0");
-   h_aBoneWeights1 = glGetAttribLocation(program, "bWeights1");
-   h_aBoneWeights2 = glGetAttribLocation(program, "bWeights2");
-   h_aBoneWeights3 = glGetAttribLocation(program, "bWeights3");
-   h_aNumInfluences = glGetAttribLocation(program, "aInfluences");
+   if (animated) {
+      table->aBoneIndices0 = glGetAttribLocation(program, "aBoneIndices0");
+      table->aBoneIndices1 = glGetAttribLocation(program, "aBoneIndices1");
+      table->aBoneIndices2 = glGetAttribLocation(program, "aBoneIndices2");
+      table->aBoneIndices3 = glGetAttribLocation(program, "aBoneIndices3");
+      table->aBoneWeights0 = glGetAttribLocation(program, "aBoneWeights0");
+      table->aBoneWeights1 = glGetAttribLocation(program, "aBoneWeights1");
+      table->aBoneWeights2 = glGetAttribLocation(program, "aBoneWeights2");
+      table->aBoneWeights3 = glGetAttribLocation(program, "aBoneWeights3");
+      table->aNumInfluences = glGetAttribLocation(program, "aNumInfluences");
+      table->uBoneMs = glGetUniformLocation(program, "uBoneMs");
+   }
 }
 
-void ForwardShader::sendWorldData(World * world) {
+void ForwardShader::render(Camera * camera, LightData * lightData, Entity * entity) {
+   Model * model = entity->model;
+
+   unsigned int program = model->isAnimated ? animProg : statProg;
+   HandleTable * table = model->isAnimated ? & animTable : & statTable;
+
    glUseProgram(program);
 
-   glUniform3fv(h_uLights, 4*world->numLights, (GLfloat*)(world->lights));
-}
+   // Send Projection, View, and Model matrices
+   glUniformMatrix4fv(table->uProjViewM, 1, GL_FALSE, glm::value_ptr(camera->generateProjViewM()));
+   glUniformMatrix4fv(table->uModelM, 1, GL_FALSE, glm::value_ptr(entity->generateModelM()));
 
-void ForwardShader::sendCameraData(Camera * camera) {
-   glUseProgram(program);
+   // Send camera and light data
+   glUniform3fv(table->uCameraPosition, 1, glm::value_ptr(camera->position));
+   glUniform3fv(table->uLights, 4*lightData->numLights, (GLfloat*)(lightData->lights));
 
-   glm::vec3 target = camera->position + camera->direction;
-   glm::mat4 viewMatrix = glm::lookAt(camera->position, target, camera->up);
-   glm::mat4 pvMatrix = projectionMatrix * viewMatrix;
-   glUniformMatrix4fv(h_uProjViewMatrix, 1, GL_FALSE, glm::value_ptr(pvMatrix));
+   // Send model present flags
+   glUniform1i(table->uHasNormals, model->hasNormals);
+   glUniform1i(table->uHasColors, model->hasColors);
+   glUniform1i(table->uHasTextures, model->hasTexCoords && model->hasTextures);
+   glUniform1i(table->uHasTansAndBitans, model->hasTansAndBitans);
 
-   glUniform3fv(h_uCameraPosition, 1, glm::value_ptr(camera->position));
-}
+   // Send model attributes
+   sendVertexAttribArray(table->aPosition, model->posID, 3);
+   if (model->hasNormals) sendVertexAttribArray(table->aNormal, model->normID, 3);
+   if (model->hasColors) sendVertexAttribArray(table->aColor, model->colorID, 3);
+   if (model->hasTexCoords) sendVertexAttribArray(table->aUV, model->uvID, 2);
+   if (model->hasTextures) sendTexture(table->uTexture, model->texID, GL_TEXTURE0);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indID);
 
-void ForwardShader::sendModelData(Model * model) {
-   glUseProgram(program);
-
-   glUniform1i(h_uHasNormals, model->hasNormals);
-   glUniform1i(h_uHasColors, model->hasColors);
-   glUniform1i(h_uHasTextures, model->hasTexCoords && model->hasTextures);
-   glUniform1i(h_uHasTansAndBitans, model->hasTansAndBitans);
-   glUniform1i(h_uHasAnimations, model->hasBoneWeights && model->hasAnimations);
-
-   sendVertexAttribArray(h_aVertexPosition, model->posID, 3);
-   if (model->hasNormals)
-      sendVertexAttribArray(h_aVertexNormal, model->normID, 3);
-   if (model->hasColors)
-      sendVertexAttribArray(h_aVertexColor, model->colorID, 3);
-   if (model->hasTexCoords)
-      sendVertexAttribArray(h_aVertexUV, model->uvID, 2);
-   if (model->hasTextures)
-      sendTexture(h_uTexture, model->texID, GL_TEXTURE0);
-   if (model->hasBoneWeights) {
-      sendLargeVertexAttribArray(h_aBoneIndices0, h_aBoneIndices1,
-                                 h_aBoneIndices2, h_aBoneIndices3,
+   // Send animation data
+   if (model->isAnimated) {
+      sendLargeVertexAttribArray(table->aBoneIndices0, table->aBoneIndices1,
+                                 table->aBoneIndices2, table->aBoneIndices3,
                                  model->bIndID, model->maxInfluences);
-      sendLargeVertexAttribArray(h_aBoneWeights0, h_aBoneWeights1,
-                                 h_aBoneWeights2, h_aBoneWeights3,
+      sendLargeVertexAttribArray(table->aBoneWeights0, table->aBoneWeights1,
+                                 table->aBoneWeights2, table->aBoneWeights3,
                                  model->bWeightID, model->maxInfluences);
-      sendVertexAttribArray(h_aNumInfluences, model->bNumInfID, 1);
+      sendVertexAttribArray(table->aNumInfluences, model->bNumInfID, 1);
+      glUniformMatrix4fv(table->uBoneMs, MAX_BONES, GL_FALSE, (GLfloat *)(entity->boneTransforms));
    }
 
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indID);
-   indexCount = 3 * model->faceCount;
-}
+   // Draw the damn thing!
+   glDrawElements(GL_TRIANGLES, 3 * model->faceCount, GL_UNSIGNED_INT, 0);
 
-void ForwardShader::renderEntity(Entity * entity) {
-   glUseProgram(program);
+   // cleanup
+   glUseProgram(0);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+   glDisableVertexAttribArray(table->aPosition);
+   glDisableVertexAttribArray(table->aNormal);
+   glDisableVertexAttribArray(table->aColor);
+   glDisableVertexAttribArray(table->aUV);
+   if (model->isAnimated) {
+      glDisableVertexAttribArray(table->aBoneIndices0);
+      glDisableVertexAttribArray(table->aBoneIndices1);
+      glDisableVertexAttribArray(table->aBoneIndices2);
+      glDisableVertexAttribArray(table->aBoneIndices3);
+      glDisableVertexAttribArray(table->aBoneWeights0);
+      glDisableVertexAttribArray(table->aBoneWeights1);
+      glDisableVertexAttribArray(table->aBoneWeights2);
+      glDisableVertexAttribArray(table->aBoneWeights3);
+      glDisableVertexAttribArray(table->aNumInfluences);
+   }
 
-   glm::mat4 transM = glm::translate(glm::mat4(1.0f), entity->position);
-   glm::mat4 rotateM = glm::rotate(glm::mat4(1.0f), entity->rotation, glm::vec3(0,1,0));
-   glm::mat4 scaleM = glm::scale(glm::mat4(1.0f), entity->scale);
-   glm::mat4 modelM = transM * rotateM * scaleM;
-   glUniformMatrix4fv(h_uModelMatrix, 1, GL_FALSE, glm::value_ptr(modelM));
-
-   if (entity->model->hasBoneWeights && entity->model->hasAnimations)
-      glUniformMatrix4fv(h_uBoneMatrices, MAX_BONES, GL_FALSE, (GLfloat *)(entity->boneTransforms));
-
-   glDrawElements(GL_TRIANGLES, 3 * entity->model->faceCount, GL_UNSIGNED_INT, 0);
    checkOpenGLError();
 }
+
 

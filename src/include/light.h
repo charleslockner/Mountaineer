@@ -1,5 +1,5 @@
-#ifndef __WORLD_H__
-#define __WORLD_H__
+#ifndef __LIGHT_H__
+#define __LIGHT_H__
 
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
@@ -19,6 +19,6 @@ typedef struct {
 typedef struct {
    Light lights[MAX_LIGHTS];
    unsigned short numLights;
-} World;
+} LightData;
 
-#endif // __WORLD_H__
+#endif // __LIGHT_H__

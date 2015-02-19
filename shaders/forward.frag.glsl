@@ -10,8 +10,8 @@ uniform sampler2D uTexture;
 
 varying vec3 vWorldPosition;
 varying vec3 vWorldNormal;
-varying vec3 vVertexColor;
-varying vec2 vVertexUV;
+varying vec3 vColor;
+varying vec2 vUV;
 
 void main(void) {
    vec3 lightPosition, lightDirection, lightColor, lightAttr;
@@ -21,11 +21,11 @@ void main(void) {
    float shine;
 
    if (uHasColors && uHasTextures)
-      skinColor = vec3(texture2D(uTexture, vVertexUV)) * vVertexColor;
+      skinColor = vec3(texture2D(uTexture, vUV)) * vColor;
    else if (uHasColors)
-      skinColor = vVertexColor;
+      skinColor = vColor;
    else if (uHasTextures)
-      skinColor = vec3(texture2D(uTexture, vVertexUV));
+      skinColor = vec3(texture2D(uTexture, vUV));
    else
       skinColor = vec3(0.8, 0.7, 0.3);
 

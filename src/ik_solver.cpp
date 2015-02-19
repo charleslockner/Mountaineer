@@ -13,8 +13,6 @@ struct CostFunctor {
 };
 
 void solveBoneRotations() {
-   // google::InitGoogleLogging(argv[0]);
-
    double x[2];
    x[0] = 5.0;
    x[1] = 1.0;

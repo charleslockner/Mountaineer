@@ -7,6 +7,11 @@
 #define BASE_SENSITIVITY 0.005
 #define PITCH_LIMIT 1.484 // 85 degrees
 
+#define HFOV   M_PI/4.0
+#define ASPECT 4.0 / 3.0
+#define NEAR   0.1
+#define FAR    1000.0
+
 Camera::Camera(glm::vec3 pos, glm::vec3 dir, glm::vec3 upVec) {
    position = pos;
    direction = glm::normalize(dir);
@@ -15,6 +20,8 @@ Camera::Camera(glm::vec3 pos, glm::vec3 dir, glm::vec3 upVec) {
    boundPitch();
 
    sensitivity = 0.5;
+
+   projectionM = glm::perspective(HFOV, ASPECT, NEAR, FAR);
 }
 
 Camera::~Camera() {}
@@ -77,4 +84,10 @@ void Camera::aim(double deltaX, double deltaY) {
       direction = glm::rotate(yawApplied, pitchDelta, leftVector);
       boundPitch();
    }
+}
+
+glm::mat4 Camera::generateProjViewM() {
+   glm::vec3 target = position + direction;
+   glm::mat4 viewM = glm::lookAt(position, target, up);
+   return projectionM * viewM;
 }
