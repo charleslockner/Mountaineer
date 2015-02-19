@@ -1,4 +1,9 @@
 
+// FOR MIP MAP CALL THAT'S NOT PRESENT IN GLFW
+#ifdef __APPLE__
+#include <OPENGL/gl.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
