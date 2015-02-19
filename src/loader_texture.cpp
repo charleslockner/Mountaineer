@@ -1,13 +1,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <OpenGL/gl.h>
-
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
+#include "safe_gl.h"
 #include "model.h"
 
 void Model::loadTexture(const char * filename) {

@@ -1,6 +1,4 @@
 
-#include <OpenGL/gl.h>
-
 #include "shader.h"
 
 void EntityShader::sendVertexAttribArray(unsigned int handle, unsigned int vbo, int size) {

@@ -21,8 +21,8 @@ Entity::~Entity() {
 
 void Entity::update(float timeDelta) {
    if (model->hasBoneTree) {
-      boneController->rotateBone(13, -0.05, glm::normalize(glm::vec3(1,1,0)));
-      boneController->rotateBone(3, 0.1, glm::normalize(glm::vec3(1,0,0)));
+      //boneController->rotateBone(13, -0.05, glm::normalize(glm::vec3(1,1,0)));
+      boneController->rotateBone(2, 0.1, glm::normalize(glm::vec3(1,0,0)));
    }
 
    if (model->hasAnimations)

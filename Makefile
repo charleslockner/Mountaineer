@@ -1,3 +1,4 @@
+UNAME_S := $(shell uname -s)
 CC=g++
 EXENAME=game
 
@@ -16,14 +17,19 @@ DEBUG=-g
 OPT=-O3
 WARN=
 
+CFLAGS=-c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER)
+LIB=-L$(LIB_DIR)
+
+ifeq ($(UNAME_S),Darwin)
 FRAME_FWS=-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
 AUDIO_FWS=-framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreServices
+LIB+=-lglfw3_OSX $(FRAME_FWS) $(AUDIO_FWS)
+endif
+ifeq ($(UNAME_S),Linux)
+LIB+=-lglfw3_LIN -lGL -lXrandr -lXi -lXinerama -lXcursor
+endif
 
-CFLAGS=-c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER)
-LFLAGS=$(FRAME_FWS) $(AUDIO_FWS)
-
-LIB=-L$(LIB_DIR) -lglfw3 -lceres
-SRC=$(shell find $(SRC_DIR) -type f -maxdepth 1 -name "*.cpp" -exec basename {} .po \;)
+SRC=$(shell find $(SRC_DIR) -maxdepth 1 -type f -name "*.cpp" -exec basename {} .po \;)
 OBJ=$(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
 
 GAME_SRC=$(shell find $(GAME_SRC_DIR) -type f -name "*.cpp" -exec basename {} .po \;)
@@ -43,14 +49,13 @@ run: $(EXE)
 	./$(EXE)
 
 clean:
-	rm -rf $(BIN_DIR)
-	rm -rf $(OBJ_DIR)
+	rm -rf $(BIN_DIR) $(OBJ_DIR)
 
 -include $(OBJS:.o=.d)
 
 $(EXE): $(OBJS)
 	mkdir -p $(@D)
-	$(CC) $(LFLAGS) -o $(EXE) $(OBJS) $(LIB)
+	$(CC) -o $(EXE) $(OBJS) $(LIB)
 
 $(GAME_OBJ_DIR)/%.o: $(GAME_SRC_DIR)/%.cpp
 	@mkdir -p $(@D)

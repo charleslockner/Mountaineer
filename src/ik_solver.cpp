@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "ik_solver.h"
-#include "ceres/ceres.h"
+/* #include "ceres/ceres.h"
 
 struct CostFunctor {
    template <typename T> bool operator()(const T* const x, T* residual) const {
@@ -30,3 +30,5 @@ void solveBoneRotations() {
    std::cout << summary.BriefReport() << "\n";
    std::cout << "x[0], x[1]: " << x[0] << " " << x[1] << "\n";
 }
+
+*/

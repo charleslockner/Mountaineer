@@ -1,7 +1,10 @@
 #ifndef __SAFE_GL__
 #define __SAFE_GL__
 
-#include <OpenGL/gl.h>
+#define GL_GLEXT_PROTOTYPES
+#define GLFW_INCLUDE_GLU
+#include <GLFW/glfw3.h>
+
 #include <stdio.h>
 
 #define USE_SAFE_GL

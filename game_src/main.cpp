@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <GLFW/glfw3.h>
 
+#include "safe_gl.h"
 #include "shader.h"
 #include "light.h"
 #include "model.h"

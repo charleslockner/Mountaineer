@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <OpenGL/gl.h>
 
 #include "shader_builder.h"
+#include "safe_gl.h"
 
 #define printOpenGLError() printOglError(__FILE__, __LINE__)
 
@@ -32,14 +32,14 @@ static void printShaderInfoLog (GLuint shader)
    glGetShaderiv (shader, GL_INFO_LOG_LENGTH, &infologLength);
    printOpenGLError ();  // Check for OpenGL errors
 
-   if (infologLength > 0) {
+   if (infologLength > 1) {
       infoLog = (GLchar *)malloc (infologLength);
       if (infoLog == NULL) {
          puts ("ERROR: Could not allocate InfoLog buffer");
          exit (1);
          }
       glGetShaderInfoLog (shader, infologLength, &charsWritten, infoLog);
-      printf ("Shader InfoLog:\n%s\n\n", infoLog);
+      printf ("Shader InfoLog:%s\n", infoLog);
       free (infoLog);
       }
    printOpenGLError();  // Check for OpenGL errors
@@ -56,7 +56,7 @@ static void printProgramInfoLog (GLuint program)
    glGetProgramiv (program, GL_INFO_LOG_LENGTH, &infologLength);
    printOpenGLError ();  // Check for OpenGL errors
 
-   if (infologLength > 0)
+   if (infologLength > 1)
       {
       infoLog = (GLchar *)malloc (infologLength);
       if (infoLog == NULL)
@@ -65,7 +65,7 @@ static void printProgramInfoLog (GLuint program)
          exit (1);
          }
       glGetProgramInfoLog (program, infologLength, &charsWritten, infoLog);
-      printf ("Program InfoLog:\n%s\n\n", infoLog);
+      printf ("Program InfoLog:%s\n", infoLog);
       free (infoLog);
       }
    printOpenGLError ();  // Check for OpenGL errors
@@ -164,7 +164,7 @@ static GLuint buildProgram(GLuint vs, GLuint fs) {
    printProgramInfoLog(program);
    getGLversion();
 
-   printf("Sucessfully installed shader %d\n", program);
+   // printf("Sucessfully installed shader %d\n", program);
 
    return program;
 }

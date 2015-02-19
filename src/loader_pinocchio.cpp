@@ -1,12 +1,13 @@
 
-#include <OpenGL/gl.h>
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
-#include <glm/gtc/matrix_transform.hpp>
+#include "glm/gtc/matrix_transform.hpp"
 
 #include "safe_gl.h"
 #include "model.h"
 #include "attachment_loader.h"
+
+#include <algorithm>
 
 #define MAX_INFLUENCES 15
 
