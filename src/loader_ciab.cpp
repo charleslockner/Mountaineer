@@ -279,4 +279,6 @@ void Model::loadCIAB(const char * path) {
 
    // printBoneTree();
    // printAnimations();
+
+   fprintf(stderr, "Loaded CIAB model: %s\n", path);
 }

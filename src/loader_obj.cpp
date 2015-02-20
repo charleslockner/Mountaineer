@@ -57,4 +57,6 @@ void Model::loadOBJ(const char * path)
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
    checkOpenGLError();
+
+   std::cerr << "Loaded OBJ model: " << path << "\n";
 }

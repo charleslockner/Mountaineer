@@ -1,6 +1,13 @@
 #ifndef __SAFE_GL__
 #define __SAFE_GL__
 
+// #ifdef __APPLE__
+// #include <GLUT/glut.h>
+// #endif
+// #ifdef __unix__
+// #include <GL/glut.h>
+// #endif
+
 #define GL_GLEXT_PROTOTYPES
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
