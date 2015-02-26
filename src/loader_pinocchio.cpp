@@ -1,8 +1,4 @@
 
-#define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-
 #include "safe_gl.h"
 #include "model.h"
 #include "attachment_loader.h"
@@ -80,9 +76,10 @@ static void parseVertexWeights(std::vector<Vertex> & verts, float * bIndices, fl
 static void bindBoneWeights(Model * model, std::vector<float> & inWeights, int numBones) {
    int numVertices = inWeights.size() / numBones;
    std::vector<Vertex> verts = std::vector<Vertex>(numVertices);
-   float bIndices[numVertices * MAX_INFLUENCES];
-   float bWeights[numVertices * MAX_INFLUENCES];
-   float bNumInfluences[numVertices];
+   int numWeights = numVertices * MAX_INFLUENCES;
+   float * bIndices = (float *)malloc(numWeights * sizeof(float));
+   float * bWeights = (float *)malloc(numWeights * sizeof(float));
+   float * bNumInfluences = (float *)malloc(numVertices * sizeof(float));
 
    fillVertexArray(inWeights, verts);
    sortBoneWeights(verts);
@@ -91,33 +88,37 @@ static void bindBoneWeights(Model * model, std::vector<float> & inWeights, int n
 
    glGenBuffers(1, & model->bIndID);
    glBindBuffer(GL_ARRAY_BUFFER, model->bIndID);
-   glBufferData(GL_ARRAY_BUFFER, sizeof(bIndices), & bIndices[0], GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, numWeights * sizeof(float), & bIndices[0], GL_STATIC_DRAW);
 
    glGenBuffers(1, & model->bWeightID);
    glBindBuffer(GL_ARRAY_BUFFER, model->bWeightID);
-   glBufferData(GL_ARRAY_BUFFER, sizeof(bWeights), & bWeights[0], GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, numWeights * sizeof(float), & bWeights[0], GL_STATIC_DRAW);
 
    glGenBuffers(1, & model->bNumInfID);
    glBindBuffer(GL_ARRAY_BUFFER, model->bNumInfID);
-   glBufferData(GL_ARRAY_BUFFER, sizeof(bNumInfluences), & bNumInfluences[0], GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(float), & bNumInfluences[0], GL_STATIC_DRAW);
 
    model->boneCount = numBones;
    model->hasBoneWeights = true;
    model->maxInfluences = MAX_INFLUENCES;
+
+   free(bIndices);
+   free(bWeights);
+   free(bNumInfluences);
 }
 
 static void setBindPoseMatrices(Model * model, std::vector<float> & inBindPoses, int numBones) {
    model->bones = (Bone *)malloc(sizeof(Bone) * numBones);
 
    for (int i = 0; i < numBones; i++) {
-      glm::vec3 tns = glm::vec3(inBindPoses[7*i+4], inBindPoses[7*i+5], inBindPoses[7*i+6]);
-      glm::quat rot = glm::quat(inBindPoses[7*i+3], inBindPoses[7*i], inBindPoses[7*i+1], inBindPoses[7*i+2]);
+      Eigen::Vector3f tns = Eigen::Vector3f(inBindPoses[7*i+4], inBindPoses[7*i+5], inBindPoses[7*i+6]);
+      Eigen::Quaternionf rot = Eigen::Quaternionf(inBindPoses[7*i+3], inBindPoses[7*i], inBindPoses[7*i+1], inBindPoses[7*i+2]);
 
-      glm::mat4 tnsM = glm::translate(glm::mat4(1.0), tns);
-      glm::mat4 rotM = glm::toMat4(rot);
-      glm::mat4 bindPose = tnsM * rotM;
+      Eigen::Matrix4f tnsM = makeTranslationMatrix(tns);
+      Eigen::Matrix4f rotM = makeRotationMatrix(rot);
+      Eigen::Matrix4f bindPose = tnsM * rotM;
 
-      model->bones[i].invBonePose = glm::inverse(bindPose);
+      model->bones[i].invBonePose = bindPose.inverse();
    }
 }
 
@@ -144,9 +145,9 @@ static void setAnimFrames(Model * model, std::vector<float> & inFrames, int numB
          int inNdx = (7 * numBones * keyNdx) + (7 * boneNdx);
 
          key->time = 1.0 * keyNdx / fps;
-         key->position = glm::vec3(inFrames[inNdx+4], inFrames[inNdx+5], inFrames[inNdx+6]);
-         key->rotation = glm::quat(inFrames[inNdx+3], inFrames[inNdx], inFrames[inNdx+1], inFrames[inNdx+2]);
-         key->scale = glm::vec3(1, 1, 1);
+         key->position = Eigen::Vector3f(inFrames[inNdx+4], inFrames[inNdx+5], inFrames[inNdx+6]);
+         key->rotation = Eigen::Quaternionf(inFrames[inNdx+3], inFrames[inNdx], inFrames[inNdx+1], inFrames[inNdx+2]);
+         key->scale = Eigen::Vector3f(1, 1, 1);
       }
    }
 

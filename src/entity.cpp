@@ -1,18 +1,16 @@
 #include "entity.h"
 #include "math.h"
 
-#include "glm/gtx/rotate_vector.hpp"
-
-Entity::Entity(glm::vec3 position, Model * model) {
+Entity::Entity(Eigen::Vector3f position, Model * model) {
    this->position = position;
-   this->rotation = 0.0f;
-   this->scale = glm::vec3(1.0f);
+   this->rotation = Eigen::Quaternionf(1,0,0,0);
+   this->scale = Eigen::Vector3f(1,1,1);
    this->model = model;
 
    for (int i = 0; i < MAX_BONES; i++)
-      this->boneTransforms[i] = glm::mat4(1.0f);
+      this->boneTransforms[i] = Eigen::Matrix4f::Identity();
 
-   this->boneController = new BoneController(model, boneTransforms);
+   // this->boneController = new BoneController(model, boneTransforms);
 }
 
 Entity::~Entity() {
@@ -20,18 +18,19 @@ Entity::~Entity() {
 }
 
 void Entity::update(float timeDelta) {
-   if (model->hasBoneTree) {
-      //boneController->rotateBone(13, -0.05, glm::normalize(glm::vec3(1,1,0)));
-      boneController->rotateBone(2, 0.1, glm::normalize(glm::vec3(1,0,0)));
-   }
+   // if (model->hasBoneTree) {
+   //    // boneController->rotateBone(13, -0.05, glm::normalize(glm::vec3(1,1,0)));
+   //    // boneController->rotateBone(2, 0.1, glm::normalize(glm::vec3(1,0,0)));
+   // }
 
-   if (model->hasAnimations)
-      boneController->updateTransforms(timeDelta);
+   // if (model->hasAnimations)
+   //    boneController->updateTransforms(timeDelta);
 }
 
-glm::mat4 Entity::generateModelM() {
-   glm::mat4 transM = glm::translate(glm::mat4(1.0f), position);
-   glm::mat4 rotateM = glm::rotate(glm::mat4(1.0f), rotation, glm::vec3(0,1,0));
-   glm::mat4 scaleM = glm::scale(glm::mat4(1.0f), scale);
-   return transM * rotateM * scaleM;
+Eigen::Matrix4f Entity::generateModelM() {
+   Eigen::Matrix4f transM = makeTranslationMatrix(position);
+   Eigen::Matrix4f rotateM = makeRotationMatrix(rotation);
+   Eigen::Matrix4f scaleM = makeScaleMatrix(scale);
+   // return transM * rotateM * scaleM;
+   return Eigen::Matrix4f::Identity();
 }

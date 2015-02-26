@@ -1,19 +1,16 @@
 #ifndef __MODEL_H__
 #define __MODEL_H__
 
-#define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
-#include "glm/gtx/quaternion.hpp"
-
-#include "stdio.h"
+#include "matrix_math.h"
+#include <stdio.h>
 
 #define MAX_BONES 100
 
 typedef struct {
    float time;
-   glm::vec3 position;
-   glm::quat rotation;
-   glm::vec3 scale;
+   Eigen::Vector3f position;
+   Eigen::Quaternionf rotation;
+   Eigen::Vector3f scale;
 } Key;
 
 typedef struct {
@@ -31,8 +28,8 @@ typedef struct {
    short parentIndex;
    short childCount;
    short * childIndices;
-   glm::mat4 invBonePose;
-   glm::mat4 parentOffset;
+   Eigen::Matrix4f invBonePose;
+   Eigen::Matrix4f parentOffset;
 } Bone;
 
 class Model {
@@ -42,6 +39,8 @@ public:
 
    void loadCIAB(const char * path);
    void loadTexture(const char * path);
+   void loadNormalMap(const char * path);
+   void loadSpecularMap(const char * path);
    void loadOBJ(const char * path);
    void loadSkinningPIN(const char * path);
    void loadAnimationPIN(const char * path);
@@ -52,10 +51,10 @@ public:
    unsigned int vertexCount, faceCount, boneCount, animationCount, maxInfluences;
 
    unsigned int posID, normID, colorID, uvID, tanID, bitanID,
-                indID, texID, bIndID, bWeightID, bNumInfID;
+                indID, texID, nmapID, smapID, bIndID, bWeightID, bNumInfID;
 
-   bool hasNormals, hasColors, hasTexCoords, hasTextures, hasTansAndBitans,
-        hasBoneWeights, hasBoneTree, hasAnimations, isAnimated;
+   bool hasNormals, hasColors, hasTexCoords, hasTexture, hasNormalMap, hasSpecularMap,
+        hasTansAndBitans, hasBoneWeights, hasBoneTree, hasAnimations, isAnimated;
 
    short boneRoot;
    Bone * bones;

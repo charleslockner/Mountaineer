@@ -1,8 +1,6 @@
 #ifndef __SHADER_H__
 #define __SHADER_H__
 
-#define USE_SMART_USE_PROGRAM
-#define USE_SAFE_GL
 #include "safe_gl.h"
 
 #include "camera.h"
@@ -18,9 +16,10 @@ public:
 
 protected:
    typedef struct {
-      unsigned int uHasNormals, uHasColors, uHasTextures, uHasTansAndBitans,
-                   uModelM, uProjViewM, uCameraPosition, uLights, uTexture, uBoneMs,
-                   aPosition, aNormal, aColor, aUV,
+      unsigned int uHasNormals, uHasColors, uHasTexture, uHasNormalMap, uHasSpecularMap,
+                   uModelM, uProjViewM, uCameraPosition, uLights, uTexture,
+                   uNormalMap, uSpecularMap, uBoneMs,
+                   aPosition, aNormal, aColor, aUV, aTangent, aBitangent,
                    aBoneIndices0, aBoneIndices1, aBoneIndices2, aBoneIndices3,
                    aBoneWeights0, aBoneWeights1, aBoneWeights2, aBoneWeights3,
                    aNumInfluences;

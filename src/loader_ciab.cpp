@@ -47,7 +47,7 @@ static unsigned int createVBO(FILE *fp, int count, int size) {
    unsigned int vbo;
    glGenBuffers(1, & vbo);
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STREAM_DRAW);
 
    free(data);
 
@@ -140,8 +140,9 @@ static void readBoneTree(FILE *fp, Model * model) {
       bone->childIndices = (short *)malloc(bone->childCount * sizeof(short));
       for (int j = 0; j < bone->childCount; j++)
          fread(& bone->childIndices[j], sizeof(short), 1, fp);
-      fread(& bone->invBonePose, sizeof(glm::mat4), 1, fp);
-      fread(& bone->parentOffset, sizeof(glm::mat4), 1, fp);
+
+      fread(& bone->invBonePose, sizeof(Eigen::Matrix4f), 1, fp);
+      fread(& bone->parentOffset, sizeof(Eigen::Matrix4f), 1, fp);
    }
 }
 

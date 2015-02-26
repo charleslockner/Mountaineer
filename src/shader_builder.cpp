@@ -39,7 +39,7 @@ static void printShaderInfoLog (GLuint shader)
          exit (1);
          }
       glGetShaderInfoLog (shader, infologLength, &charsWritten, infoLog);
-      printf ("Shader InfoLog:%s\n", infoLog);
+      printf ("Shader InfoLog: %s\n", infoLog);
       free (infoLog);
       }
    printOpenGLError();  // Check for OpenGL errors

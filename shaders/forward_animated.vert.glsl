@@ -4,6 +4,8 @@ uniform mat4 uProjViewM;
 uniform mat4 uBoneMs[100];
 
 attribute vec3 aPosition;
+attribute vec3 aTangent;
+attribute vec3 aBitangent;
 attribute vec3 aNormal;
 attribute vec3 aColor;
 attribute vec2 aUV;
@@ -20,6 +22,8 @@ attribute float aNumInfluences;
 
 varying vec3 vWorldPosition;
 varying vec3 vWorldNormal;
+varying vec3 vWorldTangent;
+varying vec3 vWorldBitangent;
 varying vec3 vColor;
 varying vec2 vUV;
 
@@ -51,6 +55,8 @@ void main(void) {
    mat4 modelM = uModelM * animMatrix;
 
    vWorldPosition = vec3(modelM * vec4(aPosition, 1.0));
+   vWorldTangent = vec3(modelM * vec4(aTangent, 1.0));
+   vWorldBitangent = vec3(modelM * vec4(aBitangent, 1.0));
    vWorldNormal = vec3(modelM * vec4(aNormal, 0.0));
    vColor = aColor;
    vUV = aUV;

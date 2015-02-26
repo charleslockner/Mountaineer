@@ -16,26 +16,31 @@ ForwardShader::ForwardShader() {
    animProg = SB_buildFromPaths("shaders/forward_animated.vert.glsl", "shaders/forward.frag.glsl");
    fillHandleTable(& animTable, animProg, true);
    fillHandleTable(& statTable, statProg, false);
-};
+}
 
-ForwardShader::~ForwardShader() {};
+ForwardShader::~ForwardShader() {}
 
 void ForwardShader::fillHandleTable(HandleTable * table, unsigned int program, bool animated) {
    table->uHasNormals = glGetUniformLocation(program, "uHasNormals");
    table->uHasColors = glGetUniformLocation(program, "uHasColors");
-   table->uHasTextures = glGetUniformLocation(program, "uHasTextures");
-   table->uHasTansAndBitans = glGetUniformLocation(program, "uHasTansAndBitans");
+   table->uHasTexture = glGetUniformLocation(program, "uHasTexture");
+   table->uHasNormalMap = glGetUniformLocation(program, "uHasNormalMap");
+   table->uHasSpecularMap = glGetUniformLocation(program, "uHasSpecularMap");
 
    table->uModelM = glGetUniformLocation(program, "uModelM");
    table->uProjViewM = glGetUniformLocation(program, "uProjViewM");
    table->uCameraPosition = glGetUniformLocation(program, "uCameraPosition");
    table->uLights = glGetUniformLocation(program, "uLights");
    table->uTexture = glGetUniformLocation(program, "uTexture");
+   table->uNormalMap = glGetUniformLocation(program, "uNormalMap");
+   table->uSpecularMap = glGetUniformLocation(program, "uSpecularMap");
 
    table->aPosition = glGetAttribLocation(program, "aPosition");
    table->aNormal = glGetAttribLocation(program, "aNormal");
    table->aColor = glGetAttribLocation(program, "aColor");
    table->aUV = glGetAttribLocation(program, "aUV");
+   table->aTangent = glGetAttribLocation(program, "aTangent");
+   table->aBitangent = glGetAttribLocation(program, "aBitangent");
 
    if (animated) {
       table->aBoneIndices0 = glGetAttribLocation(program, "aBoneIndices0");
@@ -60,25 +65,35 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
    glUseProgram(program);
 
    // Send Projection, View, and Model matrices
-   glUniformMatrix4fv(table->uProjViewM, 1, GL_FALSE, glm::value_ptr(camera->generateProjViewM()));
-   glUniformMatrix4fv(table->uModelM, 1, GL_FALSE, glm::value_ptr(entity->generateModelM()));
+   glUniformMatrix4fv(table->uProjViewM, 1, GL_FALSE, camera->generateProjViewM().data());
+   glUniformMatrix4fv(table->uModelM, 1, GL_FALSE, entity->generateModelM().data());
 
    // Send camera and light data
-   glUniform3fv(table->uCameraPosition, 1, glm::value_ptr(camera->position));
+   glUniform3fv(table->uCameraPosition, 1, camera->position.data());
    glUniform3fv(table->uLights, 4*lightData->numLights, (GLfloat*)(lightData->lights));
 
    // Send model present flags
    glUniform1i(table->uHasNormals, model->hasNormals);
    glUniform1i(table->uHasColors, model->hasColors);
-   glUniform1i(table->uHasTextures, model->hasTexCoords && model->hasTextures);
-   glUniform1i(table->uHasTansAndBitans, model->hasTansAndBitans);
+   glUniform1i(table->uHasTexture, model->hasTexCoords && model->hasTexture);
+   glUniform1i(table->uHasNormalMap, model->hasTexCoords && model->hasNormalMap);
+   glUniform1i(table->uHasSpecularMap, model->hasTexCoords && model->hasSpecularMap);
 
    // Send model attributes
    sendVertexAttribArray(table->aPosition, model->posID, 3);
-   if (model->hasNormals) sendVertexAttribArray(table->aNormal, model->normID, 3);
-   if (model->hasColors) sendVertexAttribArray(table->aColor, model->colorID, 3);
-   if (model->hasTexCoords) sendVertexAttribArray(table->aUV, model->uvID, 2);
-   if (model->hasTextures) sendTexture(table->uTexture, model->texID, GL_TEXTURE0);
+   if (model->hasNormals)
+      sendVertexAttribArray(table->aNormal, model->normID, 3);
+   if (model->hasColors)
+      sendVertexAttribArray(table->aColor, model->colorID, 3);
+   if (model->hasTexCoords) {
+      sendVertexAttribArray(table->aUV, model->uvID, 2);
+      if (model->hasTexture)
+         sendTexture(table->uTexture, model->texID, GL_TEXTURE0);
+      if (model->hasNormalMap)
+         sendTexture(table->uNormalMap, model->nmapID, GL_TEXTURE1);
+      if (model->hasSpecularMap)
+         sendTexture(table->uSpecularMap, model->smapID, GL_TEXTURE2);
+   }
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indID);
 
    // Send animation data
@@ -104,6 +119,9 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
    glDisableVertexAttribArray(table->aNormal);
    glDisableVertexAttribArray(table->aColor);
    glDisableVertexAttribArray(table->aUV);
+   glDisableVertexAttribArray(table->aTangent);
+   glDisableVertexAttribArray(table->aBitangent);
+
    if (model->isAnimated) {
       glDisableVertexAttribArray(table->aBoneIndices0);
       glDisableVertexAttribArray(table->aBoneIndices1);

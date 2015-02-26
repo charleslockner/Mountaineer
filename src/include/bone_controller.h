@@ -1,32 +1,30 @@
 #ifndef __BONE_CONTROLLER_H__
 #define __BONE_CONTROLLER_H__
 
+#include "matrix_math.h"
 #include "model.h"
-
-#define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
 
 class BoneController {
 public:
-   BoneController(Model * model, glm::mat4 * boneTransforms);
+   BoneController(Model * model, Eigen::Matrix4f * boneTransforms);
    ~BoneController();
 
-   void rotateBone(int boneNum, float angle, glm::vec3 axis);
+   void rotateBone(int boneNum, float angle, Eigen::Vector3f axis);
    void playAnimation(int boneNum, int animNum);
    void stopAnimation(int boneNum);
    void updateTransforms(float timeDelta);
 
 private:
    Model * model;
-   glm::mat4 * boneTransforms;
+   Eigen::Matrix4f * boneTransforms;
 
-   glm::quat boneRotations[MAX_BONES];
+   Eigen::Quaternionf boneRotations[MAX_BONES];
    int boneAnimNums[MAX_BONES];
    float boneTimes[MAX_BONES];
    bool bonePlaying[MAX_BONES];
 
    void computeFlatTransforms();
-   void computeRecursiveTransforms(int boneIndex, glm::mat4 parentM);
+   void computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f parentM);
 };
 
 #endif // __BONE_CONTROLLER_H__

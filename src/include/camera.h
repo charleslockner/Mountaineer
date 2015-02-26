@@ -1,37 +1,35 @@
-#ifndef __CAMERA__
-#define __CAMERA__
+#ifndef __CAMERA_H__
+#define __CAMERA_H__
 
-#define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
-
+#include "matrix_math.h"
 
 class Camera {
 public:
-   glm::vec3 position;
-   glm::vec3 direction;
-   glm::vec3 up;
+   Eigen::Vector3f position;
+   Eigen::Vector3f direction;
+   Eigen::Vector3f up;
 
    float sensitivity;
 
-   Camera(glm::vec3 pos, glm::vec3 dir, glm::vec3 up);
+   Camera(Eigen::Vector3f pos, Eigen::Vector3f dir, Eigen::Vector3f up);
    ~Camera();
 
-   void moveTo(glm::vec3 pos);
-   void moveAlong(glm::vec3 dir, float dist);
+   void moveTo(Eigen::Vector3f pos);
+   void moveAlong(Eigen::Vector3f dir, float dist);
    void moveRight(float dist);
    void moveLeft(float dist);
    void moveForward(float dist);
    void moveBackward(float dist);
    void moveUp(float dist);
    void moveDown(float dist);
-   void lookAt(glm::vec3 pnt);
+   void lookAt(Eigen::Vector3f pnt);
    void aim(double deltaX, double deltaY);
-   glm::mat4 generateProjViewM();
+   Eigen::Matrix4f generateProjViewM();
 
 private:
    void boundPitch();
 
-   glm::mat4 projectionM;
+   Eigen::Matrix4f projectionM;
 };
 
 #endif // __CAMERA__

@@ -1,5 +1,5 @@
-#ifndef __SAFE_GL__
-#define __SAFE_GL__
+#ifndef __SAFE_GL_H__
+#define __SAFE_GL_H__
 
 // #ifdef __APPLE__
 // #include <GLUT/glut.h>
@@ -8,14 +8,19 @@
 // #include <GL/glut.h>
 // #endif
 
+// FOR THE MIP MAP CALL THAT IS NOT PRESENT IN GLFW
+#ifdef __APPLE__
+#include <OPENGL/gl.h>
+#endif
+
 #define GL_GLEXT_PROTOTYPES
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
 
-#define USE_SAFE_GL
-#define USE_SMART_USE_PROGRAM
+// #define USE_SAFE_GL
+// #define USE_SMART_USE_PROGRAM
 
 #define checkOpenGLError() checkOglError(__FILE__, __LINE__)
 

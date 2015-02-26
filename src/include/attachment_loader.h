@@ -3,8 +3,8 @@
 //
 // Licensed under 2-clause BSD liecense.
 //
-#ifndef _ATTACHMENT_LOADER_H
-#define _ATTACHMENT_LOADER_H
+#ifndef __ATTACHMENT_LOADER_H__
+#define __ATTACHMENT_LOADER_H__
 
 #include <string>
 #include <vector>

@@ -5,7 +5,9 @@ Model::Model() {
    hasNormals = false;
    hasColors = false;
    hasTexCoords = false;
-   hasTextures = false;
+   hasTexture = false;
+   hasNormalMap = false;
+   hasSpecularMap = false;
    hasTansAndBitans = false;
    hasBoneWeights = false;
    hasBoneTree = false;
@@ -35,18 +37,18 @@ void Model::printBoneTree() {
       for (int j = 0; j < bone->childCount; j++) {
          printf("  child: %d\n", bone->childIndices[j]);
       }
-      glm::mat4 m = bone->invBonePose;
+      Eigen::Matrix4f m = bone->invBonePose;
       printf("  invBonePose:\n");
-      printf("    %.2f %.2f %.2f %.2f\n", m[0][0], m[1][0], m[2][0], m[3][0]);
-      printf("    %.2f %.2f %.2f %.2f\n", m[0][1], m[1][1], m[2][1], m[3][1]);
-      printf("    %.2f %.2f %.2f %.2f\n", m[0][2], m[1][2], m[2][2], m[3][2]);
-      printf("    %.2f %.2f %.2f %.2f\n", m[0][3], m[1][3], m[2][3], m[3][3]);
+      printf("    %.2f %.2f %.2f %.2f\n", m(0,0), m(1,0), m(2,0), m(3,0));
+      printf("    %.2f %.2f %.2f %.2f\n", m(0,1), m(1,1), m(2,1), m(3,1));
+      printf("    %.2f %.2f %.2f %.2f\n", m(0,2), m(1,2), m(2,2), m(3,2));
+      printf("    %.2f %.2f %.2f %.2f\n", m(0,3), m(1,3), m(2,3), m(3,3));
       m = bone->parentOffset;
       printf("  parentOffset:\n");
-      printf("    %.2f %.2f %.2f %.2f\n", m[0][0], m[1][0], m[2][0], m[3][0]);
-      printf("    %.2f %.2f %.2f %.2f\n", m[0][1], m[1][1], m[2][1], m[3][1]);
-      printf("    %.2f %.2f %.2f %.2f\n", m[0][2], m[1][2], m[2][2], m[3][2]);
-      printf("    %.2f %.2f %.2f %.2f\n", m[0][3], m[1][3], m[2][3], m[3][3]);
+      printf("    %.2f %.2f %.2f %.2f\n", m(0,0), m(1,0), m(2,0), m(3,0));
+      printf("    %.2f %.2f %.2f %.2f\n", m(0,1), m(1,1), m(2,1), m(3,1));
+      printf("    %.2f %.2f %.2f %.2f\n", m(0,2), m(1,2), m(2,2), m(3,2));
+      printf("    %.2f %.2f %.2f %.2f\n", m(0,3), m(1,3), m(2,3), m(3,3));
    }
 }
 
@@ -65,9 +67,9 @@ void Model::printAnimations() {
          for (int k = 0; k < anim->keyCount; k++) {
             Key * key = & animBone->keys[k];
             printf("    key %d at time %f:\n", k, key->time);
-            printf("      trans: %.2f %.2f %.2f\n", key->position.x, key->position.y, key->position.z);
-            printf("      rotate: %.2f %.2f %.2f %.2f\n", key->rotation.w, key->rotation.x, key->rotation.y, key->rotation.z);
-            printf("      scale: %.2f %.2f %.2f\n", key->scale.x, key->scale.y, key->scale.z);
+            printf("      trans: %.2f %.2f %.2f\n", key->position.x(), key->position.y(), key->position.z());
+            printf("      rotate: %.2f %.2f %.2f %.2f\n", key->rotation.w(), key->rotation.x(), key->rotation.y(), key->rotation.z());
+            printf("      scale: %.2f %.2f %.2f\n", key->scale.x(), key->scale.y(), key->scale.z());
          }
       }
    }

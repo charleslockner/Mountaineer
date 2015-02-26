@@ -251,6 +251,13 @@ void writeTangentsAndBitangents(FILE * fp, aiMesh& mesh) {
 
       for (int i = 0; i < mesh.mNumVertices; i++)
          writeVector3D(fp, blend2oglVec3(mesh.mBitangents[i]));
+
+      for (int i = 0; i < mesh.mNumVertices; i++) {
+         // std::cerr << "Tan[" << i << "] = " << mesh.mTangents[i].x << ", " << mesh.mTangents[i].y << ", " << mesh.mTangents[i].z << "\n";
+         // std::cerr << "Nor[" << i << "] = " << mesh.mNormals[i].x << ", " << mesh.mNormals[i].y << ", " << mesh.mNormals[i].z << "\n";
+         std::cerr << "Dot[" << i << "] = " << glm::dot(aiToGlmVec3(mesh.mTangents[i]), aiToGlmVec3(mesh.mNormals[i])) << "\n";
+
+      }
    }
 }
 

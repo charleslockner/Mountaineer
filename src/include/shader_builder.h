@@ -1,5 +1,5 @@
-#ifndef __SHADER_BUILDER__
-#define __SHADER_BUILDER__
+#ifndef __SHADER_BUILDER_H__
+#define __SHADER_BUILDER_H__
 
 /* Builds a vertex and fragment shader from the two given
 	paths to glsl files. Returns an integer representing

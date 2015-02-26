@@ -23,9 +23,9 @@ void EntityShader::sendLargeVertexAttribArray(unsigned int handle0, unsigned int
    glVertexAttribPointer(handle3, 4, GL_FLOAT, GL_FALSE, stride, (const void *)(12*sizeof(float)));
 }
 
-void EntityShader::sendTexture(unsigned int handle, unsigned int id, GLenum texture) {
-   glActiveTexture(texture);
+void EntityShader::sendTexture(unsigned int handle, unsigned int id, GLenum unit) {
+   glActiveTexture(unit);
    glBindTexture(GL_TEXTURE_2D, id);
-   glUniform1i(handle, 0);
+   glUniform1i(handle, unit - GL_TEXTURE0);
 }
 
