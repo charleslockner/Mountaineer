@@ -81,10 +81,10 @@ namespace Mmath {
    template <typename T>
    Eigen::Matrix<T,4,4> lookAtMatrix(
       const Eigen::Matrix<T,3,1> eye,
-      const Eigen::Matrix<T,3,1> target,
+      const Eigen::Matrix<T,3,1> direction,
       const Eigen::Matrix<T,3,1> up
    ) {
-      Eigen::Matrix<T,3,1> f((target - eye).normalized());
+      Eigen::Matrix<T,3,1> f(direction);
       Eigen::Matrix<T,3,1> s((f.cross(up)).normalized());
       Eigen::Matrix<T,3,1> u(s.cross(f));
 

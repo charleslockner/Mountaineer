@@ -24,7 +24,8 @@ public:
    void moveDown(float dist);
    void lookAt(Eigen::Vector3f pnt);
    void aim(double deltaX, double deltaY);
-   Eigen::Matrix4f generateProjViewM();
+   Eigen::Matrix4f getViewM();
+   Eigen::Matrix4f getProjectionM();
 
 private:
    void boundPitch();

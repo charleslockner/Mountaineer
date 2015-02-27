@@ -60,7 +60,8 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
    glUseProgram(program);
 
    // Send Projection, View, and Model matrices
-   glUniformMatrix4fv(table->uProjViewM, 1, GL_FALSE, camera->generateProjViewM().data());
+   Eigen::Matrix4f projViewM = camera->getProjectionM() * camera->getViewM();
+   glUniformMatrix4fv(table->uProjViewM, 1, GL_FALSE, projViewM.data());
    glUniformMatrix4fv(table->uModelM, 1, GL_FALSE, entity->generateModelM().data());
 
    // Send camera and light data
@@ -80,8 +81,14 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
       sendVertexAttribArray(table->aNormal, model->normID, 3);
    if (model->hasColors)
       sendVertexAttribArray(table->aColor, model->colorID, 3);
+
    if (model->hasTexCoords) {
       sendVertexAttribArray(table->aUV, model->uvID, 2);
+      if (model->hasTansAndBitans) {
+         sendVertexAttribArray(table->aTangent, model->tanID, 3);
+         sendVertexAttribArray(table->aBitangent, model->bitanID, 3);
+      }
+
       if (model->hasTexture)
          sendTexture(table->uTexture, model->texID, GL_TEXTURE0);
       if (model->hasNormalMap)
@@ -131,5 +138,3 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
 
    checkOpenGLError();
 }
-
-

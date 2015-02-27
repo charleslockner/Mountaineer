@@ -39,16 +39,8 @@ void main(void) {
       viewDirection = normalize(vWorldPosition - uCameraPosition);
 
       if (uHasNormalMap) {
-         // tangent and bitangent look messed up
-         mat3 m = mat3(normalize(vWorldTangent), normalize(vWorldBitangent), normalize(vWorldNormal));
-         // TBN = mat3(m[0][0], m[1][0], m[2][0],
-         //            m[0][1], m[1][1], m[2][1],
-         //            m[0][2], m[1][2], m[2][2]);
-         // TBN = mat3(m[0][0], m[0][1], m[0][2],
-         //            m[1][0], m[1][1], m[1][2],
-         //            m[2][0], m[2][1], m[2][2]);
-         // viewDirection = TBN * viewDirection;
-         normal = TBN * normalize(texture2D(uNormalMap, vUV).rgb*2.0 - 1.0);
+         mat3 TBN = mat3(normalize(vWorldTangent), normalize(vWorldBitangent), normalize(vWorldNormal));
+         normal = TBN * normalize(texture2D(uNormalMap, vUV).rgb * 2.0 - 1.0);
       } else
          normal = normalize(vWorldNormal);
 

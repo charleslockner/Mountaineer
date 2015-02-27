@@ -29,3 +29,41 @@ void EntityShader::sendTexture(unsigned int handle, unsigned int id, GLenum unit
    glUniform1i(handle, unit - GL_TEXTURE0);
 }
 
+// debug tangents/bitangents
+void EntityShader::renderDebug(Camera * camera, Entity * entity) {
+   Model * model = entity->model;
+
+   glMatrixMode(GL_PROJECTION);
+   glLoadMatrixf(camera->getProjectionM().data());
+   glMatrixMode(GL_MODELVIEW);
+   Eigen::Matrix4f MV = camera->getViewM() * entity->generateModelM();
+   glLoadMatrixf(MV.data());
+
+   glBegin(GL_LINES);
+   for (int i = 0; i < model->vertices.size(); i++) {
+      // draw normal
+      glColor3f(1,0,0);
+      Eigen::Vector3f p = model->vertices[i].position;
+      glVertex3fv(p.data());
+      Eigen::Vector3f normal = model->vertices[i].normal;
+      p += normal * 0.1f;
+      glVertex3fv(p.data());
+
+      // draw tangent
+      glColor3f(0,1,0);
+      p = model->vertices[i].position;
+      glVertex3fv(p.data());
+      Eigen::Vector3f tangent = model->vertices[i].tangent;
+      p += tangent * 0.1f;
+      glVertex3fv(p.data());
+
+      // draw bitangent
+      glColor3f(0,0,1);
+      p = model->vertices[i].position;
+      glVertex3fv(p.data());
+      Eigen::Vector3f bitangent = model->vertices[i].bitangent;
+      p += bitangent * 0.1f;
+      glVertex3fv(p.data());
+   }
+   glEnd();
+}

@@ -36,6 +36,9 @@ static void readHeader(FILE *fp, Model * model) {
       printf("There are %d bones and the max is %d\n", model->boneCount, MAX_BONES);
       exit(1);
    }
+
+   model->vertices = std::vector<Vertex>(model->vertexCount);
+   model->faces = std::vector<Face>(model->faceCount);
 }
 
 static unsigned int createVBO(FILE *fp, int count, int size) {
@@ -45,7 +48,7 @@ static unsigned int createVBO(FILE *fp, int count, int size) {
    unsigned int vbo;
    glGenBuffers(1, & vbo);
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STREAM_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
 
    free(data);
 
@@ -53,11 +56,43 @@ static unsigned int createVBO(FILE *fp, int count, int size) {
 }
 
 static void readPositions(FILE *fp, Model * model) {
-   model->posID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   int count = 3 * model->vertexCount;
+   int size = sizeof(float);
+
+   float * data = (float *)malloc(count * size);
+   fread(data, size, count, fp);
+
+   for (int i = 0; i < model->vertexCount; i++)
+      model->vertices[i].position = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+
+   unsigned int vbo;
+   glGenBuffers(1, & vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
+
+   free(data);
+
+   model->posID = vbo;
 }
 
 static void readNormals(FILE *fp, Model * model) {
-   model->normID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   int count = 3 * model->vertexCount;
+   int size = sizeof(float);
+
+   float * data = (float *)malloc(count * size);
+   fread(data, size, count, fp);
+
+   for (int i = 0; i < model->vertexCount; i++)
+      model->vertices[i].normal = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+
+   unsigned int vbo;
+   glGenBuffers(1, & vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
+
+   free(data);
+
+   model->normID = vbo;
 }
 
 static void readColors(FILE *fp, Model * model) {
@@ -69,11 +104,43 @@ static void readTexCoords(FILE *fp, Model * model) {
 }
 
 static void readTangents(FILE *fp, Model * model) {
-   model->tanID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   int count = 3 * model->vertexCount;
+   int size = sizeof(float);
+
+   float * data = (float *)malloc(count * size);
+   fread(data, size, count, fp);
+
+   for (int i = 0; i < model->vertexCount; i++)
+      model->vertices[i].tangent = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+
+   unsigned int vbo;
+   glGenBuffers(1, & vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
+
+   free(data);
+
+   model->tanID = vbo;
 }
 
 static void readBitangents(FILE *fp, Model * model) {
-   model->bitanID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   int count = 3 * model->vertexCount;
+   int size = sizeof(float);
+
+   float * data = (float *)malloc(count * size);
+   fread(data, size, count, fp);
+
+   for (int i = 0; i < model->vertexCount; i++)
+      model->vertices[i].bitangent = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+
+   unsigned int vbo;
+   glGenBuffers(1, & vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
+
+   free(data);
+
+   model->bitanID = vbo;
 }
 
 static void readIndices(FILE *fp, Model * model) {

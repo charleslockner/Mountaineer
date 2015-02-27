@@ -89,9 +89,10 @@ void Camera::aim(double deltaX, double deltaY) {
    }
 }
 
-Eigen::Matrix4f Camera::generateProjViewM() {
-   Eigen::Vector3f target = position + direction;
-   Eigen::Matrix4f viewM = Mmath::lookAtMatrix(position, target, up);
+Eigen::Matrix4f Camera::getViewM() {
+   return Mmath::lookAtMatrix(position, direction, up);
+}
 
-   return projectionM * viewM;
+Eigen::Matrix4f Camera::getProjectionM() {
+   return projectionM;
 }

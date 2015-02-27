@@ -135,14 +135,14 @@ int main(int argc, char ** argv) {
    setupLights();
 
    Model * model = new Model();
-   model->loadCIAB("assets/models/trex.ciab");
+   model->loadCIAB("assets/models/robot.ciab");
    model->loadTexture("assets/textures/masonry.png");
-   // model->loadNormalMap("assets/textures/masonry_normal.png");
+   model->loadNormalMap("assets/textures/masonry_normal.png");
    // model->loadNormalMap("assets/textures/normal.jpg");
-   // printf("hasNormalMap %d\n", model->hasNormalMap);
+   // model->loadOBJ("assets/cheb/cheb2.obj");
 
    entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), model));
-   // camera->lookAt(entities[0]->position);
+   camera->lookAt(entities[0]->position);
 
    double timePassed = 0;
    unsigned int numFrames = 0;
@@ -159,8 +159,10 @@ int main(int argc, char ** argv) {
 
       for (int i = 0; i < entities.size(); i++)
          entities[i]->update(deltaTime);
-      for (int i = 0; i < entities.size(); i++)
+      for (int i = 0; i < entities.size(); i++) {
          shader->render(camera, & lightData, entities[i]);
+         // shader->renderDebug(camera, entities[i]);
+      }
 
       glfwSwapBuffers(window);
       glfwPollEvents();

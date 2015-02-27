@@ -55,8 +55,8 @@ void main(void) {
    mat4 modelM = uModelM * animMatrix;
 
    vWorldPosition = vec3(modelM * vec4(aPosition, 1.0));
-   vWorldTangent = vec3(modelM * vec4(aTangent, 1.0));
-   vWorldBitangent = vec3(modelM * vec4(aBitangent, 1.0));
+   vWorldTangent = vec3(modelM * vec4(aTangent, 0.0));
+   vWorldBitangent = vec3(modelM * vec4(aBitangent, 0.0));
    vWorldNormal = vec3(modelM * vec4(aNormal, 0.0));
    vColor = aColor;
    vUV = aUV;

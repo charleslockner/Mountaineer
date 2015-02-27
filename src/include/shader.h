@@ -13,6 +13,7 @@ class Entity;
 class EntityShader {
 public:
    virtual void render(Camera * camera, LightData * lightdata, Entity * entity) {};
+   void renderDebug(Camera * camera, Entity * entity);
 
 protected:
    typedef struct {
