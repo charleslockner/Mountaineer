@@ -4,6 +4,8 @@
 #include "matrix_math.h"
 #include <vector>
 
+#define NUM_FACE_EDGES 3
+#define MAX_INFLUENCES 4
 #define MAX_BONES 100
 
 typedef struct {
@@ -21,16 +23,32 @@ typedef struct {
    unsigned int fps;
    unsigned int keyCount;
    float duration;
-   AnimBone * animBones;
+   std::vector<AnimBone> animBones;
 } Animation;
 
 typedef struct {
    short parentIndex;
    short childCount;
-   short * childIndices;
+   std::vector<short> childIndices;
    Eigen::Matrix4f invBonePose;
    Eigen::Matrix4f parentOffset;
 } Bone;
+
+typedef struct {
+   Eigen::Vector3f position;
+   Eigen::Vector3f tangent;
+   Eigen::Vector3f bitangent;
+   Eigen::Vector3f normal;
+   Eigen::Vector3f color;
+   Eigen::Vector2f uv;
+   unsigned int boneIndices[MAX_BONES];
+   float boneWeights[MAX_BONES];
+   unsigned int boneInfluencesCount;
+} Vertex;
+
+typedef struct {
+   unsigned int vertexIndices[NUM_FACE_EDGES];
+} Face;
 
 class Model {
 public:
@@ -48,7 +66,7 @@ public:
    void printBoneTree();
    void printAnimations();
 
-   unsigned int vertexCount, faceCount, boneCount, animationCount, maxInfluences;
+   unsigned int vertexCount, faceCount, boneCount, animationCount;
 
    unsigned int posID, normID, colorID, uvID, tanID, bitanID,
                 indID, texID, nmapID, smapID, bIndID, bWeightID, bNumInfID;
@@ -57,8 +75,10 @@ public:
         hasTansAndBitans, hasBoneWeights, hasBoneTree, hasAnimations, isAnimated;
 
    short boneRoot;
-   Bone * bones;
-   Animation * animations;
+   std::vector<Vertex> vertices;
+   std::vector<Face> faces;
+   std::vector<Bone> bones;
+   std::vector<Animation> animations;
 };
 
 #endif // __MODEL_H__

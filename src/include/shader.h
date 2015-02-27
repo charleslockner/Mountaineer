@@ -28,7 +28,7 @@ protected:
    void sendVertexAttribArray(unsigned int handle, unsigned int vbo, int size);
    void sendLargeVertexAttribArray(unsigned int handle0, unsigned int handle1,
                                    unsigned int handle2, unsigned int handle3,
-                                   unsigned int vbo, int numAttribs);
+                                   unsigned int vbo);
    void sendTexture(unsigned int handle, unsigned int id, GLenum texture);
 };
 

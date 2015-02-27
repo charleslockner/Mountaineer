@@ -9,8 +9,8 @@ void EntityShader::sendVertexAttribArray(unsigned int handle, unsigned int vbo, 
 
 void EntityShader::sendLargeVertexAttribArray(unsigned int handle0, unsigned int handle1,
                                               unsigned int handle2, unsigned int handle3,
-                                              unsigned int vbo, int maxInfluences) {
-   unsigned stride = maxInfluences * sizeof(float);
+                                              unsigned int vbo) {
+   unsigned stride = MAX_INFLUENCES * sizeof(float);
 
    glEnableVertexAttribArray(handle0);
    glEnableVertexAttribArray(handle1);

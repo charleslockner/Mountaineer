@@ -5,22 +5,20 @@
 
 #include <algorithm>
 
-#define MAX_INFLUENCES 15
-
 typedef struct {
    unsigned int index;
    float weight;
 } BoneWeight;
 
-typedef struct Vertex {
+typedef struct VertexWeight {
    std::vector<BoneWeight> boneWeights;
-} Vertex;
+} VertexWeight;
 
 static bool weightCompare(BoneWeight a, BoneWeight b) {
    return a.weight > b.weight;
 }
 
-static void fillVertexArray(std::vector<float> & inWeights, std::vector<Vertex> & outVerts) {
+static void fillVertexArray(std::vector<float> & inWeights, std::vector<VertexWeight> & outVerts) {
    int boneCount = inWeights.size() / outVerts.size();
 
    // put each bone weight into each vertex's boneWeights list
@@ -36,13 +34,13 @@ static void fillVertexArray(std::vector<float> & inWeights, std::vector<Vertex> 
    }
 }
 
-static void sortBoneWeights(std::vector<Vertex> & verts) {
+static void sortBoneWeights(std::vector<VertexWeight> & verts) {
    // sort the bone indices by their bone weights (in decending order)
    for (int i = 0; i < verts.size(); i++)
       std::sort(verts[i].boneWeights.begin(), verts[i].boneWeights.end(), weightCompare);
 }
 
-static void normalizeBoneWeights(std::vector<Vertex> & verts) {
+static void normalizeBoneWeights(std::vector<VertexWeight> & verts) {
    // Make sum of each vertex's weights equal to 1
    for (int i = 0; i < verts.size(); i++) {
       float preSum = 0;
@@ -53,7 +51,7 @@ static void normalizeBoneWeights(std::vector<Vertex> & verts) {
    }
 }
 
-static void parseVertexWeights(std::vector<Vertex> & verts, float * bIndices, float * bWeights, float * bNumInfluences) {
+static void parseVertexWeights(std::vector<VertexWeight> & verts, float * bIndices, float * bWeights, float * bNumInfluences) {
    // Sort vertex components into buffers to send to the GPU
    for (int i = 0; i < verts.size(); i++) {
       bool foundNum = false;
@@ -75,7 +73,7 @@ static void parseVertexWeights(std::vector<Vertex> & verts, float * bIndices, fl
 
 static void bindBoneWeights(Model * model, std::vector<float> & inWeights, int numBones) {
    int numVertices = inWeights.size() / numBones;
-   std::vector<Vertex> verts = std::vector<Vertex>(numVertices);
+   std::vector<VertexWeight> verts = std::vector<VertexWeight>(numVertices);
    int numWeights = numVertices * MAX_INFLUENCES;
    float * bIndices = (float *)malloc(numWeights * sizeof(float));
    float * bWeights = (float *)malloc(numWeights * sizeof(float));
@@ -100,7 +98,6 @@ static void bindBoneWeights(Model * model, std::vector<float> & inWeights, int n
 
    model->boneCount = numBones;
    model->hasBoneWeights = true;
-   model->maxInfluences = MAX_INFLUENCES;
 
    free(bIndices);
    free(bWeights);
@@ -108,7 +105,7 @@ static void bindBoneWeights(Model * model, std::vector<float> & inWeights, int n
 }
 
 static void setBindPoseMatrices(Model * model, std::vector<float> & inBindPoses, int numBones) {
-   model->bones = (Bone *)malloc(sizeof(Bone) * numBones);
+   model->bones = std::vector<Bone>(numBones);
 
    for (int i = 0; i < numBones; i++) {
       Eigen::Vector3f tns = Eigen::Vector3f(inBindPoses[7*i+4], inBindPoses[7*i+5], inBindPoses[7*i+6]);
@@ -123,7 +120,7 @@ static void setBindPoseMatrices(Model * model, std::vector<float> & inBindPoses,
 }
 
 static void setAnimFrames(Model * model, std::vector<float> & inFrames, int numBones) {
-   model->animations = (Animation *)malloc(sizeof(Animation) * 1);
+   model->animations = std::vector<Animation>(1);
    Animation * anim = & model->animations[0];
 
    int keyCount = inFrames.size() / (7 * numBones);
@@ -133,13 +130,11 @@ static void setAnimFrames(Model * model, std::vector<float> & inFrames, int numB
    anim->keyCount = keyCount;
    anim->duration = 1.0 * (keyCount-1) / fps;
 
-   anim->animBones = (AnimBone *)malloc(sizeof(AnimBone) * numBones);
-
+   anim->animBones = std::vector<AnimBone>(numBones);
    for (int boneNdx = 0; boneNdx < numBones; boneNdx++) {
       AnimBone * animBone = & anim->animBones[boneNdx];
 
       animBone->keys = std::vector<Key>(anim->keyCount);
-      // animBone->keys = (Key *)malloc(sizeof(Key) * keyCount);
       for (int keyNdx = 0; keyNdx < keyCount; keyNdx++) {
          Key * key = & animBone->keys[keyNdx];
 

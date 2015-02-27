@@ -8,8 +8,6 @@
 #include "safe_gl.h"
 #include "model.h"
 
-#define MAX_INFLUENCES 4
-
 typedef enum {
    POSITIONS = 1,
    NORMALS = 2,
@@ -131,13 +129,14 @@ static void readBoneInfluences(FILE *fp, Model * model) {
 static void readBoneTree(FILE *fp, Model * model) {
    fread(& model->boneRoot, sizeof(short), 1, fp);
 
-   model->bones = (Bone *)malloc(model->boneCount * sizeof(Bone));
+   model->bones = std::vector<Bone>(model->boneCount);
 
    for (int i = 0; i < model->boneCount; i++) {
       Bone * bone = & model->bones[i];
       fread(& bone->parentIndex, sizeof(short), 1, fp);
       fread(& bone->childCount, sizeof(short), 1, fp);
-      bone->childIndices = (short *)malloc(bone->childCount * sizeof(short));
+
+      bone->childIndices = std::vector<short>(bone->childCount);
       for (int j = 0; j < bone->childCount; j++)
          fread(& bone->childIndices[j], sizeof(short), 1, fp);
 
@@ -147,7 +146,7 @@ static void readBoneTree(FILE *fp, Model * model) {
 }
 
 static void readAnimations(FILE *fp, Model * model) {
-   model->animations = (Animation *)malloc(model->animationCount * sizeof(Animation));
+   model->animations = std::vector<Animation>(model->animationCount);
 
    for (int i = 0; i < model->animationCount; i++) {
       Animation * anim = & model->animations[i];
@@ -156,12 +155,11 @@ static void readAnimations(FILE *fp, Model * model) {
       fread(& anim->keyCount, sizeof(unsigned int), 1, fp);
       anim->duration = 1.0 * (anim->keyCount-1) / anim->fps;
 
-      anim->animBones = (AnimBone *)malloc(model->boneCount * sizeof(AnimBone));
+      anim->animBones = std::vector<AnimBone>(model->boneCount);
       for (int j = 0; j < model->boneCount; j++) {
          AnimBone * animBone = & anim->animBones[j];
 
          animBone->keys = std::vector<Key>(anim->keyCount);
-         // animBone->keys = (Key *)malloc(anim->keyCount * sizeof(Key));
          for (int k = 0; k < anim->keyCount; k++) {
             Key * key = & animBone->keys[k];
 
@@ -251,7 +249,6 @@ static void loadMeshData(FILE *fp, Model * model) {
    }
 
    checkPresentFields(model, receivedFlags);
-   model->maxInfluences = MAX_INFLUENCES;
    model->isAnimated = model->hasBoneWeights && model->hasAnimations;
 
    checkOpenGLError();

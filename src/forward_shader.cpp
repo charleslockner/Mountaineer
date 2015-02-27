@@ -95,10 +95,10 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
    if (model->isAnimated) {
       sendLargeVertexAttribArray(table->aBoneIndices0, table->aBoneIndices1,
                                  table->aBoneIndices2, table->aBoneIndices3,
-                                 model->bIndID, model->maxInfluences);
+                                 model->bIndID);
       sendLargeVertexAttribArray(table->aBoneWeights0, table->aBoneWeights1,
                                  table->aBoneWeights2, table->aBoneWeights3,
-                                 model->bWeightID, model->maxInfluences);
+                                 model->bWeightID);
       sendVertexAttribArray(table->aNumInfluences, model->bNumInfID, 1);
       glUniformMatrix4fv(table->uBoneMs, MAX_BONES, GL_FALSE, (GLfloat *)(entity->boneTransforms));
    }
