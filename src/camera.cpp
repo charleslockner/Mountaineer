@@ -9,7 +9,7 @@
 
 #define PI 3.1415927f
 
-#define HFOV   PI/4.0f
+#define HFOV   1.0f //PI/4.0f
 #define ASPECT 4.0f / 3.0f
 #define NEAR   0.1f
 #define FAR    1000.0f
@@ -23,7 +23,7 @@ Camera::Camera(Eigen::Vector3f pos, Eigen::Vector3f dir, Eigen::Vector3f upVec) 
 
    sensitivity = 0.5;
 
-   projectionM = makePerspectiveMatrix(HFOV, ASPECT, NEAR, FAR);
+   projectionM = Mmath::perspectiveMatrix(HFOV, ASPECT, NEAR, FAR);
 }
 
 Camera::~Camera() {}
@@ -65,7 +65,6 @@ void Camera::lookAt(Eigen::Vector3f pnt) {
    direction = dir.normalized();
 }
 
-
 void Camera::boundPitch() {
    float pitch = M_PI/2 - acos(up.dot(direction));
 
@@ -82,21 +81,17 @@ void Camera::aim(double deltaX, double deltaY) {
       float pitchDelta = BASE_SENSITIVITY * sensitivity * deltaY;
       float yawDelta = BASE_SENSITIVITY * sensitivity * deltaX;
 
-      Eigen::Vector3f yawApplied = rotateVec3(direction, -yawDelta, up);
+      Eigen::Vector3f yawApplied = Mmath::rotateVec3(direction, -yawDelta, up);
       Eigen::Vector3f leftVector = up.cross(direction).normalized();
 
-      direction = rotateVec3(yawApplied, pitchDelta, leftVector);
+      direction = Mmath::rotateVec3(yawApplied, pitchDelta, leftVector);
       boundPitch();
-      // printf("pitch yaw = %f %f\n", pitchDelta, yawDelta);
-      // printf("direction %f %f %f\n", direction(0), direction(1), direction(2));
    }
 }
 
 Eigen::Matrix4f Camera::generateProjViewM() {
    Eigen::Vector3f target = position + direction;
-   Eigen::Matrix4f viewM = makeLookAtMatrix(position, target, up);
-   std::cout << viewM << "\n";
+   Eigen::Matrix4f viewM = Mmath::lookAtMatrix(position, target, up);
 
-   // return Eigen::Matrix4f::Identity();
-   return viewM;
+   return projectionM * viewM;
 }

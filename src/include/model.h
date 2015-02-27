@@ -2,7 +2,7 @@
 #define __MODEL_H__
 
 #include "matrix_math.h"
-#include <stdio.h>
+#include <vector>
 
 #define MAX_BONES 100
 
@@ -14,7 +14,7 @@ typedef struct {
 } Key;
 
 typedef struct {
-   Key * keys;
+   std::vector<Key> keys;
 } AnimBone;
 
 typedef struct {

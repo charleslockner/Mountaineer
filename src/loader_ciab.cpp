@@ -160,7 +160,8 @@ static void readAnimations(FILE *fp, Model * model) {
       for (int j = 0; j < model->boneCount; j++) {
          AnimBone * animBone = & anim->animBones[j];
 
-         animBone->keys = (Key *)malloc(anim->keyCount * sizeof(Key));
+         animBone->keys = std::vector<Key>(anim->keyCount);
+         // animBone->keys = (Key *)malloc(anim->keyCount * sizeof(Key));
          for (int k = 0; k < anim->keyCount; k++) {
             Key * key = & animBone->keys[k];
 

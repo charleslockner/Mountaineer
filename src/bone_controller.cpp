@@ -27,7 +27,7 @@ static Key interpolateKeys(Key earlyKey, Key lateKey, float tickTime) {
 }
 
 static Eigen::Matrix4f computeAnimTransform(AnimBone * animBone, int keyCount, float tickTime, float duration) {
-   Key * keys = animBone->keys;
+   std::vector<Key>& keys = animBone->keys;
    assert(keyCount >= 1);
 
    int earlyNdx = findEarlyKeyIndex(keyCount, tickTime, duration);
@@ -36,7 +36,7 @@ static Eigen::Matrix4f computeAnimTransform(AnimBone * animBone, int keyCount, f
    Key interpKey = (keyCount == 1) ? keys[earlyNdx] :
       interpolateKeys(keys[earlyNdx], keys[lateNdx], tickTime);
 
-   return makeTransformationMatrix(interpKey.position, interpKey.rotation, interpKey.scale);
+   return Mmath::transformationMatrix(interpKey.position, interpKey.rotation, interpKey.scale);
 }
 
 BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms) {
@@ -95,7 +95,7 @@ void BoneController::computeFlatTransforms() {
       AnimBone * animBone = & anim->animBones[boneIndex];
 
       Eigen::Matrix4f animKeysM = computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
-      Eigen::Matrix4f rotationM = makeRotationMatrix(boneRotations[boneIndex]);
+      Eigen::Matrix4f rotationM = Mmath::rotationMatrix(boneRotations[boneIndex]);
 
       boneTransforms[boneIndex] = animKeysM * bone->invBonePose;
    }
@@ -110,7 +110,7 @@ void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f p
    AnimBone * animBone = & anim->animBones[boneIndex];
 
    Eigen::Matrix4f animKeysM = computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
-   Eigen::Matrix4f rotationM = makeRotationMatrix(boneRotations[boneIndex]);
+   Eigen::Matrix4f rotationM = Mmath::rotationMatrix(boneRotations[boneIndex]);
 
    Eigen::Matrix4f accumM = parentM * animKeysM * rotationM;
    boneTransforms[boneIndex] = accumM * bone->invBonePose;

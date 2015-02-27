@@ -22,8 +22,8 @@ Model::~Model() {
    free(bones);
 
    for (int i = 0; i < animationCount; i++) {
-      for (int j = 0; j < boneCount; j++)
-         free(animations[i].animBones[j].keys);
+      // for (int j = 0; j < boneCount; j++)
+      //    free(animations[i].animBones[j].keys);
       free(animations[i].animBones);
    }
    free(animations);

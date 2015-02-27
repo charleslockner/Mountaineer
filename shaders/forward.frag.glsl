@@ -75,6 +75,5 @@ void main(void) {
    } else
       finalColor = skinColor;
 
-
-   gl_FragColor = vec4(normal, 1.0);
+   gl_FragColor = vec4(finalColor, 1.0);
 }

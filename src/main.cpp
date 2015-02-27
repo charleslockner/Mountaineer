@@ -131,12 +131,12 @@ int main(int argc, char ** argv) {
    GLFWwindow * window = windowSetup();
 
    EntityShader * shader = new ForwardShader();
-   camera = new Camera(Eigen::Vector3f(10,0,0), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
+   camera = new Camera(Eigen::Vector3f(0,0,10), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
    setupLights();
 
    Model * model = new Model();
    model->loadCIAB("assets/models/trex.ciab");
-   // model->loadTexture("assets/textures/masonry.png");
+   model->loadTexture("assets/textures/masonry.png");
    // model->loadNormalMap("assets/textures/masonry_normal.png");
    // model->loadNormalMap("assets/textures/normal.jpg");
    // printf("hasNormalMap %d\n", model->hasNormalMap);
