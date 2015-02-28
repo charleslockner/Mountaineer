@@ -30,12 +30,10 @@ static void error_callback(int error, const char* description) {
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
    if (action == GLFW_PRESS) {
       switch (key) {
-         case GLFW_KEY_T:
-            camera->lookAt(entities[0]->position);
-            break;
          case GLFW_KEY_ESCAPE:
             glfwSetWindowShouldClose(window, GL_TRUE);
             break;
+         case GLFW_KEY_T:
          case GLFW_KEY_L:
             break;
          default:
@@ -44,11 +42,13 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       }
    } else if (action == GLFW_RELEASE) {
       switch (key) {
+         case GLFW_KEY_T:
+            keyToggles[key] = !keyToggles[key];
+            break;
          case GLFW_KEY_L:
             keyToggles[key] = !keyToggles[key];
-            if(keyToggles[key])
-               glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            else
+            keyToggles[key] ?
+               glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) :
                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             break;
          default:
@@ -125,6 +125,8 @@ void updateCameraPosition(double timePassed) {
       camera->moveUp(distTraveled);
    if (keyToggles[GLFW_KEY_LEFT_SHIFT])
       camera->moveDown(distTraveled);
+   if (keyToggles[GLFW_KEY_T])
+      camera->lookAt(entities[0]->position);
 }
 
 int main(int argc, char ** argv) {
@@ -135,14 +137,14 @@ int main(int argc, char ** argv) {
    setupLights();
 
    Model * model = new Model();
-   model->loadCIAB("assets/models/robot.ciab");
+   model->loadCIAB("assets/models/trex.ciab");
    model->loadTexture("assets/textures/masonry.png");
    model->loadNormalMap("assets/textures/masonry_normal.png");
-   // model->loadNormalMap("assets/textures/normal.jpg");
    // model->loadOBJ("assets/cheb/cheb2.obj");
+   // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   // model->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
 
    entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), model));
-   camera->lookAt(entities[0]->position);
 
    double timePassed = 0;
    unsigned int numFrames = 0;

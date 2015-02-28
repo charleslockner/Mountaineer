@@ -21,7 +21,7 @@ LIB=-L$(LIB_DIR)
 ifeq ($(OS),Darwin)
 FRAME_FWS=-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
 # AUDIO_FWS=-framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreServices
-LIB+=-lglfw3_OSX $(FRAME_FWS)# $(AUDIO_FWS)
+LIB+=-lceres_OSX -lglfw3_OSX $(FRAME_FWS)# $(AUDIO_FWS)
 endif
 ifeq ($(OS),Linux)
 LIB+=-lglfw3_LIN -lGL -lXrandr -lXi -lXinerama -lXcursor

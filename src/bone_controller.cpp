@@ -44,10 +44,10 @@ BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms) 
    this->boneTransforms = boneTransforms;
 
    for (int i = 0; i < model->boneCount; i++) {
-      this->boneRotations[i] = Eigen::Quaternionf(1,0,0,0); // May need to put the 1 last
+      this->boneRotations[i] = Eigen::Quaternionf(1,0,0,0);
       this->boneAnimNums[i] = 0;
       this->boneTimes[i] = 0;
-      this->bonePlaying[i] = true;
+      this->bonePlaying[i] = false;
    }
 }
 
@@ -58,20 +58,28 @@ void BoneController::rotateBone(int boneIndex, float angle, Eigen::Vector3f axis
    boneRotations[boneIndex] = boneRotations[boneIndex] * rotQuat;
 }
 
-void BoneController::playAnimation(int boneNum, int animNum) {
+void BoneController::playAnimation(int boneNum, int animNum, bool recursive) {
+   assert(animNum < model->animationCount);
    boneAnimNums[boneNum] = animNum;
    boneTimes[boneNum] = 0;
    bonePlaying[boneNum] = true;
-   assert(animNum < model->animationCount);
+
+   if (recursive)
+      for (int i = 0; i < model->bones[boneNum].childCount; i++)
+         playAnimation(model->bones[boneNum].childIndices[i], animNum, true);
 }
 
-void BoneController::stopAnimation(int boneNum) {
+void BoneController::stopAnimation(int boneNum, bool recursive) {
    bonePlaying[boneNum] = false;
+
+   if (recursive)
+      for (int i = 0; i < model->bones[boneNum].childCount; i++)
+         stopAnimation(model->bones[boneNum].childIndices[i], true);
 }
 
 void BoneController::updateTransforms(float tickDelta) {
    for (int i = 0; i < model->boneCount; i++) {
-      if (bonePlaying[i]) {
+      if (!model->hasBoneTree || bonePlaying[i]) {
          float duration = model->animations[boneAnimNums[i]].duration;
 
          boneTimes[i] += tickDelta;

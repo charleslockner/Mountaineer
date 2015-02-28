@@ -10,8 +10,8 @@ public:
    ~BoneController();
 
    void rotateBone(int boneNum, float angle, Eigen::Vector3f axis);
-   void playAnimation(int boneNum, int animNum);
-   void stopAnimation(int boneNum);
+   void playAnimation(int boneNum, int animNum, bool recursive);
+   void stopAnimation(int boneNum, bool recursive);
    void updateTransforms(float timeDelta);
 
 private:

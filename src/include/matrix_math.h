@@ -65,10 +65,7 @@ namespace Mmath {
       T tanHalfFovy = tan(fovy / static_cast<T>(2));
 
       Eigen::Matrix<T,4,4> Result;
-      Result << T(0), T(0), T(0), T(0),
-                T(0), T(0), T(0), T(0),
-                T(0), T(0), T(0), T(0),
-                T(0), T(0), T(0), T(0);
+      Result.setZero();
       Result(0,0) = static_cast<T>(1) / (aspect * tanHalfFovy);
       Result(1,1) = static_cast<T>(1) / (tanHalfFovy);
       Result(2,2) = - (zFar + zNear) / (zFar - zNear);
