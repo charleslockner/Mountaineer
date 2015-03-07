@@ -11,8 +11,8 @@ Entity::Entity(Eigen::Vector3f position, Model * model) {
       this->boneTransforms[i] = Eigen::Matrix4f::Identity();
 
    this->boneController = new BoneController(model, boneTransforms);
-   boneController->playAnimation(0, 0, true);
-   // boneController->stopAnimation(1, true);
+   boneController->playAnimation(1, 0, true);
+   // boneController->stopAnimation(0, true);
 }
 
 Entity::~Entity() {

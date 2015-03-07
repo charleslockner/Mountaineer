@@ -3,81 +3,49 @@
 #include "ceres/ceres.h"
 
 #include <iostream>
+#include <vector>
 #include <stdio.h>
 
-// class CostFunctor {
-// public:
-//    CostFunctor(Link * root) {
-//       this->pTransM[0] = root->parentM;
-//       this->pTransM[1] = root->children[0]->parentM;
-//       this->pTransM[2] = root->children[0]->children[0]->parentM;
-//       this->pTransM[3] = root->children[0]->children[0]->children[0]->parentM;
-//       this->pTransM[4] = root->children[0]->children[0]->children[0]->children[0]->parentM;
-//    }
+struct CostFunctor {
+   template<typename T>
+   bool operator()(T const* const* parameters, T* residuals) const {
+      T const* angles = parameters[0];
+      T const* axisValues = parameters[1];
+      T const* goal = parameters[2];
+   }
+};
 
-//    void setGoal(Eigen::Vector3d goal) {
-//       this->goalD = goal;
-//    }
+IKSolver::IKSolver(Model * model) {
+   this->model = model;
+}
 
-//    template <typename T> bool operator()(const T* const angles, T* residual) const {
-//       Matrix<T,3,1> goal = goalD.cast<T>();
-//       Matrix<T,4,1> startPos = Matrix<T,4,1>(T(1),T(0),T(0),T(1));
+IKSolver::~IKSolver() {}
 
-//       Matrix<T,4,1> endEffector =
-//          pTransM[0].cast<T>() * rotM(angles[0]) *
-//          pTransM[1].cast<T>() * rotM(angles[1]) *
-//          pTransM[2].cast<T>() * rotM(angles[2]) *
-//          pTransM[3].cast<T>() * rotM(angles[3]) *
-//          pTransM[4].cast<T>() * rotM(angles[4]) * startPos;
+static void fillBoneOffsets(Model * model, IKLimb * limb, std::vector<Eigen::Matrix4f*>& boneOffsets) {
+   for (int i = 0; i < limb->joints.size(); i++) {
+      int jointBoneIndex = limb->joints[i].boneIndex;
+      Eigen::Matrix4f * boneOffset = &(model->bones[jointBoneIndex].parentOffset);
+      boneOffsets.push_back(boneOffset);
+   }
+}
 
-//       Matrix<T,3,1> distVec = goal - endEffector.block(0,0,3,1);
-//       residual[0] = distVec(0,0);
-//       residual[1] = distVec(1,0);
-//       residual[2] = distVec(2,0);
+void IKSolver::solveBoneRotations(IKLimb * limb, float * angles) {
+   std::vector<Eigen::Matrix4f*> boneOffsets;
+   fillBoneOffsets(model, limb, boneOffsets);
 
-//       return true;
-//    }
+   // ceres::DynamicAutoDiffCostFunction<CostFunctor, 4> * function =
+   //    new DynamicAutoDiffCostFunction<CostFunctor, 4>(new CostFunctor());
+   // function->AddParameterBlock(5);
+   // function->AddParameterBlock(10);
+   // function->SetNumResiduals(3);
 
-// private:
-//    Eigen::Vector3d goalD;
-//    Eigen::Matrix4f pTransM[NUM_BONES];
+   // problem.AddResidualBlock(function, NULL, angles);
+   // // problem.SetParameterLowerBound(double* values, int index, double lower_bound);
+   // // problem.SetParameterUpperBound(double* values, int index, double upper_bound);
 
-//    template <typename T> Matrix<T,4,4> rotM(T angle) const {
-//       Matrix<T,4,4> m = Matrix<T,4,4>::Identity();
-//       Matrix<T,3,3> m3x3;
-//       m3x3 = AngleAxis<T>(angle, Matrix<T,3,1>::UnitZ());
-//       m.block(0,0,3,3) = m3x3;
-//       return m;
-//    }
-// };
-
-// IKSolver::IKSolver(Link * root) {
-//    this->root = root;
-
-//    functor = new CostFunctorDistance(root);
-//    ceres::CostFunction * function = new ceres::AutoDiffCostFunction<CostFunctorDistance, 3, NUM_BONES>(functor);
-
-//    problemSimple.AddResidualBlock(function, NULL, angles);
-// }
-
-// IKSolver::~IKSolver() {}
-
-// void IKSolver::solveBoneRotations(Eigen::Vector3d goal, SpringState state) {
-//    // Set the initial angles
-//    this->angles[0] = root->angle;
-//    this->angles[1] = root->children[0]->angle;
-//    this->angles[2] = root->children[0]->children[0]->angle;
-//    this->angles[3] = root->children[0]->children[0]->children[0]->angle;
-//    this->angles[4] = root->children[0]->children[0]->children[0]->children[0]->angle;
-
-//    // Select the problem according to key state
-//    ceres::Problem * problem = & problemSimple;
-//    functorDistance->setGoal(goal);
-
-//    // Run the solver!
-//    ceres::Solver::Options options;
-//    ceres::Solver::Summary summary;
-//    ceres::Solve(options, problem, &summary);
+   // ceres::Solver::Options options;
+   // ceres::Solver::Summary summary;
+   // ceres::Solve(options, problem, &summary);
 
 //    // Set the bones to the calculated angles
 //    root->angle =                                                     this->angles[0];
@@ -85,4 +53,4 @@
 //    root->children[0]->children[0]->angle =                           this->angles[2];
 //    root->children[0]->children[0]->children[0]->angle =              this->angles[3];
 //    root->children[0]->children[0]->children[0]->children[0]->angle = this->angles[4];
-// }
+}

@@ -3,6 +3,7 @@
 
 #include "matrix_math.h"
 #include "model.h"
+#include "ik_solver.h"
 
 class BoneController {
 public:
@@ -17,8 +18,9 @@ public:
 private:
    Model * model;
    Eigen::Matrix4f * boneTransforms;
+   IKSolver * solver;
 
-   Eigen::Quaternionf boneRotations[MAX_BONES];
+   float boneAngles[MAX_BONES];
    int boneAnimNums[MAX_BONES];
    float boneTimes[MAX_BONES];
    bool bonePlaying[MAX_BONES];

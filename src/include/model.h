@@ -27,11 +27,24 @@ typedef struct {
 } Animation;
 
 typedef struct {
+   Eigen::Vector3f axis;
+   float minAngle;
+   float maxAngle;
+   int boneIndex;
+} IKJoint;
+
+typedef struct {
+   std::vector<IKJoint> joints;
+} IKLimb;
+
+typedef struct {
    short parentIndex;
    short childCount;
    std::vector<short> childIndices;
    Eigen::Matrix4f invBonePose;
    Eigen::Matrix4f parentOffset;
+   IKLimb limb;
+   IKJoint * joint;
 } Bone;
 
 typedef struct {
@@ -47,8 +60,21 @@ typedef struct {
 } Vertex;
 
 typedef struct {
-   unsigned int vertexIndices[NUM_FACE_EDGES];
+   unsigned int vertices[NUM_FACE_EDGES];
 } Face;
+
+typedef struct {
+   Face * face;
+   Face * expandedFace;
+   unsigned char indexOfFaceVertices; // 0, 1, or 2
+} FaceUpdate;
+
+typedef struct {
+   Vertex * emergeVertex;
+   Vertex * baseVertex;
+   std::vector<Face *> emergingFaces;
+   std::vector<FaceUpdate> faceUpdates;
+} TesselateStep;
 
 class Model {
 public:

@@ -1,6 +1,6 @@
 
 #include "bone_controller.h"
-#include <Eigen/Dense>
+#include "matrix_math.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -42,9 +42,10 @@ static Eigen::Matrix4f computeAnimTransform(AnimBone * animBone, int keyCount, f
 BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms) {
    this->model = model;
    this->boneTransforms = boneTransforms;
+   this->solver = new IKSolver(model);
 
    for (int i = 0; i < model->boneCount; i++) {
-      this->boneRotations[i] = Eigen::Quaternionf(1,0,0,0);
+      this->boneAngles[i] = 0;
       this->boneAnimNums[i] = 0;
       this->boneTimes[i] = 0;
       this->bonePlaying[i] = false;
@@ -52,11 +53,6 @@ BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms) 
 }
 
 BoneController::~BoneController() {}
-
-void BoneController::rotateBone(int boneIndex, float angle, Eigen::Vector3f axis) {
-   Eigen::Quaternionf rotQuat(Eigen::AngleAxisf(angle, axis));
-   boneRotations[boneIndex] = boneRotations[boneIndex] * rotQuat;
-}
 
 void BoneController::playAnimation(int boneNum, int animNum, bool recursive) {
    assert(animNum < model->animationCount);
@@ -93,6 +89,11 @@ void BoneController::updateTransforms(float tickDelta) {
       computeFlatTransforms();
 }
 
+// void BoneController::rotateBone(int boneIndex, float angle, Eigen::Vector3f axis) {
+//    Eigen::Quaternionf rotQuat(Eigen::AngleAxisf(angle, axis));
+//    boneAngles[boneIndex] = boneAngles[boneIndex] * rotQuat;
+// }
+
 void BoneController::computeFlatTransforms() {
    for (int boneIndex = 0; boneIndex < model->boneCount; boneIndex++) {
       int animNum = boneAnimNums[boneIndex];
@@ -102,9 +103,8 @@ void BoneController::computeFlatTransforms() {
       Animation * anim = & model->animations[animNum];
       AnimBone * animBone = & anim->animBones[boneIndex];
 
+      // We cannot manually rotate bones if there is no bone hierarchy.
       Eigen::Matrix4f animKeysM = computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
-      Eigen::Matrix4f rotationM = Mmath::rotationMatrix(boneRotations[boneIndex]);
-
       boneTransforms[boneIndex] = animKeysM * bone->invBonePose;
    }
 }
@@ -116,11 +116,17 @@ void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f p
    Bone * bone = & model->bones[boneIndex];
    Animation * anim = & model->animations[animNum];
    AnimBone * animBone = & anim->animBones[boneIndex];
+   IKLimb * limb = & bone->limb;
 
-   Eigen::Matrix4f animKeysM = computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
-   Eigen::Matrix4f rotationM = Mmath::rotationMatrix(boneRotations[boneIndex]);
+   // if this bone is the root joint for a limb, compute its ik rotation angles.
+   if (limb)
+      solver->solveBoneRotations(limb, & boneAngles[boneIndex]);
 
-   Eigen::Matrix4f accumM = parentM * animKeysM * rotationM;
+   // if this bone is part of a limb, use the ik rotation, otherwise use the animation
+   Eigen::Matrix4f accumM = bone->joint ?
+      parentM * bone->parentOffset * Mmath::angleAxisMatrix(boneAngles[boneIndex], bone->joint->axis) :
+      parentM * computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
+
    boneTransforms[boneIndex] = accumM * bone->invBonePose;
 
    for (int i = 0; i < bone->childCount; i++)

@@ -1,0 +1,59 @@
+Format specification for the tlf model file (TLF == Tesselation Loader Format):
+
+IMPORTANT:
+1) The matrices (ie: mat_inv_bone_pos and mat_parent_transform) are in column major format
+2) The quaternions (ie: rot x,y,z,w) are formated such that the w value (angle) is last instead of first
+
+[] denotes a data field
+{} denotes a collection of data fields to which () and <> applies to each [] within it
+() denotes the number of repetitions
+<> denotes the data type
+
+[bone_count]<uint32>
+[bone_root_index]<int16> (bone_count){
+   [parent]<int16>
+   [num_children]<int16>
+   (num_children)[child_index]<int16>
+   (16)[mat_inv_bone_pose]<float32>]
+   (16)[mat_parent_transform]<float32>
+}
+[animation_count]<uint32>
+(animation_count){
+   [fps]<uint32>
+   [key_count]<uint32>
+   (bone_count){
+      (key_count){
+         [time]<float>
+         {[posX] [posY] [posZ]}<float32>
+         {[rotX] [rotY] [rotZ] [rotW]}<float32>
+         {[sclX] [sclY] [sclZ]}<float32>
+      }
+   }
+}
+
+[vert_count]<uint32>
+[face_count]<uint32>
+[present_vertex_field_flags]<uint32>
+(vert_count) {
+   {[posX]    [posY]    [posZ]}<float32>
+   {[normX]   [normY]   [normZ]}<float32>
+   {[red]     [green]   [blue]}<float32>
+   {[u_coord] [v_coord]}<float32>
+   {[tanX]    [tanY]    [tanZ]}<float32>
+   {[bitanX]  [bitanY]  [bitanZ]}<float32>
+   {[index1]  [index2]  [index3]  [index4]}<uint16>
+   {[weight1] [weight2] [weight3] [weight4]}<float32>
+   [numInf]<uint16>
+
+   [base_vertex_index]<uint32>
+
+   [new_faces_count]<uint8>
+   (new_faces_count) {{[face_index1]  [face_index2]  [face_index3]}<uint32>}
+   [updated_faces_count]<uint32>
+   (updated_faces_count) {
+      [face_index]<uint32>
+      [updated_vertex_index]<uint8>
+   }
+}
+
+
