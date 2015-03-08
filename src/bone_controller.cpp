@@ -45,7 +45,8 @@ BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms) 
    this->solver = new IKSolver(model);
 
    for (int i = 0; i < model->boneCount; i++) {
-      this->boneAngles[i] = 0;
+      for (int j = 0; j < MAX_BONE_JOINTS; j++)
+         this->boneAngles[i][j] = 0;
       this->boneAnimNums[i] = 0;
       this->boneTimes[i] = 0;
       this->bonePlaying[i] = false;
@@ -109,6 +110,17 @@ void BoneController::computeFlatTransforms() {
    }
 }
 
+Eigen::Matrix4f BoneController::constructJointMatrix(int boneIndex) {
+   Bone * bone = & model->bones[boneIndex];
+   assert(bone->jointCount <= MAX_BONE_JOINTS);
+
+   Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
+   for (int i = 0; i < bone->jointCount; i++)
+      jointRotationM *= Mmath::angleAxisMatrix(boneAngles[boneIndex][i], bone->joints[i].axis);
+
+   return bone->parentOffset * jointRotationM;
+}
+
 void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f parentM) {
    int animNum = boneAnimNums[boneIndex];
    float tickTime = boneTimes[boneIndex];
@@ -116,15 +128,15 @@ void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f p
    Bone * bone = & model->bones[boneIndex];
    Animation * anim = & model->animations[animNum];
    AnimBone * animBone = & anim->animBones[boneIndex];
-   IKLimb * limb = & bone->limb;
+   IKLimb * limb = bone->limb;
 
    // if this bone is the root joint for a limb, compute its ik rotation angles.
    if (limb)
-      solver->solveBoneRotations(limb, & boneAngles[boneIndex]);
+      solver->solveBoneRotations(limb, & boneAngles[boneIndex][0]);
 
    // if this bone is part of a limb, use the ik rotation, otherwise use the animation
-   Eigen::Matrix4f accumM = bone->joint ?
-      parentM * bone->parentOffset * Mmath::angleAxisMatrix(boneAngles[boneIndex], bone->joint->axis) :
+   Eigen::Matrix4f accumM = bone->jointCount > 0 ?
+      parentM * constructJointMatrix(boneIndex) :
       parentM * computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
 
    boneTransforms[boneIndex] = accumM * bone->invBonePose;

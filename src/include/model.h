@@ -7,6 +7,7 @@
 #define NUM_FACE_EDGES 3
 #define MAX_INFLUENCES 4
 #define MAX_BONES 100
+#define MAX_BONE_JOINTS 3
 
 typedef struct {
    float time;
@@ -30,11 +31,11 @@ typedef struct {
    Eigen::Vector3f axis;
    float minAngle;
    float maxAngle;
-   int boneIndex;
+   short boneIndex;
 } IKJoint;
 
 typedef struct {
-   std::vector<IKJoint> joints;
+   std::vector<short> boneIndices;
 } IKLimb;
 
 typedef struct {
@@ -43,8 +44,10 @@ typedef struct {
    std::vector<short> childIndices;
    Eigen::Matrix4f invBonePose;
    Eigen::Matrix4f parentOffset;
-   IKLimb limb;
-   IKJoint * joint;
+
+   IKLimb * limb;
+   short jointCount;
+   IKJoint joints[MAX_BONE_JOINTS];
 } Bone;
 
 typedef struct {
@@ -54,6 +57,7 @@ typedef struct {
    Eigen::Vector3f normal;
    Eigen::Vector3f color;
    Eigen::Vector2f uv;
+
    unsigned int boneIndices[MAX_BONES];
    float boneWeights[MAX_BONES];
    unsigned int boneInfluencesCount;

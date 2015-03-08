@@ -20,13 +20,14 @@ private:
    Eigen::Matrix4f * boneTransforms;
    IKSolver * solver;
 
-   float boneAngles[MAX_BONES];
+   float boneAngles[MAX_BONES][MAX_BONE_JOINTS];
    int boneAnimNums[MAX_BONES];
    float boneTimes[MAX_BONES];
    bool bonePlaying[MAX_BONES];
 
    void computeFlatTransforms();
    void computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f parentM);
+   Eigen::Matrix4f constructJointMatrix(int boneIndex);
 };
 
 #endif // __BONE_CONTROLLER_H__

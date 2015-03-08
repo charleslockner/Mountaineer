@@ -137,7 +137,7 @@ int main(int argc, char ** argv) {
    setupLights();
 
    Model * model = new Model();
-   model->loadCIAB("assets/models/trex.ciab");
+   model->loadCIAB("assets/models/guy.ciab");
    model->loadTexture("assets/textures/masonry.png");
    model->loadNormalMap("assets/textures/masonry_normal.png");
    // model->loadOBJ("assets/cheb/cheb2.obj");

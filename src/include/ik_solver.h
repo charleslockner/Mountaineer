@@ -3,7 +3,10 @@
 
 #include "matrix_math.h"
 #include "model.h"
+#include "ceres/ceres.h"
 #include <vector>
+
+class JointCostFunctor;
 
 class IKSolver {
 public:
@@ -13,6 +16,7 @@ public:
 
 private:
    Model * model;
+   ceres::DynamicAutoDiffCostFunction<JointCostFunctor, 4> * costFunction;
 };
 
 #endif // __IK_SOLVER_H__
