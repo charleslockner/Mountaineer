@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-class JointCostFunctor {
+class LimbCostFunctor {
 public:
-   JointCostFunctor(
+   LimbCostFunctor(
       std::vector<int> jointCounts,
       std::vector<Eigen::Matrix4f*> boneOffsets,
       std::vector<Eigen::Vector3f*> jointAxis,
@@ -75,8 +75,8 @@ IKSolver::IKSolver(Model * model) {
    std::vector<Eigen::Vector3f*> jointAxis;
    Eigen::Matrix4f* invBindPose;
 
-   costFunction = new ceres::DynamicAutoDiffCostFunction<JointCostFunctor, 4>(
-      new JointCostFunctor(jointCounts, boneOffsets, jointAxis, invBindPose)
+   costFunction = new ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 4>(
+      new LimbCostFunctor(jointCounts, boneOffsets, jointAxis, invBindPose)
    );
 }
 

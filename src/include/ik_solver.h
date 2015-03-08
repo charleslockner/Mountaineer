@@ -6,7 +6,7 @@
 #include "ceres/ceres.h"
 #include <vector>
 
-class JointCostFunctor;
+class LimbCostFunctor;
 
 class IKSolver {
 public:
@@ -16,7 +16,7 @@ public:
 
 private:
    Model * model;
-   ceres::DynamicAutoDiffCostFunction<JointCostFunctor, 4> * costFunction;
+   ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 4> * costFunction;
 };
 
 #endif // __IK_SOLVER_H__
