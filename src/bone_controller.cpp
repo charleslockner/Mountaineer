@@ -121,11 +121,14 @@ void BoneController::setModelM(Eigen::Matrix4f modelM) {
    this->modelM = modelM;
 }
 
-std::vector<float *> BoneController::constructAnglePtrs() {
+std::vector<float *> BoneController::constructAnglePtrs(int limbIndex) {
    std::vector<float *> angles = std::vector<float *>();
-      for (int i = 0; i < bones.size(); i++)
-         for (int j = 0; j < bones[i].angles.size(); j++)
-            angles.push_back(& bones[i].angles[j]);
+   std::vector<short> boneIndices = model->limbSolvers[limbIndex]->boneIndices;
+   for (int i = 0; i < boneIndices.size(); i++) {
+      EntityBone * bone = & bones[boneIndices[i]];
+      for (int j = 0; j < bone->angles.size(); j++)
+         angles.push_back(& bone->angles[j]);
+   }
    return angles;
 }
 
@@ -150,12 +153,14 @@ void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f p
    Animation * anim = & model->animations[animNum];
    AnimBone * animBone = & anim->animBones[boneIndex];
 
-   // if this bone is the root joint for a limb, compute its ik rotation angles.
+   // if this bone is the root of a limb, compute the limb's ik rotation angles.
    if (bone->limbIndex >= 0) {
       IKSolver * limbSolver = model->limbSolvers[bone->limbIndex];
       Eigen::Vector3f goal = this->limbs[bone->limbIndex].goal;
-      std::vector<float *> angles = constructAnglePtrs();
-      limbSolver->solveBoneRotations(modelM, parentM, goal, angles);
+      std::vector<float *> angles = constructAnglePtrs(bone->limbIndex);
+      Eigen::Matrix4f baseM = modelM * parentM;
+      limbSolver->solveBoneRotations(baseM, goal, angles);
+      angles.clear();
    }
 
    // if this bone has a computed ik rotation, use it, otherwise use the animation

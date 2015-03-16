@@ -15,22 +15,15 @@ public:
    ~IKSolver();
 
    void solveBoneRotations(
-      Eigen::Matrix4f& modelM,
-      Eigen::Matrix4f& baseM,
-      Eigen::Vector3f& goal,
-      std::vector<float *>& angles
+      Eigen::Matrix4f baseM,
+      Eigen::Vector3f goal,
+      std::vector<float *> angles
    );
+
+   std::vector<short> boneIndices;
 
 private:
    Model * model;
-   int angleCount;
-   ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 3> * costFunction;
-   ceres::Problem problem;
-
-   std::vector<short> jointCounts;
-   std::vector<double> angleValues;
-   Eigen::Matrix4d baseMValues;
-   Eigen::Vector3d goalValues;
 };
 
 #endif // __IK_SOLVER_H__

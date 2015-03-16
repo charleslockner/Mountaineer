@@ -40,7 +40,7 @@ private:
 
    void computeFlatTransforms();
    void computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f parentM);
-   std::vector<float *> constructAnglePtrs();
+   std::vector<float *> constructAnglePtrs(int limbIndex) ;
    Eigen::Matrix4f constructJointMatrix(int boneIndex);
 
 };

@@ -66,17 +66,26 @@ private:
 
 IKSolver::IKSolver(Model * model, std::vector<short> boneIndices) {
    this->model = model;
+   this->boneIndices = boneIndices;
+}
 
-   this->angleCount = 0;
+void IKSolver::solveBoneRotations(
+   Eigen::Matrix4f baseM,
+   Eigen::Vector3f goal,
+   std::vector<float *> entAngles
+) {
+   int angleCount = 0;
    int boneCount = boneIndices.size();
+
    std::vector<Eigen::Matrix4f> boneOffsets;
    std::vector<Eigen::Vector3f> jointAxis;
+   std::vector<short> jointCounts;
 
-   // Fill in jointCounts, jointAxis, and angleCount from ikBones data
+   // Fill in jointCounts, jointAxis, and boneOffsets from bone data
    for (int i = 0; i < boneCount; i++) {
       Bone * bone = & model->bones[boneIndices[i]];
       int jointCount = bone->joints.size();
-      this->angleCount += jointCount;
+      angleCount += jointCount;
 
       jointCounts.push_back(jointCount);
       boneOffsets.push_back(bone->parentOffset);
@@ -84,7 +93,7 @@ IKSolver::IKSolver(Model * model, std::vector<short> boneIndices) {
          jointAxis.push_back(bone->joints[j].axis);
    }
 
-   costFunction =
+   ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 3> * costFunction =
       new ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 3>(
          new LimbCostFunctor(jointCounts, boneOffsets, jointAxis));
 
@@ -94,14 +103,20 @@ IKSolver::IKSolver(Model * model, std::vector<short> boneIndices) {
    costFunction->AddParameterBlock(3);          // goal
    costFunction->SetNumResiduals(3);            // residuals
 
-   angleValues = std::vector<double>(angleCount);
-   baseMValues = Eigen::Matrix4d::Identity();
-   goalValues = Eigen::Vector3d(0,0,0);
+   // Setup up the parameter data blocks
+   std::vector<double> angleValues = std::vector<double>();
+   for (int i = 0; i < entAngles.size(); i++)
+      angleValues.push_back(double(*(entAngles[i])));
+   Eigen::Matrix4d baseMValues = baseM.cast<double>();
+   Eigen::Vector3d goalValues = goal.cast<double>();
+
+   assert(entAngles.size() == angleCount);
 
    double * angleData = angleValues.data();
    double * baseMData = baseMValues.data();
    double * goalData = goalValues.data();
 
+   ceres::Problem problem;
    problem.AddParameterBlock(angleData, angleCount);
    problem.AddParameterBlock(baseMData, 16);
    problem.AddParameterBlock(goalData, 3);
@@ -122,30 +137,14 @@ IKSolver::IKSolver(Model * model, std::vector<short> boneIndices) {
    problem.SetParameterBlockVariable(angleData);
    problem.SetParameterBlockConstant(baseMData);
    problem.SetParameterBlockConstant(goalData);
-}
-
-void IKSolver::solveBoneRotations(
-   Eigen::Matrix4f& modelM,
-   Eigen::Matrix4f& parentM,
-   Eigen::Vector3f& goal,
-   std::vector<float *>& entAngles
-) {
-   // Setup up the parameter block data
-   angleValues.clear();
-   for (int i = 0; i < entAngles.size(); i++)
-      angleValues.push_back(double(*(entAngles[i])));
-
-   baseMValues = (modelM * parentM).cast<double>();
-   goalValues = goal.cast<double>();
 
    // Solve for the angles
    ceres::Solver::Options options;
-   options.linear_solver_type = ceres::DENSE_QR;
+   // options.linear_solver_type = ceres::DENSE_QR;
    ceres::Solver::Summary summary;
    ceres::Solve(options, &problem, &summary);
 
    // Set the calculated angles
-   assert(entAngles.size() == angleValues.size());
    for (int i = 0; i < entAngles.size(); i++)
       *(entAngles[i]) = angleValues[i];
 }

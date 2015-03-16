@@ -111,6 +111,67 @@ GLFWwindow * windowSetup() {
    return window;
 }
 
+void setupLimbs(Model * model) {
+   IKJoint joint;
+   std::vector<short> boneIndices;
+   IKSolver * solver;
+   model->limbSolvers = std::vector<IKSolver*>(2);
+
+   // left arm
+   model->bones[9].limbIndex = 0;
+
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[9].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[10].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,0,1);
+   model->bones[10].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[11].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,0,1);
+   model->bones[11].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[12].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,0,1);
+   model->bones[12].joints.push_back(joint);
+
+   boneIndices.push_back(9);
+   boneIndices.push_back(10);
+   boneIndices.push_back(11);
+   boneIndices.push_back(12);
+   boneIndices.push_back(13);
+   model->limbSolvers[0] = new IKSolver(model, boneIndices);
+   boneIndices.clear();
+
+   // right arm
+   model->bones[15].limbIndex = 1;
+
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[15].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[16].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,0,1);
+   model->bones[16].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[17].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,0,1);
+   model->bones[17].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[18].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,0,1);
+   model->bones[18].joints.push_back(joint);
+
+   boneIndices.push_back(15);
+   boneIndices.push_back(16);
+   boneIndices.push_back(17);
+   boneIndices.push_back(18);
+   boneIndices.push_back(19);
+// printf("sizeof boneIndices %d\n", boneIndices.size());
+   model->limbSolvers[1] = new IKSolver(model, boneIndices);
+   boneIndices.clear();
+
+}
+
 void updateCameraPosition(double timePassed) {
    float distTraveled = CAMERA_SPEED * timePassed;
 
@@ -131,51 +192,32 @@ void updateCameraPosition(double timePassed) {
 }
 
 void updateWorld(double timePassed) {
+   double speed = 3.0f;
+
    if (keyToggles[GLFW_KEY_X]) {
       if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goalPoint(0) = goalPoint(0) - timePassed;
+         goalPoint(0) = goalPoint(0) - timePassed * speed;
       else
-         goalPoint(0) = goalPoint(0) + timePassed;
+         goalPoint(0) = goalPoint(0) + timePassed * speed;
    }
    if (keyToggles[GLFW_KEY_Y]) {
       if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goalPoint(1) = goalPoint(1) - timePassed;
+         goalPoint(1) = goalPoint(1) - timePassed * speed;
       else
-         goalPoint(1) = goalPoint(1) + timePassed;
+         goalPoint(1) = goalPoint(1) + timePassed * speed;
    }
    if (keyToggles[GLFW_KEY_Z]) {
       if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goalPoint(2) = goalPoint(2) - timePassed;
+         goalPoint(2) = goalPoint(2) - timePassed * speed;
       else
-         goalPoint(2) = goalPoint(2) + timePassed;
+         goalPoint(2) = goalPoint(2) + timePassed * speed;
    }
-}
 
-void setupLimbs(Model * model) {
-   // left arm
-   IKJoint joint;
-   joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[10].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,1,0);
-   model->bones[10].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,0,1);
-   model->bones[10].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[11].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,1,0);
-   model->bones[11].joints.push_back(joint);
-   // joint.axis = Eigen::Vector3f(1,0,0);
-   // model->bones[12].joints.push_back(joint);
-   // joint.axis = Eigen::Vector3f(0,1,0);
-   // model->bones[12].joints.push_back(joint);
+   entities[0]->boneController->setLimbGoal(0, goalPoint);
+   entities[0]->boneController->setLimbGoal(1, goalPoint);
 
-   std::vector<short> boneIndices;
-   boneIndices.push_back(10);
-   boneIndices.push_back(11);
-   boneIndices.push_back(12);
-   IKSolver * solver = new IKSolver(model, boneIndices);
-   model->bones[10].limbIndex = 0;
-   model->limbSolvers.push_back(solver);
+   // entities[0]->position += Eigen::Vector3f(0,0.1,0) * timePassed;
+
 }
 
 int main(int argc, char ** argv) {
@@ -210,8 +252,6 @@ int main(int argc, char ** argv) {
 
       updateCameraPosition(deltaTime);
       updateWorld(deltaTime);
-
-      entities[0]->boneController->setLimbGoal(0, goalPoint);
 
       for (int i = 0; i < entities.size(); i++)
          entities[i]->update(deltaTime);
