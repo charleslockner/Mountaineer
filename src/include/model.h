@@ -2,6 +2,7 @@
 #define __MODEL_H__
 
 #include "matrix_math.h"
+#include "ik_solver.h"
 #include <vector>
 
 #define NUM_FACE_EDGES 3
@@ -27,16 +28,13 @@ typedef struct {
    std::vector<AnimBone> animBones;
 } Animation;
 
+struct IKSolver;
+
 typedef struct {
    Eigen::Vector3f axis;
    float minAngle;
    float maxAngle;
-   short boneIndex;
 } IKJoint;
-
-typedef struct {
-   std::vector<short> boneIndices;
-} IKLimb;
 
 typedef struct {
    short parentIndex;
@@ -44,10 +42,8 @@ typedef struct {
    std::vector<short> childIndices;
    Eigen::Matrix4f invBonePose;
    Eigen::Matrix4f parentOffset;
-
-   IKLimb * limb;
-   short jointCount;
-   IKJoint joints[MAX_BONE_JOINTS];
+   short limbIndex;
+   std::vector<IKJoint> joints;
 } Bone;
 
 typedef struct {
@@ -108,6 +104,7 @@ public:
    std::vector<Vertex> vertices;
    std::vector<Face> faces;
    std::vector<Bone> bones;
+   std::vector<IKSolver*> limbSolvers;
    std::vector<Animation> animations;
 };
 

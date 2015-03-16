@@ -20,6 +20,7 @@ std::vector<Entity *> entities;
 
 double lastScreenX;
 double lastScreenY;
+Eigen::Vector3f goalPoint;
 
 bool keyToggles[512] = {false};
 
@@ -129,6 +130,54 @@ void updateCameraPosition(double timePassed) {
       camera->lookAt(entities[0]->position);
 }
 
+void updateWorld(double timePassed) {
+   if (keyToggles[GLFW_KEY_X]) {
+      if (keyToggles[GLFW_KEY_LEFT_CONTROL])
+         goalPoint(0) = goalPoint(0) - timePassed;
+      else
+         goalPoint(0) = goalPoint(0) + timePassed;
+   }
+   if (keyToggles[GLFW_KEY_Y]) {
+      if (keyToggles[GLFW_KEY_LEFT_CONTROL])
+         goalPoint(1) = goalPoint(1) - timePassed;
+      else
+         goalPoint(1) = goalPoint(1) + timePassed;
+   }
+   if (keyToggles[GLFW_KEY_Z]) {
+      if (keyToggles[GLFW_KEY_LEFT_CONTROL])
+         goalPoint(2) = goalPoint(2) - timePassed;
+      else
+         goalPoint(2) = goalPoint(2) + timePassed;
+   }
+}
+
+void setupLimbs(Model * model) {
+   // left arm
+   IKJoint joint;
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[10].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,1,0);
+   model->bones[10].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,0,1);
+   model->bones[10].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(1,0,0);
+   model->bones[11].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,1,0);
+   model->bones[11].joints.push_back(joint);
+   // joint.axis = Eigen::Vector3f(1,0,0);
+   // model->bones[12].joints.push_back(joint);
+   // joint.axis = Eigen::Vector3f(0,1,0);
+   // model->bones[12].joints.push_back(joint);
+
+   std::vector<short> boneIndices;
+   boneIndices.push_back(10);
+   boneIndices.push_back(11);
+   boneIndices.push_back(12);
+   IKSolver * solver = new IKSolver(model, boneIndices);
+   model->bones[10].limbIndex = 0;
+   model->limbSolvers.push_back(solver);
+}
+
 int main(int argc, char ** argv) {
    GLFWwindow * window = windowSetup();
 
@@ -138,11 +187,13 @@ int main(int argc, char ** argv) {
 
    Model * model = new Model();
    model->loadCIAB("assets/models/guy.ciab");
-   model->loadTexture("assets/textures/masonry.png");
+   // model->loadTexture("assets/textures/masonry.png");
    model->loadNormalMap("assets/textures/masonry_normal.png");
    // model->loadOBJ("assets/cheb/cheb2.obj");
    // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
    // model->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
+
+   setupLimbs(model);
 
    entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), model));
 
@@ -158,12 +209,16 @@ int main(int argc, char ** argv) {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       updateCameraPosition(deltaTime);
+      updateWorld(deltaTime);
+
+      entities[0]->boneController->setLimbGoal(0, goalPoint);
 
       for (int i = 0; i < entities.size(); i++)
          entities[i]->update(deltaTime);
       for (int i = 0; i < entities.size(); i++) {
          shader->render(camera, & lightData, entities[i]);
          // shader->renderDebug(camera, entities[i]);
+         shader->renderPoint(camera, goalPoint);
       }
 
       glfwSwapBuffers(window);

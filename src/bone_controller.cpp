@@ -42,24 +42,27 @@ static Eigen::Matrix4f computeAnimTransform(AnimBone * animBone, int keyCount, f
 BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms) {
    this->model = model;
    this->boneTransforms = boneTransforms;
-   this->solver = new IKSolver(model);
+   this->bones = std::vector<EntityBone>(model->boneCount);
 
    for (int i = 0; i < model->boneCount; i++) {
-      for (int j = 0; j < MAX_BONE_JOINTS; j++)
-         this->boneAngles[i][j] = 0;
-      this->boneAnimNums[i] = 0;
-      this->boneTimes[i] = 0;
-      this->bonePlaying[i] = false;
+      this->bones[i].angles = std::vector<float>(model->bones[i].joints.size());
+      // for (int j = 0; j < model->bones[i].joints.size(); j++)
+      //    this->bones[i].angles.push_back(0);
+      this->bones[i].animIndex = 0;
+      this->bones[i].animTime = 0;
+      this->bones[i].animIsPlaying = false;
    }
+   this->limbs = std::vector<EntityLimb>(model->limbSolvers.size());
+   this->modelM = Eigen::Matrix4f::Identity();
 }
 
 BoneController::~BoneController() {}
 
 void BoneController::playAnimation(int boneNum, int animNum, bool recursive) {
    assert(animNum < model->animationCount);
-   boneAnimNums[boneNum] = animNum;
-   boneTimes[boneNum] = 0;
-   bonePlaying[boneNum] = true;
+   bones[boneNum].animIndex = animNum;
+   bones[boneNum].animTime = 0;
+   bones[boneNum].animIsPlaying = true;
 
    if (recursive)
       for (int i = 0; i < model->bones[boneNum].childCount; i++)
@@ -67,7 +70,7 @@ void BoneController::playAnimation(int boneNum, int animNum, bool recursive) {
 }
 
 void BoneController::stopAnimation(int boneNum, bool recursive) {
-   bonePlaying[boneNum] = false;
+   bones[boneNum].animIsPlaying = false;
 
    if (recursive)
       for (int i = 0; i < model->bones[boneNum].childCount; i++)
@@ -76,12 +79,12 @@ void BoneController::stopAnimation(int boneNum, bool recursive) {
 
 void BoneController::updateTransforms(float tickDelta) {
    for (int i = 0; i < model->boneCount; i++) {
-      if (!model->hasBoneTree || bonePlaying[i]) {
-         float duration = model->animations[boneAnimNums[i]].duration;
+      if (!model->hasBoneTree || bones[i].animIsPlaying) {
+         float duration = model->animations[bones[i].animIndex].duration;
 
-         boneTimes[i] += tickDelta;
-         if (boneTimes[i] > duration)
-            boneTimes[i] -= duration;
+         bones[i].animTime += tickDelta;
+         if (bones[i].animTime > duration)
+            bones[i].animTime -= duration;
       }
    }
 
@@ -97,8 +100,8 @@ void BoneController::updateTransforms(float tickDelta) {
 
 void BoneController::computeFlatTransforms() {
    for (int boneIndex = 0; boneIndex < model->boneCount; boneIndex++) {
-      int animNum = boneAnimNums[boneIndex];
-      float tickTime = boneTimes[boneIndex];
+      int animNum = bones[boneIndex].animIndex;
+      float tickTime = bones[boneIndex].animTime;
 
       Bone * bone = & model->bones[boneIndex];
       Animation * anim = & model->animations[animNum];
@@ -110,32 +113,53 @@ void BoneController::computeFlatTransforms() {
    }
 }
 
+void BoneController::setLimbGoal(int limbIndex, Eigen::Vector3f goal) {
+   this->limbs[limbIndex].goal = goal;
+}
+
+void BoneController::setModelM(Eigen::Matrix4f modelM) {
+   this->modelM = modelM;
+}
+
+std::vector<float *> BoneController::constructAnglePtrs() {
+   std::vector<float *> angles = std::vector<float *>();
+      for (int i = 0; i < bones.size(); i++)
+         for (int j = 0; j < bones[i].angles.size(); j++)
+            angles.push_back(& bones[i].angles[j]);
+   return angles;
+}
+
 Eigen::Matrix4f BoneController::constructJointMatrix(int boneIndex) {
    Bone * bone = & model->bones[boneIndex];
-   assert(bone->jointCount <= MAX_BONE_JOINTS);
+   EntityBone * entBone = & bones[boneIndex];
 
    Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
-   for (int i = 0; i < bone->jointCount; i++)
-      jointRotationM *= Mmath::angleAxisMatrix(boneAngles[boneIndex][i], bone->joints[i].axis);
+   for (int i = 0; i < bone->joints.size(); i++) {
+      assert(bone->joints.size() == entBone->angles.size());
+      jointRotationM *= Mmath::angleAxisMatrix<float>(entBone->angles[i], bone->joints[i].axis);
+   }
 
    return bone->parentOffset * jointRotationM;
 }
 
 void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f parentM) {
-   int animNum = boneAnimNums[boneIndex];
-   float tickTime = boneTimes[boneIndex];
+   int animNum = bones[boneIndex].animIndex;
+   float tickTime = bones[boneIndex].animTime;
 
    Bone * bone = & model->bones[boneIndex];
    Animation * anim = & model->animations[animNum];
    AnimBone * animBone = & anim->animBones[boneIndex];
-   IKLimb * limb = bone->limb;
 
    // if this bone is the root joint for a limb, compute its ik rotation angles.
-   if (limb)
-      solver->solveBoneRotations(limb, & boneAngles[boneIndex][0]);
+   if (bone->limbIndex >= 0) {
+      IKSolver * limbSolver = model->limbSolvers[bone->limbIndex];
+      Eigen::Vector3f goal = this->limbs[bone->limbIndex].goal;
+      std::vector<float *> angles = constructAnglePtrs();
+      limbSolver->solveBoneRotations(modelM, parentM, goal, angles);
+   }
 
-   // if this bone is part of a limb, use the ik rotation, otherwise use the animation
-   Eigen::Matrix4f accumM = bone->jointCount > 0 ?
+   // if this bone has a computed ik rotation, use it, otherwise use the animation
+   Eigen::Matrix4f accumM = bone->joints.size() > 0 ?
       parentM * constructJointMatrix(boneIndex) :
       parentM * computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
 

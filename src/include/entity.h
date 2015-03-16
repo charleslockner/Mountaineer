@@ -24,9 +24,7 @@ public:
    void update(float time);
    Eigen::Matrix4f generateModelM();
 
-private:
    BoneController * boneController;
-   Eigen::Quaternionf boneRotations[MAX_BONES];
 };
 
 #endif // __ENTITY_H__

@@ -67,3 +67,27 @@ void EntityShader::renderDebug(Camera * camera, Entity * entity) {
    }
    glEnd();
 }
+
+void EntityShader::renderPoint(Camera * camera, Eigen::Vector3f p) {
+   glMatrixMode(GL_PROJECTION);
+   glLoadMatrixf(camera->getProjectionM().data());
+   glMatrixMode(GL_MODELVIEW);
+   glLoadMatrixf(camera->getViewM().data());
+
+   glBegin(GL_LINES);
+
+   float size = 0.5f;
+   glColor3f(1,0,0);
+   glVertex3f(p(0) - size, p(1), p(2));
+   glVertex3f(p(0) + size, p(1), p(2));
+
+   glColor3f(0,1,0);
+   glVertex3f(p(0), p(1) - size, p(2));
+   glVertex3f(p(0), p(1) + size, p(2));
+
+   glColor3f(0,0,1);
+   glVertex3f(p(0), p(1), p(2) - size);
+   glVertex3f(p(0), p(1), p(2) + size);
+
+   glEnd();
+}

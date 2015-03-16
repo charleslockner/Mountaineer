@@ -5,6 +5,19 @@
 #include "model.h"
 #include "ik_solver.h"
 
+#include <vector>
+
+typedef struct {
+   std::vector<float> angles;
+   int animIndex;
+   bool animIsPlaying;
+   float animTime;
+} EntityBone;
+
+typedef struct {
+   Eigen::Vector3f goal;
+} EntityLimb;
+
 class BoneController {
 public:
    BoneController(Model * model, Eigen::Matrix4f * boneTransforms);
@@ -13,21 +26,23 @@ public:
    void rotateBone(int boneNum, float angle, Eigen::Vector3f axis);
    void playAnimation(int boneNum, int animNum, bool recursive);
    void stopAnimation(int boneNum, bool recursive);
+   void setLimbGoal(int limbIndex, Eigen::Vector3f goal);
+   void setModelM(Eigen::Matrix4f modelM);
    void updateTransforms(float timeDelta);
 
 private:
    Model * model;
    Eigen::Matrix4f * boneTransforms;
-   IKSolver * solver;
 
-   float boneAngles[MAX_BONES][MAX_BONE_JOINTS];
-   int boneAnimNums[MAX_BONES];
-   float boneTimes[MAX_BONES];
-   bool bonePlaying[MAX_BONES];
+   Eigen::Matrix4f modelM;
+   std::vector<EntityBone> bones;
+   std::vector<EntityLimb> limbs;
 
    void computeFlatTransforms();
    void computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f parentM);
+   std::vector<float *> constructAnglePtrs();
    Eigen::Matrix4f constructJointMatrix(int boneIndex);
+
 };
 
 #endif // __BONE_CONTROLLER_H__

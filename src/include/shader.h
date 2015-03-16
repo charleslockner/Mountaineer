@@ -14,6 +14,7 @@ class EntityShader {
 public:
    virtual void render(Camera * camera, LightData * lightdata, Entity * entity) {};
    void renderDebug(Camera * camera, Entity * entity);
+   void renderPoint(Camera * camera, Eigen::Vector3f p);
 
 protected:
    typedef struct {
