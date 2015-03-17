@@ -61,7 +61,7 @@ BoneController::~BoneController() {}
 void BoneController::playAnimation(int boneNum, int animNum, bool recursive) {
    assert(animNum < model->animationCount);
    bones[boneNum].animIndex = animNum;
-   bones[boneNum].animTime = 0;
+   // bones[boneNum].animTime = 0;
    bones[boneNum].animIsPlaying = true;
 
    if (recursive)

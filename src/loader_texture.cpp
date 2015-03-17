@@ -8,6 +8,16 @@
 #include "safe_gl.h"
 #include "model.h"
 
+static void swapBytes(unsigned char * buf1, unsigned char * buf2, int numBytes) {
+   unsigned char * buf1Temp = (unsigned char *)malloc(sizeof(unsigned char) * numBytes);
+
+   memcpy(buf1Temp, buf1, numBytes);
+   memcpy(buf1, buf2, numBytes);
+   memcpy(buf2, buf1Temp, numBytes);
+
+   free(buf1Temp);
+}
+
 static unsigned int loadImage(const char * filename) {
 
    unsigned int id;
@@ -28,6 +38,11 @@ static unsigned int loadImage(const char * filename) {
       std::cerr << filename << " must be a power of 2" << std::endl;
       exit(1);
    }
+
+   int rowLen = ncomps * w;
+
+   for (int i = 0; i < h/2; i++)
+      swapBytes(& data[rowLen*i], & data[rowLen*(h-1-i)], rowLen);
 
    // Generate a texture buffer object
    glGenTextures(1, & id);

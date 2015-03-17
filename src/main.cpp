@@ -20,7 +20,9 @@ std::vector<Entity *> entities;
 
 double lastScreenX;
 double lastScreenY;
-Eigen::Vector3f goalPoint;
+int goalIndex = 0;
+Eigen::Vector3f goals[2];
+bool playing = false;
 
 bool keyToggles[512] = {false};
 
@@ -34,6 +36,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_ESCAPE:
             glfwSetWindowShouldClose(window, GL_TRUE);
             break;
+         case GLFW_KEY_Q:
+         case GLFW_KEY_E:
          case GLFW_KEY_T:
          case GLFW_KEY_L:
             break;
@@ -43,6 +47,16 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       }
    } else if (action == GLFW_RELEASE) {
       switch (key) {
+         case GLFW_KEY_Q:
+            playing = !playing;
+            if (playing)
+               entities[0]->boneController->playAnimation(0, 0, true);
+            else
+               entities[0]->boneController->stopAnimation(0, true);
+            break;
+         case GLFW_KEY_E:
+            goalIndex = goalIndex == 0 ? 1 : 0;
+            break;
          case GLFW_KEY_T:
             keyToggles[key] = !keyToggles[key];
             break;
@@ -111,55 +125,55 @@ GLFWwindow * windowSetup() {
    return window;
 }
 
-void setupLimbs(Model * model) {
+void setupLimbs(Model * guyModel) {
    IKJoint joint;
    std::vector<short> boneIndices;
    IKSolver * solver;
-   model->limbSolvers = std::vector<IKSolver*>(2);
+   guyModel->limbSolvers = std::vector<IKSolver*>(2);
 
    // left arm
-   model->bones[9].limbIndex = 0;
+   guyModel->bones[9].limbIndex = 0;
 
    joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[9].joints.push_back(joint);
+   guyModel->bones[9].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[10].joints.push_back(joint);
+   guyModel->bones[10].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(0,0,1);
-   model->bones[10].joints.push_back(joint);
+   guyModel->bones[10].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[11].joints.push_back(joint);
+   guyModel->bones[11].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(0,0,1);
-   model->bones[11].joints.push_back(joint);
+   guyModel->bones[11].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[12].joints.push_back(joint);
+   guyModel->bones[12].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(0,0,1);
-   model->bones[12].joints.push_back(joint);
+   guyModel->bones[12].joints.push_back(joint);
 
    boneIndices.push_back(9);
    boneIndices.push_back(10);
    boneIndices.push_back(11);
    boneIndices.push_back(12);
    boneIndices.push_back(13);
-   model->limbSolvers[0] = new IKSolver(model, boneIndices);
+   guyModel->limbSolvers[0] = new IKSolver(guyModel, boneIndices);
    boneIndices.clear();
 
    // right arm
-   model->bones[15].limbIndex = 1;
+   guyModel->bones[15].limbIndex = 1;
 
    joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[15].joints.push_back(joint);
+   guyModel->bones[15].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[16].joints.push_back(joint);
+   guyModel->bones[16].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(0,0,1);
-   model->bones[16].joints.push_back(joint);
+   guyModel->bones[16].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[17].joints.push_back(joint);
+   guyModel->bones[17].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(0,0,1);
-   model->bones[17].joints.push_back(joint);
+   guyModel->bones[17].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(1,0,0);
-   model->bones[18].joints.push_back(joint);
+   guyModel->bones[18].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(0,0,1);
-   model->bones[18].joints.push_back(joint);
+   guyModel->bones[18].joints.push_back(joint);
 
    boneIndices.push_back(15);
    boneIndices.push_back(16);
@@ -167,7 +181,7 @@ void setupLimbs(Model * model) {
    boneIndices.push_back(18);
    boneIndices.push_back(19);
 // printf("sizeof boneIndices %d\n", boneIndices.size());
-   model->limbSolvers[1] = new IKSolver(model, boneIndices);
+   guyModel->limbSolvers[1] = new IKSolver(guyModel, boneIndices);
    boneIndices.clear();
 
 }
@@ -196,28 +210,27 @@ void updateWorld(double timePassed) {
 
    if (keyToggles[GLFW_KEY_X]) {
       if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goalPoint(0) = goalPoint(0) - timePassed * speed;
+         goals[goalIndex](0) = goals[goalIndex](0) - timePassed * speed;
       else
-         goalPoint(0) = goalPoint(0) + timePassed * speed;
+         goals[goalIndex](0) = goals[goalIndex](0) + timePassed * speed;
    }
    if (keyToggles[GLFW_KEY_Y]) {
       if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goalPoint(1) = goalPoint(1) - timePassed * speed;
+         goals[goalIndex](1) = goals[goalIndex](1) - timePassed * speed;
       else
-         goalPoint(1) = goalPoint(1) + timePassed * speed;
+         goals[goalIndex](1) = goals[goalIndex](1) + timePassed * speed;
    }
    if (keyToggles[GLFW_KEY_Z]) {
       if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goalPoint(2) = goalPoint(2) - timePassed * speed;
+         goals[goalIndex](2) = goals[goalIndex](2) - timePassed * speed;
       else
-         goalPoint(2) = goalPoint(2) + timePassed * speed;
+         goals[goalIndex](2) = goals[goalIndex](2) + timePassed * speed;
    }
 
-   entities[0]->boneController->setLimbGoal(0, goalPoint);
-   entities[0]->boneController->setLimbGoal(1, goalPoint);
+   entities[0]->boneController->setLimbGoal(0, goals[0]);
+   entities[0]->boneController->setLimbGoal(1, goals[1]);
 
-   // entities[0]->position += Eigen::Vector3f(0,0.1,0) * timePassed;
-
+   // entities[0]->position += Eigen::Vector3f(0,0.5,0) * timePassed;
 }
 
 int main(int argc, char ** argv) {
@@ -227,17 +240,26 @@ int main(int argc, char ** argv) {
    camera = new Camera(Eigen::Vector3f(0,0,10), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
    setupLights();
 
-   Model * model = new Model();
-   model->loadCIAB("assets/models/guy.ciab");
-   // model->loadTexture("assets/textures/masonry.png");
-   model->loadNormalMap("assets/textures/masonry_normal.png");
-   // model->loadOBJ("assets/cheb/cheb2.obj");
-   // model->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   // model->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
+   Model * guyModel = new Model();
+   guyModel->loadCIAB("assets/models/guy.ciab");
+   guyModel->loadTexture("assets/textures/guy_tex.bmp");
+   // guyModel->loadNormalMap("assets/textures/masonry_normal.png");
+   setupLimbs(guyModel);
+   entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), guyModel));
 
-   setupLimbs(model);
+   Model * trexModel = new Model();
+   trexModel->loadCIAB("assets/models/trex.ciab");
+   trexModel->loadTexture("assets/textures/masonry.png");
+   trexModel->loadNormalMap("assets/textures/masonry_normal.png");
+   entities.push_back(new Entity(Eigen::Vector3f(10, 0, -15), trexModel));
+   entities[1]->boneController->playAnimation(0, 0, true);
 
-   entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), model));
+   Model * chebModel = new Model();
+   chebModel->loadOBJ("assets/cheb/cheb2.obj");
+   chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   chebModel->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
+   entities.push_back(new Entity(Eigen::Vector3f(-8, 0, 5), chebModel));
+   entities[2]->boneController->playAnimation(0, 0, false);
 
    double timePassed = 0;
    unsigned int numFrames = 0;
@@ -255,11 +277,11 @@ int main(int argc, char ** argv) {
 
       for (int i = 0; i < entities.size(); i++)
          entities[i]->update(deltaTime);
-      for (int i = 0; i < entities.size(); i++) {
+      for (int i = 0; i < entities.size(); i++)
          shader->render(camera, & lightData, entities[i]);
-         // shader->renderDebug(camera, entities[i]);
-         shader->renderPoint(camera, goalPoint);
-      }
+
+      // shader->renderDebug(camera, entities[i]);
+      shader->renderPoint(camera, goals[goalIndex]);
 
       glfwSwapBuffers(window);
       glfwPollEvents();
