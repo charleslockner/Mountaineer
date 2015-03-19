@@ -5,10 +5,6 @@
 
 #include <algorithm>
 
-typedef struct {
-   unsigned int index;
-   float weight;
-} BoneWeight;
 
 typedef struct VertexWeight {
    std::vector<BoneWeight> boneWeights;
@@ -111,8 +107,8 @@ static void setBindPoseMatrices(Model * model, std::vector<float> & inBindPoses,
       Eigen::Vector3f tns = Eigen::Vector3f(inBindPoses[7*i+4], inBindPoses[7*i+5], inBindPoses[7*i+6]);
       Eigen::Quaternionf rot = Eigen::Quaternionf(inBindPoses[7*i+3], inBindPoses[7*i], inBindPoses[7*i+1], inBindPoses[7*i+2]);
 
-      Eigen::Matrix4f tnsM = Mmath::translationMatrix(tns);
-      Eigen::Matrix4f rotM = Mmath::rotationMatrix(rot);
+      Eigen::Matrix4f tnsM = Mmath::TranslationMatrix(tns);
+      Eigen::Matrix4f rotM = Mmath::RotationMatrix(rot);
       Eigen::Matrix4f bindPose = tnsM * rotM;
 
       model->bones[i].invBonePose = bindPose.inverse();

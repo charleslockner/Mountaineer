@@ -30,7 +30,7 @@ void EntityShader::sendTexture(unsigned int handle, unsigned int id, GLenum unit
 }
 
 // debug tangents/bitangents
-void EntityShader::renderDebug(Camera * camera, Entity * entity) {
+void EntityShader::renderVertices(Camera * camera, Entity * entity) {
    Model * model = entity->model;
 
    glMatrixMode(GL_PROJECTION);
@@ -68,26 +68,48 @@ void EntityShader::renderDebug(Camera * camera, Entity * entity) {
    glEnd();
 }
 
+void EntityShader::renderBones(Camera * camera, Entity * entity) {
+   Model * model = entity->model;
+
+   for (int i = 0; i < model->boneCount; i++) {
+      Eigen::Vector4f p = entity->generateModelM() * entity->boneTransforms[i] * Eigen::Vector4f(0,0,0,1);
+      renderPoint(camera, Eigen::Vector3f(p(0), p(1), p(2)));
+
+      glLineWidth(3);
+      glBegin(GL_LINES);
+
+      glColor3f(0.8,0,0);
+      glVertex3f(p(0), p(1), p(2));
+      Eigen::Vector4f dir = entity->generateModelM() * entity->boneTransforms[i] * Eigen::Vector4f(1,0,0,0);
+      Eigen::Vector4f end = p + dir * 0.5f;
+      glVertex3f(end(0), end(1), end(2));
+
+      glColor3f(0,0.8,0);
+      glVertex3f(p(0), p(1), p(2));
+      dir = entity->generateModelM() * entity->boneTransforms[i] * Eigen::Vector4f(0,1,0,0);
+      end = p + dir * 0.5f;
+      glVertex3f(end(0), end(1), end(2));
+
+      glColor3f(0,0,0.8);
+      glVertex3f(p(0), p(1), p(2));
+      dir = entity->generateModelM() * entity->boneTransforms[i] * Eigen::Vector4f(0,0,1,0);
+      end = p + dir * 0.5f;
+      glVertex3f(end(0), end(1), end(2));
+
+      glEnd();
+      glLineWidth(1);
+   }
+}
+
 void EntityShader::renderPoint(Camera * camera, Eigen::Vector3f p) {
    glMatrixMode(GL_PROJECTION);
    glLoadMatrixf(camera->getProjectionM().data());
    glMatrixMode(GL_MODELVIEW);
    glLoadMatrixf(camera->getViewM().data());
 
-   glBegin(GL_LINES);
-
-   float size = 0.5f;
-   glColor3f(1,0,0);
-   glVertex3f(p(0) - size, p(1), p(2));
-   glVertex3f(p(0) + size, p(1), p(2));
-
-   glColor3f(0,1,0);
-   glVertex3f(p(0), p(1) - size, p(2));
-   glVertex3f(p(0), p(1) + size, p(2));
-
-   glColor3f(0,0,1);
-   glVertex3f(p(0), p(1), p(2) - size);
-   glVertex3f(p(0), p(1), p(2) + size);
-
+   glPointSize(8);
+   glBegin(GL_POINTS);
+   glColor3f(0.1,0.8,0.6);
+   glVertex3f(p(0), p(1), p(2));
    glEnd();
 }

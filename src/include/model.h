@@ -47,6 +47,11 @@ typedef struct {
 } Bone;
 
 typedef struct {
+   unsigned int index;
+   float weight;
+} BoneWeight;
+
+typedef struct {
    Eigen::Vector3f position;
    Eigen::Vector3f tangent;
    Eigen::Vector3f bitangent;
@@ -54,8 +59,7 @@ typedef struct {
    Eigen::Vector3f color;
    Eigen::Vector2f uv;
 
-   unsigned int boneIndices[MAX_BONES];
-   float boneWeights[MAX_BONES];
+   std::vector<BoneWeight> boneWeights;
    unsigned int boneInfluencesCount;
 } Vertex;
 

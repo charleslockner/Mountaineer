@@ -40,7 +40,7 @@ public:
             assert(jointI >= 0);
             T angle = angles[jointI];
             Eigen::Matrix<T,3,1> axis = jointAxis[jointI].cast<T>();
-            Eigen::Matrix<T,4,4> jointRotM = Mmath::angleAxisMatrix(angle, axis);
+            Eigen::Matrix<T,4,4> jointRotM = Mmath::AngleAxisMatrix(angle, axis);
             endEffector = jointRotM * endEffector;
          }
 
@@ -122,16 +122,16 @@ void IKSolver::solveBoneRotations(
    problem.AddParameterBlock(goalData, 3);
    problem.AddResidualBlock(costFunction, NULL, angleData, baseMData, goalData);
 
-   // // set min and max values of each angle
-   // int angleIndex = 0;
-   // for (int i = 0; i < boneCount; i++) {
-   //    Bone * bone = & model->bones[boneIndices[i]];
-   //    for (int j = 0; j < bone->joints.size(); j++) {
-   //       problem.SetParameterLowerBound(angleData, angleIndex, bone->joints[j].minAngle);
-   //       problem.SetParameterUpperBound(angleData, angleIndex, bone->joints[j].maxAngle);
-   //       angleIndex++;
-   //    }
-   // }
+   // set min and max values of each angle
+   int angleIndex = 0;
+   for (int i = 0; i < boneCount; i++) {
+      Bone * bone = & model->bones[boneIndices[i]];
+      for (int j = 0; j < bone->joints.size(); j++) {
+         problem.SetParameterLowerBound(angleData, angleIndex, bone->joints[j].minAngle);
+         problem.SetParameterUpperBound(angleData, angleIndex, bone->joints[j].maxAngle);
+         angleIndex++;
+      }
+   }
 
    // Set everything constant except for the angles
    problem.SetParameterBlockVariable(angleData);

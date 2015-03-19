@@ -16,7 +16,8 @@ public:
    Eigen::Vector3f scale;
 
    Model * model;
-   Eigen::Matrix4f boneTransforms[MAX_BONES];
+   Eigen::Matrix4f boneTransforms[MAX_BONES];   // has all space transforms except for invBindPose
+   Eigen::Matrix4f animTransforms[MAX_BONES];   // invBindPose included
 
    Entity(Eigen::Vector3f pos, Model * model);
    ~Entity();

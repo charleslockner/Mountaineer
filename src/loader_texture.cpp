@@ -9,41 +9,37 @@
 #include "model.h"
 
 static void swapBytes(unsigned char * buf1, unsigned char * buf2, int numBytes) {
-   unsigned char * buf1Temp = (unsigned char *)malloc(sizeof(unsigned char) * numBytes);
 
-   memcpy(buf1Temp, buf1, numBytes);
-   memcpy(buf1, buf2, numBytes);
-   memcpy(buf2, buf1Temp, numBytes);
-
-   free(buf1Temp);
 }
 
 static unsigned int loadImage(const char * filename) {
-
    unsigned int id;
 
    // Load texture
    int w, h, ncomps;
-   unsigned char *data = stbi_load(filename, &w, &h, &ncomps, 0);
+   unsigned char *stbi_data = stbi_load(filename, &w, &h, &ncomps, 0);
 
-   if(!data) {
-      std::cerr << filename << " not found" << std::endl;
+   if(!stbi_data) {
+      std::cerr << filename << " not found\n";
       exit(1);
    }
    if(ncomps != 3) {
-      std::cerr << filename << " must have 3 components (RGB)" << std::endl;
+      std::cerr << filename << " must have 3 components (RGB)\n";
       exit(1);
    }
    if((w & (w - 1)) != 0 || (h & (h - 1)) != 0) {
-      std::cerr << filename << " must be a power of 2" << std::endl;
+      std::cerr << filename << " must be a power of 2\n";
       exit(1);
    }
 
-   int rowLen = ncomps * w;
+   // Flip the image for opengl
+   int rowSize = ncomps * w;
+   unsigned char * data = (unsigned char *)malloc(sizeof(unsigned char) * rowSize * h);
+   for (int i = 0; i < h; i++)
+      memcpy(& data[rowSize * i], & stbi_data[rowSize * (h-1-i)], rowSize);
 
-   for (int i = 0; i < h/2; i++)
-      swapBytes(& data[rowLen*i], & data[rowLen*(h-1-i)], rowLen);
-
+   // Free the stbi buffer because now we're using "data"
+   stbi_image_free(stbi_data);
    // Generate a texture buffer object
    glGenTextures(1, & id);
    // Bind the current texture to be the newly generated texture object
@@ -61,8 +57,8 @@ static unsigned int loadImage(const char * filename) {
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
    // Unbind
    glBindTexture(GL_TEXTURE_2D, 0);
-   // Free image, since the data is now on the GPU
-   stbi_image_free(data);
+   // Free the image data, since the data is now on the GPU
+   free(data);
 
    return id;
 }

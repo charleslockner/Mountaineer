@@ -3,3 +3,9 @@ http://www.calpoly.edu/~jgphelan/_Media%20Assets/shannon_moran_messer_final_draf
 http://kinesiology.calpoly.edu/content/faculty/profiles/bob_dark
 http://kinesiology.calpoly.edu/content/faculty/index
 
+Todo:
+- Change exporter to export each vertex instead of each field seperately
+- Update the ciab loader accordingly
+- Create the debug bone render functions
+
+- Limit the joints with min and max values

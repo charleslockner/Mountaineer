@@ -23,7 +23,7 @@ Camera::Camera(Eigen::Vector3f pos, Eigen::Vector3f dir, Eigen::Vector3f upVec) 
 
    sensitivity = 0.5;
 
-   projectionM = Mmath::perspectiveMatrix(HFOV, ASPECT, NEAR, FAR);
+   projectionM = Mmath::PerspectiveMatrix(HFOV, ASPECT, NEAR, FAR);
 }
 
 Camera::~Camera() {}
@@ -81,16 +81,16 @@ void Camera::aim(double deltaX, double deltaY) {
       float pitchDelta = BASE_SENSITIVITY * sensitivity * deltaY;
       float yawDelta = BASE_SENSITIVITY * sensitivity * deltaX;
 
-      Eigen::Vector3f yawApplied = Mmath::rotateVec3(direction, -yawDelta, up);
+      Eigen::Vector3f yawApplied = Mmath::RotateVec3(direction, -yawDelta, up);
       Eigen::Vector3f leftVector = up.cross(direction).normalized();
 
-      direction = Mmath::rotateVec3(yawApplied, pitchDelta, leftVector);
+      direction = Mmath::RotateVec3(yawApplied, pitchDelta, leftVector);
       boundPitch();
    }
 }
 
 Eigen::Matrix4f Camera::getViewM() {
-   return Mmath::lookAtMatrix(position, direction, up);
+   return Mmath::LookAtMatrix(position, direction, up);
 }
 
 Eigen::Matrix4f Camera::getProjectionM() {

@@ -7,7 +7,7 @@
 
 namespace Mmath {
    template <typename T>
-   Eigen::Matrix<T,4,4> translationMatrix(
+   Eigen::Matrix<T,4,4> TranslationMatrix(
       const Eigen::Matrix<T,3,1> tns
    ) {
       Eigen::Matrix<T,4,4> m = Eigen::Matrix<T,4,4>::Identity();
@@ -16,7 +16,7 @@ namespace Mmath {
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> rotationMatrix(
+   Eigen::Matrix<T,4,4> RotationMatrix(
       const Eigen::Quaternion<T> rot
    ) {
       Eigen::Matrix<T,4,4> m = Eigen::Matrix<T,4,4>::Identity();
@@ -25,7 +25,7 @@ namespace Mmath {
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> scaleMatrix(
+   Eigen::Matrix<T,4,4> ScaleMatrix(
       const Eigen::Matrix<T,3,1> scl
    ) {
       Eigen::Matrix<T,4,4> m = Eigen::Matrix<T,4,4>::Identity();
@@ -36,22 +36,22 @@ namespace Mmath {
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> transformationMatrix(
+   Eigen::Matrix<T,4,4> TransformationMatrix(
       const Eigen::Matrix<T,3,1> tns,
       const Eigen::Quaternion<T> rot,
       const Eigen::Matrix<T,3,1> scl
    ) {
-      return translationMatrix(tns) * rotationMatrix(rot) * scaleMatrix(scl);
+      return TranslationMatrix(tns) * RotationMatrix(rot) * ScaleMatrix(scl);
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> angleAxisMatrix(T angle, Eigen::Matrix<T,3,1> axis) {
+   Eigen::Matrix<T,4,4> AngleAxisMatrix(T angle, Eigen::Matrix<T,3,1> axis) {
       Eigen::Quaternion<T> rotQuat(Eigen::AngleAxis<T>(angle, axis));
-      return rotationMatrix(rotQuat);
+      return RotationMatrix(rotQuat);
    }
 
    template <typename T>
-   Eigen::Matrix<T,3,1> rotateVec3(
+   Eigen::Matrix<T,3,1> RotateVec3(
       const Eigen::Matrix<T,3,1> subject,
       const T angle,
       const Eigen::Matrix<T,3,1> axis
@@ -62,7 +62,7 @@ namespace Mmath {
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> perspectiveMatrix(
+   Eigen::Matrix<T,4,4> PerspectiveMatrix(
       const T fovy,
       const T aspect,
       const T zNear,
@@ -82,7 +82,7 @@ namespace Mmath {
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> lookAtMatrix(
+   Eigen::Matrix<T,4,4> LookAtMatrix(
       const Eigen::Matrix<T,3,1> eye,
       const Eigen::Matrix<T,3,1> direction,
       const Eigen::Matrix<T,3,1> up

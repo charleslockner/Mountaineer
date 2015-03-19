@@ -36,12 +36,13 @@ static Eigen::Matrix4f computeAnimTransform(AnimBone * animBone, int keyCount, f
    Key interpKey = (keyCount == 1) ? keys[earlyNdx] :
       interpolateKeys(keys[earlyNdx], keys[lateNdx], tickTime);
 
-   return Mmath::transformationMatrix(interpKey.position, interpKey.rotation, interpKey.scale);
+   return Mmath::TransformationMatrix(interpKey.position, interpKey.rotation, interpKey.scale);
 }
 
-BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms) {
+BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms, Eigen::Matrix4f * animTransforms) {
    this->model = model;
    this->boneTransforms = boneTransforms;
+   this->animTransforms = animTransforms;
    this->bones = std::vector<EntityBone>(model->boneCount);
 
    for (int i = 0; i < model->boneCount; i++) {
@@ -109,7 +110,7 @@ void BoneController::computeFlatTransforms() {
 
       // We cannot manually rotate bones if there is no bone hierarchy.
       Eigen::Matrix4f animKeysM = computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
-      boneTransforms[boneIndex] = animKeysM * bone->invBonePose;
+      animTransforms[boneIndex] = animKeysM * bone->invBonePose;
    }
 }
 
@@ -139,7 +140,7 @@ Eigen::Matrix4f BoneController::constructJointMatrix(int boneIndex) {
    Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
    for (int i = 0; i < bone->joints.size(); i++) {
       assert(bone->joints.size() == entBone->angles.size());
-      jointRotationM *= Mmath::angleAxisMatrix<float>(entBone->angles[i], bone->joints[i].axis);
+      jointRotationM *= Mmath::AngleAxisMatrix<float>(entBone->angles[i], bone->joints[i].axis);
    }
 
    return bone->parentOffset * jointRotationM;
@@ -160,7 +161,6 @@ void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f p
       std::vector<float *> angles = constructAnglePtrs(bone->limbIndex);
       Eigen::Matrix4f baseM = modelM * parentM;
       limbSolver->solveBoneRotations(baseM, goal, angles);
-      angles.clear();
    }
 
    // if this bone has a computed ik rotation, use it, otherwise use the animation
@@ -168,7 +168,8 @@ void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f p
       parentM * constructJointMatrix(boneIndex) :
       parentM * computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
 
-   boneTransforms[boneIndex] = accumM * bone->invBonePose;
+   boneTransforms[boneIndex] = accumM;
+   animTransforms[boneIndex] = accumM * bone->invBonePose;
 
    for (int i = 0; i < bone->childCount; i++)
       computeRecursiveTransforms(bone->childIndices[i], accumM);

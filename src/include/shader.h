@@ -13,7 +13,10 @@ class Entity;
 class EntityShader {
 public:
    virtual void render(Camera * camera, LightData * lightdata, Entity * entity) {};
-   void renderDebug(Camera * camera, Entity * entity);
+
+   // Debug Functions
+   void renderVertices(Camera * camera, Entity * entity);
+   void renderBones(Camera * camera, Entity * entity);
    void renderPoint(Camera * camera, Eigen::Vector3f p);
 
 protected:
@@ -32,8 +35,10 @@ protected:
                                    unsigned int handle2, unsigned int handle3,
                                    unsigned int vbo);
    void sendTexture(unsigned int handle, unsigned int id, GLenum texture);
-};
 
+   HandleTable animTable, statTable;
+   unsigned int animProg, statProg;
+};
 
 class ForwardShader: public EntityShader {
 public:
@@ -43,9 +48,6 @@ public:
 
 private:
    void fillHandleTable(HandleTable * table, unsigned int prog, bool animated);
-
-   HandleTable animTable, statTable;
-   unsigned int animProg, statProg;
 };
 
 #endif // __SHADER_H__

@@ -20,7 +20,7 @@ typedef struct {
 
 class BoneController {
 public:
-   BoneController(Model * model, Eigen::Matrix4f * boneTransforms);
+   BoneController(Model * model, Eigen::Matrix4f * boneTransforms, Eigen::Matrix4f * animTransforms);
    ~BoneController();
 
    void rotateBone(int boneNum, float angle, Eigen::Vector3f axis);
@@ -33,6 +33,7 @@ public:
 private:
    Model * model;
    Eigen::Matrix4f * boneTransforms;
+   Eigen::Matrix4f * animTransforms;
 
    Eigen::Matrix4f modelM;
    std::vector<EntityBone> bones;

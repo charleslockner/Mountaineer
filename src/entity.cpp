@@ -7,10 +7,12 @@ Entity::Entity(Eigen::Vector3f position, Model * model) {
    this->scale = Eigen::Vector3f(1,1,1);
    this->model = model;
 
-   for (int i = 0; i < MAX_BONES; i++)
+   for (int i = 0; i < MAX_BONES; i++) {
       this->boneTransforms[i] = Eigen::Matrix4f::Identity();
+      this->animTransforms[i] = Eigen::Matrix4f::Identity();
+   }
 
-   this->boneController = new BoneController(model, boneTransforms);
+   this->boneController = new BoneController(model, boneTransforms, animTransforms);
 }
 
 Entity::~Entity() {
@@ -25,5 +27,5 @@ void Entity::update(float timeDelta) {
 }
 
 Eigen::Matrix4f Entity::generateModelM() {
-   return Mmath::transformationMatrix(position, rotation, scale);
+   return Mmath::TransformationMatrix(position, rotation, scale);
 }

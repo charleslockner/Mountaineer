@@ -135,25 +135,28 @@ void setupLimbs(Model * guyModel) {
    guyModel->bones[9].limbIndex = 0;
 
    joint.axis = Eigen::Vector3f(1,0,0);
-   guyModel->bones[9].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(1,0,0);
+   joint.minAngle = -M_PI/2;
+   joint.maxAngle = M_PI/2;
+   guyModel->bones[10].joints.push_back(joint);
+   joint.axis = Eigen::Vector3f(0,1,0);
+   joint.minAngle = -M_PI/3;
+   joint.maxAngle = M_PI/2;
    guyModel->bones[10].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(0,0,1);
+   joint.minAngle = -M_PI/2;
+   joint.maxAngle = M_PI/3;
    guyModel->bones[10].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(1,0,0);
+   joint.axis = Eigen::Vector3f(0,1,0);
+   joint.minAngle = -M_PI/2;
+   joint.maxAngle = M_PI/3;
    guyModel->bones[11].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,0,1);
-   guyModel->bones[11].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(1,0,0);
-   guyModel->bones[12].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,0,1);
-   guyModel->bones[12].joints.push_back(joint);
 
    boneIndices.push_back(9);
    boneIndices.push_back(10);
    boneIndices.push_back(11);
    boneIndices.push_back(12);
    boneIndices.push_back(13);
+
    guyModel->limbSolvers[0] = new IKSolver(guyModel, boneIndices);
    boneIndices.clear();
 
@@ -161,18 +164,24 @@ void setupLimbs(Model * guyModel) {
    guyModel->bones[15].limbIndex = 1;
 
    joint.axis = Eigen::Vector3f(1,0,0);
-   guyModel->bones[15].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(1,0,0);
+   joint.minAngle = -M_PI;
+   joint.maxAngle = M_PI;
    guyModel->bones[16].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,0,1);
+   joint.axis = Eigen::Vector3f(0,1,0);
+   joint.minAngle = -M_PI;
+   joint.maxAngle = M_PI;
    guyModel->bones[16].joints.push_back(joint);
    joint.axis = Eigen::Vector3f(1,0,0);
+   joint.minAngle = -M_PI;
+   joint.maxAngle = M_PI;
    guyModel->bones[17].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,0,1);
+   joint.axis = Eigen::Vector3f(0,1,0);
+   joint.minAngle = -M_PI;
+   joint.maxAngle = M_PI;
    guyModel->bones[17].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(1,0,0);
-   guyModel->bones[18].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,0,1);
+   joint.axis = Eigen::Vector3f(0,1,0);
+   joint.minAngle = -M_PI/2;
+   joint.maxAngle = M_PI/2;
    guyModel->bones[18].joints.push_back(joint);
 
    boneIndices.push_back(15);
@@ -180,7 +189,7 @@ void setupLimbs(Model * guyModel) {
    boneIndices.push_back(17);
    boneIndices.push_back(18);
    boneIndices.push_back(19);
-// printf("sizeof boneIndices %d\n", boneIndices.size());
+
    guyModel->limbSolvers[1] = new IKSolver(guyModel, boneIndices);
    boneIndices.clear();
 
@@ -280,7 +289,9 @@ int main(int argc, char ** argv) {
       for (int i = 0; i < entities.size(); i++)
          shader->render(camera, & lightData, entities[i]);
 
-      // shader->renderDebug(camera, entities[i]);
+      // shader->renderVertices(camera, entities[1]);
+      shader->renderBones(camera, entities[1]);
+      shader->renderBones(camera, entities[0]);
       shader->renderPoint(camera, goals[goalIndex]);
 
       glfwSwapBuffers(window);

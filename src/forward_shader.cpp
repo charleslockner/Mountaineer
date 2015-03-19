@@ -107,7 +107,7 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
                                  table->aBoneWeights2, table->aBoneWeights3,
                                  model->bWeightID);
       sendVertexAttribArray(table->aNumInfluences, model->bNumInfID, 1);
-      glUniformMatrix4fv(table->uBoneMs, MAX_BONES, GL_FALSE, (GLfloat *)(entity->boneTransforms));
+      glUniformMatrix4fv(table->uBoneMs, MAX_BONES, GL_FALSE, (GLfloat *)(entity->animTransforms));
    }
 
    // Draw the damn thing!
