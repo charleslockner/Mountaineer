@@ -266,7 +266,7 @@ int main(int argc, char ** argv) {
    Model * chebModel = new Model();
    chebModel->loadOBJ("assets/cheb/cheb2.obj");
    chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   chebModel->loadAnimationPIN("assets/cheb/cheb_skel_runAround.txt");
+   chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
    entities.push_back(new Entity(Eigen::Vector3f(-8, 0, 5), chebModel));
    entities[2]->boneController->playAnimation(0, 0, false);
 
@@ -289,9 +289,11 @@ int main(int argc, char ** argv) {
       for (int i = 0; i < entities.size(); i++)
          shader->render(camera, & lightData, entities[i]);
 
-      // shader->renderVertices(camera, entities[1]);
-      shader->renderBones(camera, entities[1]);
-      shader->renderBones(camera, entities[0]);
+      if (keyToggles[GLFW_KEY_K]) {
+         shader->renderVertices(camera, entities[1]);
+         shader->renderBones(camera, entities[1]);
+         shader->renderBones(camera, entities[0]);
+      }
       shader->renderPoint(camera, goals[goalIndex]);
 
       glfwSwapBuffers(window);

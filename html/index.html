@@ -1,0 +1,62 @@
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="description" content="">
+      <meta name="author" content="Charles Lockner">
+
+      <!-- FAVICON -->
+      <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+
+      <!-- The Styles -->
+      <link rel="stylesheet" href="global.min.css">
+      <link rel="stylesheet" href="bootstrap.min.css">
+      <link rel="stylesheet" href="bootstrap-theme.min.css">
+
+      <title>Skinned IK</title>
+   </head>
+
+   <body>
+      <div class="container content">
+        <div class="row">
+            <div class="page-header">
+               <h1>Skinned Huminoid with Inverse Kinematics<br><small>By Charles Lockner</small></h1>
+            </div>
+
+            <div class="panel panel-default">
+               <div class="panel-heading">Introduction</div>
+               <div class="panel-body">
+                  <p> The goal of this project is to create a huminoid model that can realistically interact with terrain. To do this I created a Blender and Maya exporters to give mesh, bone, and animation data to my program. After this was done I interpolated keyframes from the animation data to display the character animation. One particular feature I wanted to have in this project was the ability to separately manage animations for individual bones. To do this I separated the matrices for animations from the bind pose matrices. Doing this allowed me to easy swap out matrices used during IK and those created from the fixed loaded animation.
+                  <p> As for inverse kinematics, I created "limbs" that are basically a string of bones. At each frame every time the program calculates a new position for each bone, the program traverses up the tree until it reaches the root of a new limb. At this time it calculates the needed rotations to reach the given goal point, which you can see in the program as a terquois dot. As it progresses up the tree. If there is a rotation given from the IK solver for the given bone, the program uses this matrix instead of the static animation matrix.
+                  </p>
+               </div>
+            </div>
+
+            <div class="panel panel-default">
+               <div class="panel-heading">Sample Video</div>
+               <div class="panel-body">
+                  <div style="text-align: center;">
+                     <video id="Sample Clip" src="recording.mov" controls></video>
+                  </div>
+                  <div class="well">
+                  Here is a sample recording of the features in my project. Here you can see the character's left arm has many constraints that limit the angles the IK Solver will allow. As you can see, it looks much better than the right arm, which has no constraints attached to it.
+                  </div>
+               </div>
+            </div>
+
+            <div class="panel panel-default">
+               <div class="panel-heading">Example Photos</div>
+               <div class="panel-body">
+                  <div class="well" style="text-align: center;"><img src="img1.png"></div>
+                  <div class="well" style="text-align: center;"><img src="img2.png"></div>
+                  <div class="well" style="text-align: center;"><img src="img3.png"></div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </body>
+
+   <!-- The javascript includes go down here so the page loads faster -->
+   <script type="text/javascript" src="jquery.min.js"></script>
+   <script type="text/javascript" src="bootstrap.min.js"></script>
+</html>
