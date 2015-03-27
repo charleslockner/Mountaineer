@@ -45,29 +45,31 @@ static inline void parseFloat3(
   z = parseFloat(token);
 }
 
+static void trimNewLine(std::string& linebuf) {
+   // Trim newline '\r\n' or '\n'
+   if (linebuf.size() > 0) {
+      if (linebuf[linebuf.size()-1] == '\n')
+         linebuf.erase(linebuf.size()-1);
+   }
+   if (linebuf.size() > 0) {
+      if (linebuf[linebuf.size()-1] == '\r')
+         linebuf.erase(linebuf.size()-1);
+   }
+}
+
 static void parseNumBones(int& numBones, std::istream& inStream) {
    int maxchars = 8192;  // Alloc enough size.
    std::vector<char> buf(maxchars);  // Alloc enough size.
 
    while (inStream.peek() != -1) {
       inStream.getline(&buf[0], maxchars);
-
       std::string linebuf(&buf[0]);
 
-      // Trim newline '\r\n' or '\n'
-      if (linebuf.size() > 0) {
-         if (linebuf[linebuf.size()-1] == '\n')
-            linebuf.erase(linebuf.size()-1);
-      }
-      if (linebuf.size() > 0) {
-         if (linebuf[linebuf.size()-1] == '\r')
-            linebuf.erase(linebuf.size()-1);
-      }
+      trimNewLine(linebuf);
 
       // Skip if empty line.
-      if (linebuf.empty()) {
+      if (linebuf.empty())
          continue;
-      }
 
       // Skip leading space.
       const char* token = linebuf.c_str();
@@ -109,20 +111,11 @@ void PIN_loadWeights(std::vector<float>& boneWeights,
 
       std::string linebuf(&buf[0]);
 
-      // Trim newline '\r\n' or '\n'
-      if (linebuf.size() > 0) {
-         if (linebuf[linebuf.size()-1] == '\n')
-            linebuf.erase(linebuf.size()-1);
-      }
-      if (linebuf.size() > 0) {
-         if (linebuf[linebuf.size()-1] == '\r')
-            linebuf.erase(linebuf.size()-1);
-      }
+      trimNewLine(linebuf);
 
       // Skip if empty line.
-      if (linebuf.empty()) {
+      if (linebuf.empty())
          continue;
-      }
 
       // Skip leading space.
       const char* token = linebuf.c_str();
@@ -152,15 +145,7 @@ static void parseBindPose(std::vector<float>& bindPose,
    inStream.getline(&buf[0], maxchars);
    std::string linebuf(&buf[0]);
 
-   // Trim newline '\r\n' or '\n'
-   if (linebuf.size() > 0) {
-      if (linebuf[linebuf.size()-1] == '\n')
-         linebuf.erase(linebuf.size()-1);
-   }
-   if (linebuf.size() > 0) {
-      if (linebuf[linebuf.size()-1] == '\r')
-         linebuf.erase(linebuf.size()-1);
-   }
+   trimNewLine(linebuf);
 
    // Skip leading space.
    const char* token = linebuf.c_str();
@@ -201,20 +186,11 @@ void PIN_loadSkeleton(std::vector<float>& frames,
       inStream.getline(&buf[0], maxchars);
       std::string linebuf(&buf[0]);
 
-      // Trim newline '\r\n' or '\n'
-      if (linebuf.size() > 0) {
-         if (linebuf[linebuf.size()-1] == '\n')
-            linebuf.erase(linebuf.size()-1);
-      }
-      if (linebuf.size() > 0) {
-         if (linebuf[linebuf.size()-1] == '\r')
-            linebuf.erase(linebuf.size()-1);
-      }
+      trimNewLine(linebuf);
 
       // Skip if empty line.
-      if (linebuf.empty()) {
+      if (linebuf.empty())
          continue;
-      }
 
       // Skip leading space.
       const char* token = linebuf.c_str();

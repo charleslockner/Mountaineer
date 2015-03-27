@@ -26,6 +26,8 @@ bool playing = false;
 
 bool keyToggles[512] = {false};
 
+Model * guyModel;
+
 static void error_callback(int error, const char* description) {
    fputs(description, stderr);
 }
@@ -40,6 +42,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_E:
          case GLFW_KEY_T:
          case GLFW_KEY_L:
+         case GLFW_KEY_M:
             break;
          default:
             keyToggles[key] = true;
@@ -59,6 +62,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             break;
          case GLFW_KEY_T:
             keyToggles[key] = !keyToggles[key];
+            break;
+         case GLFW_KEY_M:
+            guyModel->loadConstraints("assets/models/guy.cns");
             break;
          case GLFW_KEY_L:
             keyToggles[key] = !keyToggles[key];
@@ -126,73 +132,28 @@ GLFWwindow * windowSetup() {
 }
 
 void setupLimbs(Model * guyModel) {
-   IKJoint joint;
    std::vector<short> boneIndices;
-   IKSolver * solver;
    guyModel->limbSolvers = std::vector<IKSolver*>(2);
 
    // left arm
-   guyModel->bones[9].limbIndex = 0;
-
-   joint.axis = Eigen::Vector3f(1,0,0);
-   joint.minAngle = -M_PI/2;
-   joint.maxAngle = M_PI/2;
-   guyModel->bones[10].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,1,0);
-   joint.minAngle = -M_PI/3;
-   joint.maxAngle = M_PI/2;
-   guyModel->bones[10].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,0,1);
-   joint.minAngle = -M_PI/2;
-   joint.maxAngle = M_PI/3;
-   guyModel->bones[10].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,1,0);
-   joint.minAngle = -M_PI/2;
-   joint.maxAngle = M_PI/3;
-   guyModel->bones[11].joints.push_back(joint);
-
    boneIndices.push_back(9);
    boneIndices.push_back(10);
    boneIndices.push_back(11);
    boneIndices.push_back(12);
    boneIndices.push_back(13);
-
+   guyModel->bones[9].limbIndex = 0;
    guyModel->limbSolvers[0] = new IKSolver(guyModel, boneIndices);
    boneIndices.clear();
 
    // right arm
-   guyModel->bones[15].limbIndex = 1;
-
-   joint.axis = Eigen::Vector3f(1,0,0);
-   joint.minAngle = -M_PI;
-   joint.maxAngle = M_PI;
-   guyModel->bones[16].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,1,0);
-   joint.minAngle = -M_PI;
-   joint.maxAngle = M_PI;
-   guyModel->bones[16].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(1,0,0);
-   joint.minAngle = -M_PI;
-   joint.maxAngle = M_PI;
-   guyModel->bones[17].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,1,0);
-   joint.minAngle = -M_PI;
-   joint.maxAngle = M_PI;
-   guyModel->bones[17].joints.push_back(joint);
-   joint.axis = Eigen::Vector3f(0,1,0);
-   joint.minAngle = -M_PI/2;
-   joint.maxAngle = M_PI/2;
-   guyModel->bones[18].joints.push_back(joint);
-
    boneIndices.push_back(15);
    boneIndices.push_back(16);
    boneIndices.push_back(17);
    boneIndices.push_back(18);
    boneIndices.push_back(19);
-
+   guyModel->bones[15].limbIndex = 1;
    guyModel->limbSolvers[1] = new IKSolver(guyModel, boneIndices);
    boneIndices.clear();
-
 }
 
 void updateCameraPosition(double timePassed) {
@@ -249,10 +210,10 @@ int main(int argc, char ** argv) {
    camera = new Camera(Eigen::Vector3f(0,0,10), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
    setupLights();
 
-   Model * guyModel = new Model();
+   guyModel = new Model();
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_tex.bmp");
-   // guyModel->loadNormalMap("assets/textures/masonry_normal.png");
+   guyModel->loadConstraints("assets/models/guy.cns");
    setupLimbs(guyModel);
    entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), guyModel));
 
@@ -291,7 +252,6 @@ int main(int argc, char ** argv) {
 
       if (keyToggles[GLFW_KEY_K]) {
          shader->renderVertices(camera, entities[1]);
-         shader->renderBones(camera, entities[1]);
          shader->renderBones(camera, entities[0]);
       }
       shader->renderPoint(camera, goals[goalIndex]);

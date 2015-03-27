@@ -92,6 +92,7 @@ public:
    void loadOBJ(const char * path);
    void loadSkinningPIN(const char * path);
    void loadAnimationPIN(const char * path);
+   void loadConstraints(const char * path);
 
    void printBoneTree();
    void printAnimations();

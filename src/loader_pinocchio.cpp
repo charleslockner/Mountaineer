@@ -5,7 +5,6 @@
 
 #include <algorithm>
 
-
 typedef struct VertexWeight {
    std::vector<BoneWeight> boneWeights;
 } VertexWeight;
