@@ -9,13 +9,19 @@
 class LimbCostFunctor {
 public:
    LimbCostFunctor(
-      Model * model,
-      std::vector<short> boneIndices,
-      int numAngles
+      std::vector<short> jointCounts,
+      std::vector<Eigen::Matrix4f> boneOffsets,
+      std::vector<Eigen::Vector3f> jointAxis
    ) {
-      this->model = model;
-      this->boneIndices = boneIndices;
-      this->numAngles = numAngles;
+      assert(boneOffsets.size() == jointCounts.size());
+      this->numBones = jointCounts.size();
+      this->totalJointCount = 0;
+      for (int i = 0; i < jointCounts.size(); i++)
+         this->totalJointCount += jointCounts[i];
+
+      this->jointCounts = jointCounts;
+      this->boneOffsets = boneOffsets;
+      this->jointAxis = jointAxis;
    }
 
    template<typename T>
@@ -24,40 +30,38 @@ public:
       Eigen::Matrix<T,4,4> baseM = Eigen::Map<const Eigen::Matrix<T,4,4> >(p[1], 4, 4);
       Eigen::Matrix<T,3,1> goal = Eigen::Map<const Eigen::Matrix<T,3,1> >(p[2], 3, 1);
 
-      // Start the endPoint off at its position relative to the location of the last bone
-      Eigen::Matrix<T,4,1> endPoint = Eigen::Matrix<T,4,1>(T(0),T(0),T(0),T(1));
+      // Start the endEffector off at the origin in model space
+      Eigen::Matrix<T,4,1> endEffector = Eigen::Matrix<T,4,1>(T(0),T(0),T(0),T(1));
 
       // Multiply by all rotation and offset matrices starting at the end and working towards the root
-      int angleI = numAngles-1;
-      for (int boneI = boneIndices.size()-1; boneI >= 0; boneI--) {
-         Bone * bone = & model->bones[boneIndices[boneI]];
-         std::vector<IKJoint> * joints = & bone->joints;
-
-         for (int jointI = joints->size()-1; jointI >= 0; jointI--, angleI--) {
+      int jointI = totalJointCount-1;
+      for (int i = numBones-1; i >= 0; i--) {
+         for (int j = 0; j < jointCounts[i]; j++, jointI--) {
             assert(jointI >= 0);
-            T angle = angles[angleI];
-            Eigen::Matrix<T,3,1> axis = (*joints)[jointI].axis.cast<T>();
+            T angle = angles[jointI];
+            Eigen::Matrix<T,3,1> axis = jointAxis[jointI].cast<T>();
             Eigen::Matrix<T,4,4> jointRotM = Mmath::AngleAxisMatrix(angle, axis);
-            endPoint = jointRotM * endPoint;
+            endEffector = jointRotM * endEffector;
          }
 
-         Eigen::Matrix<T,4,4> boneOffset = bone->parentOffset.cast<T>();
-         endPoint = boneOffset * endPoint;
+         Eigen::Matrix<T,4,4> boneOffset = boneOffsets[i].cast<T>();
+         endEffector = boneOffset * endEffector;
       }
 
       // Multiply by model->world matrix and all the bone transforms before this limb (baseM)
-      endPoint = baseM * endPoint;
+      endEffector = baseM * endEffector;
 
-      residuals[0] = goal(0) - endPoint(0);
-      residuals[1] = goal(1) - endPoint(1);
-      residuals[2] = goal(2) - endPoint(2);
+      residuals[0] = goal(0) - endEffector(0);
+      residuals[1] = goal(1) - endEffector(1);
+      residuals[2] = goal(2) - endEffector(2);
       return true;
    }
 
 private:
-   Model * model;
-   std::vector<short> boneIndices;
-   int numAngles;
+   int numBones, totalJointCount;
+   std::vector<short> jointCounts;
+   std::vector<Eigen::Matrix4f> boneOffsets;
+   std::vector<Eigen::Vector3f> jointAxis;
 };
 
 IKSolver::IKSolver(Model * model, std::vector<short> boneIndices) {
@@ -72,13 +76,26 @@ void IKSolver::solveBoneRotations(
 ) {
    int angleCount = 0;
    int boneCount = boneIndices.size();
-   for (int i = 0; i < boneCount; i++)
-      angleCount += model->bones[boneIndices[i]].joints.size();
 
-   // Create the cost functor and pass in the constant arguments
+   std::vector<Eigen::Matrix4f> boneOffsets;
+   std::vector<Eigen::Vector3f> jointAxis;
+   std::vector<short> jointCounts;
+
+   // Fill in jointCounts, jointAxis, and boneOffsets from bone data
+   for (int i = 0; i < boneCount; i++) {
+      Bone * bone = & model->bones[boneIndices[i]];
+      int jointCount = bone->joints.size();
+      angleCount += jointCount;
+
+      jointCounts.push_back(jointCount);
+      boneOffsets.push_back(bone->parentOffset);
+      for (int j = 0; j < jointCount; j++)
+         jointAxis.push_back(bone->joints[j].axis);
+   }
+
    ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 3> * costFunction =
       new ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 3>(
-         new LimbCostFunctor(model, boneIndices, angleCount));
+         new LimbCostFunctor(jointCounts, boneOffsets, jointAxis));
 
    // Set up the cost function parameter and residual blocks
    costFunction->AddParameterBlock(angleCount); // angles
@@ -123,7 +140,7 @@ void IKSolver::solveBoneRotations(
 
    // Solve for the angles
    ceres::Solver::Options options;
-   options.linear_solver_type = ceres::DENSE_QR;
+   // options.linear_solver_type = ceres::DENSE_QR;
    ceres::Solver::Summary summary;
    ceres::Solve(options, &problem, &summary);
 

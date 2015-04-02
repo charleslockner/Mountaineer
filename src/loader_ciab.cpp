@@ -30,7 +30,7 @@ static void readHeader(FILE *fp, Model * model) {
    fread(& model->animationCount, sizeof(unsigned int), 1, fp);
 
    // printf("verts: %d, faces: %d, bones: %d, anims: %d\n",
-      // model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
+   //    model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
 
    if (model->boneCount > MAX_BONES) {
       printf("There are %d bones and the max is %d\n", model->boneCount, MAX_BONES);
