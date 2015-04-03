@@ -15,12 +15,22 @@ typedef struct {
 } EntityBone;
 
 typedef struct {
-   Eigen::Vector3f goal;
+   std::vector<short> baseBoneIndices; // bones that move the root around
+   std::vector<short> reachBoneIndices; // bones that move the end effector
+   Eigen::Vector3f baseOffset;
+   Eigen::Vector3f reachOffset;
+   Eigen::Vector3f baseGoal;
+   Eigen::Vector3f reachGoal;
 } EntityLimb;
 
 class BoneController {
 public:
-   BoneController(Model * model, Eigen::Matrix4f * boneTransforms, Eigen::Matrix4f * animTransforms);
+   BoneController(
+      Model * model,
+      Eigen::Matrix4f * boneTransforms,
+      Eigen::Matrix4f * animTransforms,
+      std::vector<EntityLimb> limbs
+   );
    ~BoneController();
 
    void rotateBone(int boneNum, float angle, Eigen::Vector3f axis);

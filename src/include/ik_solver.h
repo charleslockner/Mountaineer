@@ -9,21 +9,26 @@
 struct Model;
 class LimbCostFunctor;
 
-class IKSolver {
-public:
-   IKSolver(Model * model, std::vector<short> boneIndices);
-   ~IKSolver();
-
-   void solveBoneRotations(
+namespace IK {
+   void SolveSegment(
+      Model * model,
       Eigen::Matrix4f baseM,
       Eigen::Vector3f goal,
-      std::vector<float *> angles
+      std::vector<float *> angles,
+      std::vector<short> boneIndices
    );
 
-   std::vector<short> boneIndices;
-
-private:
-   Model * model;
-};
+   void SolveThroughRoot(
+      Model * model,
+      Eigen::Matrix4f baseSclRotM,
+      Eigen::Vector3f * basePosition,
+      Eigen::Vector3f baseGoal,
+      Eigen::Vector3f reachGoal,
+      std::vector<float *> baseAngles,
+      std::vector<float *> reachAngles,
+      std::vector<short> baseBoneIndices,
+      std::vector<short> reachBoneIndices
+   );
+}
 
 #endif // __IK_SOLVER_H__

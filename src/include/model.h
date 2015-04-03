@@ -109,7 +109,6 @@ public:
    std::vector<Vertex> vertices;
    std::vector<Face> faces;
    std::vector<Bone> bones;
-   std::vector<IKSolver*> limbSolvers;
    std::vector<Animation> animations;
 };
 

@@ -39,12 +39,18 @@ static Eigen::Matrix4f computeAnimTransform(AnimBone * animBone, int keyCount, f
    return Mmath::TransformationMatrix(interpKey.position, interpKey.rotation, interpKey.scale);
 }
 
-BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms, Eigen::Matrix4f * animTransforms) {
+BoneController::BoneController(
+   Model * model,
+   Eigen::Matrix4f * boneTransforms,
+   Eigen::Matrix4f * animTransforms,
+   std::vector<EntityLimb> limbs
+) {
    this->model = model;
    this->boneTransforms = boneTransforms;
    this->animTransforms = animTransforms;
-   this->bones = std::vector<EntityBone>(model->boneCount);
+   this->limbs = limbs;
 
+   this->bones = std::vector<EntityBone>(model->boneCount);
    for (int i = 0; i < model->boneCount; i++) {
       this->bones[i].angles = std::vector<float>(model->bones[i].joints.size());
       // for (int j = 0; j < model->bones[i].joints.size(); j++)
@@ -53,7 +59,7 @@ BoneController::BoneController(Model * model, Eigen::Matrix4f * boneTransforms, 
       this->bones[i].animTime = 0;
       this->bones[i].animIsPlaying = false;
    }
-   this->limbs = std::vector<EntityLimb>(model->limbSolvers.size());
+
    this->modelM = Eigen::Matrix4f::Identity();
 }
 
@@ -115,7 +121,7 @@ void BoneController::computeFlatTransforms() {
 }
 
 void BoneController::setLimbGoal(int limbIndex, Eigen::Vector3f goal) {
-   this->limbs[limbIndex].goal = goal;
+   this->limbs[limbIndex].reachGoal = goal;
 }
 
 void BoneController::setModelM(Eigen::Matrix4f modelM) {
@@ -124,7 +130,7 @@ void BoneController::setModelM(Eigen::Matrix4f modelM) {
 
 std::vector<float *> BoneController::constructAnglePtrs(int limbIndex) {
    std::vector<float *> angles = std::vector<float *>();
-   std::vector<short> boneIndices = model->limbSolvers[limbIndex]->boneIndices;
+   std::vector<short> boneIndices = limbs[limbIndex].reachBoneIndices;
    for (int i = 0; i < boneIndices.size(); i++) {
       EntityBone * bone = & bones[boneIndices[i]];
       for (int j = 0; j < bone->angles.size(); j++)
@@ -156,11 +162,12 @@ void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f p
 
    // if this bone is the root of a limb, compute the limb's ik rotation angles.
    if (bone->limbIndex >= 0) {
-      IKSolver * limbSolver = model->limbSolvers[bone->limbIndex];
-      Eigen::Vector3f goal = this->limbs[bone->limbIndex].goal;
+      EntityLimb * limb = & this->limbs[bone->limbIndex];
+      std::vector<short> boneIndices = limb->reachBoneIndices;
+      Eigen::Vector3f goal = limb->reachGoal;
       std::vector<float *> angles = constructAnglePtrs(bone->limbIndex);
       Eigen::Matrix4f baseM = modelM * parentM;
-      limbSolver->solveBoneRotations(baseM, goal, angles);
+      IK::SolveSegment(model, baseM, goal, angles, boneIndices);
    }
 
    // if this bone has a computed ik rotation, use it, otherwise use the animation

@@ -131,29 +131,25 @@ GLFWwindow * windowSetup() {
    return window;
 }
 
-void setupLimbs(Model * guyModel) {
-   std::vector<short> boneIndices;
-   guyModel->limbSolvers = std::vector<IKSolver*>(2);
+std::vector<EntityLimb> setupLimbs() {
+   std::vector<EntityLimb> limbs = std::vector<EntityLimb>(1);
 
-   // left arm
-   boneIndices.push_back(9);
-   boneIndices.push_back(10);
-   boneIndices.push_back(11);
-   boneIndices.push_back(12);
-   boneIndices.push_back(13);
-   guyModel->bones[9].limbIndex = 0;
-   guyModel->limbSolvers[0] = new IKSolver(guyModel, boneIndices);
-   boneIndices.clear();
+   // Set up the left arm
+   EntityLimb entLimb;
+   // entBone.baseBoneIndices.push_back()
+   entLimb.reachBoneIndices.push_back(9);
+   entLimb.reachBoneIndices.push_back(10);
+   entLimb.reachBoneIndices.push_back(11);
+   entLimb.reachBoneIndices.push_back(12);
+   entLimb.reachBoneIndices.push_back(13);
+   entLimb.reachBoneIndices.push_back(14);
+   entLimb.baseOffset = Eigen::Vector3f(0,0,0);
+   entLimb.reachOffset = Eigen::Vector3f(0,0,0);
+   entLimb.baseGoal = Eigen::Vector3f(0,0,0);
+   entLimb.reachGoal = Eigen::Vector3f(0,0,0);
+   limbs[0] = entLimb;
 
-   // right arm
-   boneIndices.push_back(15);
-   boneIndices.push_back(16);
-   boneIndices.push_back(17);
-   boneIndices.push_back(18);
-   boneIndices.push_back(19);
-   guyModel->bones[15].limbIndex = 1;
-   guyModel->limbSolvers[1] = new IKSolver(guyModel, boneIndices);
-   boneIndices.clear();
+   return limbs;
 }
 
 void updateCameraPosition(double timePassed) {
@@ -214,21 +210,21 @@ int main(int argc, char ** argv) {
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_tex.bmp");
    guyModel->loadConstraints("assets/models/guy.cns");
-   setupLimbs(guyModel);
-   entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), guyModel));
+   entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), guyModel, setupLimbs()));
+   entities[0]->model->bones[9].limbIndex = 0;
 
    Model * trexModel = new Model();
    trexModel->loadCIAB("assets/models/trex.ciab");
    trexModel->loadTexture("assets/textures/masonry.png");
    trexModel->loadNormalMap("assets/textures/masonry_normal.png");
-   entities.push_back(new Entity(Eigen::Vector3f(10, 0, -15), trexModel));
+   entities.push_back(new Entity(Eigen::Vector3f(10, 0, -15), trexModel, std::vector<EntityLimb>()));
    entities[1]->boneController->playAnimation(0, 0, true);
 
    Model * chebModel = new Model();
    chebModel->loadOBJ("assets/cheb/cheb2.obj");
    chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
    chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
-   entities.push_back(new Entity(Eigen::Vector3f(-8, 0, 5), chebModel));
+   entities.push_back(new Entity(Eigen::Vector3f(-8, 0, 5), chebModel, std::vector<EntityLimb>()));
    entities[2]->boneController->playAnimation(0, 0, false);
 
    double timePassed = 0;
