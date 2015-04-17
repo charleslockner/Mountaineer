@@ -42,13 +42,12 @@ static Eigen::Matrix4f computeAnimTransform(AnimBone * animBone, int keyCount, f
 BoneController::BoneController(
    Model * model,
    Eigen::Matrix4f * boneTransforms,
-   Eigen::Matrix4f * animTransforms,
-   std::vector<EntityLimb> limbs
+   Eigen::Matrix4f * animTransforms
 ) {
    this->model = model;
    this->boneTransforms = boneTransforms;
    this->animTransforms = animTransforms;
-   this->limbs = limbs;
+   // this->limbs = limbs;
 
    this->bones = std::vector<EntityBone>(model->boneCount);
    for (int i = 0; i < model->boneCount; i++) {
@@ -121,36 +120,36 @@ void BoneController::computeFlatTransforms() {
 }
 
 void BoneController::setLimbGoal(int limbIndex, Eigen::Vector3f goal) {
-   this->limbs[limbIndex].reachGoal = goal;
+   // this->limbs[limbIndex].reachGoal = goal;
 }
 
 void BoneController::setModelM(Eigen::Matrix4f modelM) {
    this->modelM = modelM;
 }
 
-std::vector<float *> BoneController::constructAnglePtrs(int limbIndex) {
-   std::vector<float *> angles = std::vector<float *>();
-   std::vector<short> boneIndices = limbs[limbIndex].reachBoneIndices;
-   for (int i = 0; i < boneIndices.size(); i++) {
-      EntityBone * bone = & bones[boneIndices[i]];
-      for (int j = 0; j < bone->angles.size(); j++)
-         angles.push_back(& bone->angles[j]);
-   }
-   return angles;
-}
+// std::vector<float *> BoneController::constructAnglePtrs(int limbIndex) {
+//    std::vector<float *> angles = std::vector<float *>();
+//    std::vector<short> boneIndices = limbs[limbIndex].reachBoneIndices;
+//    for (int i = 0; i < boneIndices.size(); i++) {
+//       EntityBone * bone = & bones[boneIndices[i]];
+//       for (int j = 0; j < bone->angles.size(); j++)
+//          angles.push_back(& bone->angles[j]);
+//    }
+//    return angles;
+// }
 
-Eigen::Matrix4f BoneController::constructJointMatrix(int boneIndex) {
-   Bone * bone = & model->bones[boneIndex];
-   EntityBone * entBone = & bones[boneIndex];
+// Eigen::Matrix4f BoneController::constructJointMatrix(int boneIndex) {
+//    Bone * bone = & model->bones[boneIndex];
+//    EntityBone * entBone = & bones[boneIndex];
 
-   Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
-   for (int i = 0; i < bone->joints.size(); i++) {
-      assert(bone->joints.size() == entBone->angles.size());
-      jointRotationM *= Mmath::AngleAxisMatrix<float>(entBone->angles[i], bone->joints[i].axis);
-   }
+//    Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
+//    for (int i = 0; i < bone->joints.size(); i++) {
+//       assert(bone->joints.size() == entBone->angles.size());
+//       jointRotationM *= Mmath::AngleAxisMatrix<float>(entBone->angles[i], bone->joints[i].axis);
+//    }
 
-   return bone->parentOffset * jointRotationM;
-}
+//    return bone->parentOffset * jointRotationM;
+// }
 
 void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f parentM) {
    int animNum = bones[boneIndex].animIndex;

@@ -1,7 +1,7 @@
 #include "entity.h"
 #include "math.h"
 
-Entity::Entity(Eigen::Vector3f position, Model * model, std::vector<EntityLimb> limbs) {
+Entity::Entity(Eigen::Vector3f position, Model * model) {
    this->position = position;
    this->rotation = Eigen::Quaternionf(1,0,0,0);
    this->scale = Eigen::Vector3f(1,1,1);
@@ -12,7 +12,7 @@ Entity::Entity(Eigen::Vector3f position, Model * model, std::vector<EntityLimb> 
       this->animTransforms[i] = Eigen::Matrix4f::Identity();
    }
 
-   this->boneController = new BoneController(model, boneTransforms, animTransforms, limbs);
+   this->boneController = new BoneController(model, boneTransforms, animTransforms);
 }
 
 Entity::~Entity() {

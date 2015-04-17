@@ -21,7 +21,7 @@ public:
    Eigen::Matrix4f boneTransforms[MAX_BONES];   // has all space transforms except for invBindPose
    Eigen::Matrix4f animTransforms[MAX_BONES];   // invBindPose included
 
-   Entity(Eigen::Vector3f pos, Model * model, std::vector<EntityLimb> limbs);
+   Entity(Eigen::Vector3f pos, Model * model);
    ~Entity();
 
    void update(float time);

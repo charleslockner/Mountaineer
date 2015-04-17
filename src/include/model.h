@@ -2,7 +2,6 @@
 #define __MODEL_H__
 
 #include "matrix_math.h"
-#include "ik_solver.h"
 #include <vector>
 
 #define NUM_FACE_EDGES 3
@@ -28,7 +27,14 @@ typedef struct {
    std::vector<AnimBone> animBones;
 } Animation;
 
-struct IKSolver;
+typedef struct {
+   std::vector<short> baseBoneIndices; // bones that move the root around
+   std::vector<short> reachBoneIndices; // bones that move the end effector
+   Eigen::Vector3f baseOffset;
+   Eigen::Vector3f reachOffset;
+   Eigen::Vector3f baseGoal;
+   Eigen::Vector3f reachGoal;
+} IKLimb;
 
 typedef struct {
    Eigen::Vector3f axis;
@@ -65,20 +71,21 @@ typedef struct {
 
 typedef struct {
    unsigned int vertices[NUM_FACE_EDGES];
+   // Eigen::Vector3f normal;
 } Face;
 
-typedef struct {
-   Face * face;
-   Face * expandedFace;
-   unsigned char indexOfFaceVertices; // 0, 1, or 2
-} FaceUpdate;
+// typedef struct {
+//    Face * face;
+//    Face * expandedFace;
+//    unsigned char indexOfFaceVertices; // 0, 1, or 2
+// } FaceUpdate;
 
-typedef struct {
-   Vertex * emergeVertex;
-   Vertex * baseVertex;
-   std::vector<Face *> emergingFaces;
-   std::vector<FaceUpdate> faceUpdates;
-} TesselateStep;
+// typedef struct {
+//    Vertex * emergeVertex;
+//    Vertex * baseVertex;
+//    std::vector<Face *> emergingFaces;
+//    std::vector<FaceUpdate> faceUpdates;
+// } TesselateStep;
 
 class Model {
 public:
@@ -110,6 +117,7 @@ public:
    std::vector<Face> faces;
    std::vector<Bone> bones;
    std::vector<Animation> animations;
+   std::vector<IKLimb> limbs;
 };
 
 #endif // __MODEL_H__

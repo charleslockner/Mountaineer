@@ -14,22 +14,12 @@ typedef struct {
    float animTime;
 } EntityBone;
 
-typedef struct {
-   std::vector<short> baseBoneIndices; // bones that move the root around
-   std::vector<short> reachBoneIndices; // bones that move the end effector
-   Eigen::Vector3f baseOffset;
-   Eigen::Vector3f reachOffset;
-   Eigen::Vector3f baseGoal;
-   Eigen::Vector3f reachGoal;
-} EntityLimb;
-
 class BoneController {
 public:
    BoneController(
       Model * model,
       Eigen::Matrix4f * boneTransforms,
-      Eigen::Matrix4f * animTransforms,
-      std::vector<EntityLimb> limbs
+      Eigen::Matrix4f * animTransforms
    );
    ~BoneController();
 
@@ -47,7 +37,6 @@ private:
 
    Eigen::Matrix4f modelM;
    std::vector<EntityBone> bones;
-   std::vector<EntityLimb> limbs;
 
    void computeFlatTransforms();
    void computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f parentM);
