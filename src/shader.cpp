@@ -41,6 +41,7 @@ void EntityShader::renderVertices(Camera * camera, Entity * entity) {
 
    glBegin(GL_LINES);
    for (int i = 0; i < model->vertices.size(); i++) {
+      printf("i = %d\n", i); // seg fault at 0 at line 47
       // draw normal
       glColor3f(1,0,0);
       Eigen::Vector3f p = model->vertices[i].position;

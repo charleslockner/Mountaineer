@@ -15,7 +15,7 @@ DEBUG=-g
 OPT=-O3
 WARN=-ansi -pedantic
 
-CFLAGS=-c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER)
+CFLAGS=-c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER) $(PARA)
 LIB=-L$(LIB_DIR)
 
 ifeq ($(OS),Darwin)

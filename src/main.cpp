@@ -137,12 +137,15 @@ std::vector<EntityLimb> setupLimbs() {
    // Set up the left arm
    EntityLimb entLimb;
    // entBone.baseBoneIndices.push_back()
+   entLimb.reachBoneIndices.push_back(0);
+   entLimb.reachBoneIndices.push_back(1);
+   entLimb.reachBoneIndices.push_back(2);
+   entLimb.reachBoneIndices.push_back(3);
    entLimb.reachBoneIndices.push_back(9);
    entLimb.reachBoneIndices.push_back(10);
    entLimb.reachBoneIndices.push_back(11);
    entLimb.reachBoneIndices.push_back(12);
    entLimb.reachBoneIndices.push_back(13);
-   entLimb.reachBoneIndices.push_back(14);
    entLimb.baseOffset = Eigen::Vector3f(0,0,0);
    entLimb.reachOffset = Eigen::Vector3f(0,0,0);
    entLimb.baseGoal = Eigen::Vector3f(0,0,0);
@@ -211,20 +214,20 @@ int main(int argc, char ** argv) {
    guyModel->loadTexture("assets/textures/guy_tex.bmp");
    guyModel->loadConstraints("assets/models/guy.cns");
    entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), guyModel, setupLimbs()));
-   entities[0]->model->bones[9].limbIndex = 0;
+   entities[0]->model->bones[0].limbIndex = 0;
 
    Model * trexModel = new Model();
    trexModel->loadCIAB("assets/models/trex.ciab");
    trexModel->loadTexture("assets/textures/masonry.png");
    trexModel->loadNormalMap("assets/textures/masonry_normal.png");
-   entities.push_back(new Entity(Eigen::Vector3f(10, 0, -15), trexModel, std::vector<EntityLimb>()));
+   entities.push_back(new Entity(Eigen::Vector3f(10, 0, -15), trexModel, std::vector<EntityLimb>(0)));
    entities[1]->boneController->playAnimation(0, 0, true);
 
    Model * chebModel = new Model();
    chebModel->loadOBJ("assets/cheb/cheb2.obj");
    chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
    chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
-   entities.push_back(new Entity(Eigen::Vector3f(-8, 0, 5), chebModel, std::vector<EntityLimb>()));
+   entities.push_back(new Entity(Eigen::Vector3f(-8, 0, 5), chebModel, std::vector<EntityLimb>(0)));
    entities[2]->boneController->playAnimation(0, 0, false);
 
    double timePassed = 0;

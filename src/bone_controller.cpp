@@ -161,20 +161,21 @@ void BoneController::computeRecursiveTransforms(int boneIndex, Eigen::Matrix4f p
    AnimBone * animBone = & anim->animBones[boneIndex];
 
    // if this bone is the root of a limb, compute the limb's ik rotation angles.
-   if (bone->limbIndex >= 0) {
-      EntityLimb * limb = & this->limbs[bone->limbIndex];
-      std::vector<short> boneIndices = limb->reachBoneIndices;
-      Eigen::Vector3f goal = limb->reachGoal;
-      std::vector<float *> angles = constructAnglePtrs(bone->limbIndex);
-      Eigen::Matrix4f baseM = modelM * parentM;
-      IK::SolveSegment(model, baseM, goal, angles, boneIndices);
-   }
+   // if (bone->limbIndex >= 0) {
+   //    EntityLimb * limb = & this->limbs[bone->limbIndex];
+   //    std::vector<short> boneIndices = limb->reachBoneIndices;
+   //    Eigen::Vector3f goal = limb->reachGoal;
+   //    std::vector<float *> angles = constructAnglePtrs(bone->limbIndex);
+   //    Eigen::Matrix4f baseM = modelM * parentM;
+   //    IK::SolveSegment(model, baseM, goal, angles, boneIndices);
+   // }
 
    // if this bone has a computed ik rotation, use it, otherwise use the animation
-   Eigen::Matrix4f accumM = bone->joints.size() > 0 ?
-      parentM * constructJointMatrix(boneIndex) :
-      parentM * computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
+   // Eigen::Matrix4f accumM = bone->joints.size() > 0 ?
+   //    parentM * constructJointMatrix(boneIndex) :
+   //    parentM * computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
 
+   Eigen::Matrix4f accumM = parentM * computeAnimTransform(animBone, anim->keyCount, tickTime, anim->duration);
    boneTransforms[boneIndex] = accumM;
    animTransforms[boneIndex] = accumM * bone->invBonePose;
 
