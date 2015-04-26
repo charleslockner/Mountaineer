@@ -32,8 +32,6 @@ typedef struct {
    std::vector<short> reachBoneIndices; // bones that move the end effector
    Eigen::Vector3f baseOffset;
    Eigen::Vector3f reachOffset;
-   Eigen::Vector3f baseGoal;
-   Eigen::Vector3f reachGoal;
 } IKLimb;
 
 typedef struct {

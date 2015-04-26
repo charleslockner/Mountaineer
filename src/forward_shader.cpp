@@ -47,11 +47,11 @@ void ForwardShader::fillHandleTable(HandleTable * table, unsigned int program, b
       table->aBoneWeights2 = glGetAttribLocation(program, "aBoneWeights2");
       table->aBoneWeights3 = glGetAttribLocation(program, "aBoneWeights3");
       table->aNumInfluences = glGetAttribLocation(program, "aNumInfluences");
-      table->uBoneMs = glGetUniformLocation(program, "uBoneMs");
+      table->uAnimMs = glGetUniformLocation(program, "uAnimMs");
    }
 }
 
-void ForwardShader::render(Camera * camera, LightData * lightData, Entity * entity) {
+void ForwardShader::render(Camera * camera, LightData * lightData, AnimatedEntity * entity) {
    Model * model = entity->model;
 
    unsigned int program = model->isAnimated ? animProg : statProg;
@@ -107,7 +107,7 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
                                  table->aBoneWeights2, table->aBoneWeights3,
                                  model->bWeightID);
       sendVertexAttribArray(table->aNumInfluences, model->bNumInfID, 1);
-      glUniformMatrix4fv(table->uBoneMs, MAX_BONES, GL_FALSE, (GLfloat *)(entity->animTransforms));
+      glUniformMatrix4fv(table->uAnimMs, MAX_BONES, GL_FALSE, (GLfloat *)(entity->animMs));
    }
 
    // Draw the damn thing!

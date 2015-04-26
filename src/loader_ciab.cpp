@@ -38,7 +38,7 @@ static void readHeader(FILE *fp, Model * model) {
    }
 
    model->vertices = std::vector<Vertex>(model->vertexCount);
-   printf("numVertices = %d, size = %d\n", model->vertexCount, model->vertices.size());
+   // printf("numVertices = %d, size = %d\n", model->vertexCount, model->vertices.size());
    model->faces = std::vector<Face>(model->faceCount);
 }
 

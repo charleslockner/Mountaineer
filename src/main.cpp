@@ -16,7 +16,7 @@
 
 LightData lightData;
 Camera * camera;
-std::vector<Entity *> entities;
+std::vector<AnimatedEntity *> entities;
 
 double lastScreenX;
 double lastScreenY;
@@ -52,11 +52,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       switch (key) {
          case GLFW_KEY_Q:
             playing = !playing;
-            if (playing)
-               entities[0]->boneController->playAnimation(0, 0, true);
-            else
-               entities[0]->boneController->stopAnimation(0, true);
-            break;
+            // if (playing)
+            //    entities[0]->playAnimation(0, 0, true);
+            // else
+            //    entities[0]->stopAnimation(0, true);
+            // break;
          case GLFW_KEY_E:
             goalIndex = goalIndex == 0 ? 1 : 0;
             break;
@@ -131,27 +131,6 @@ GLFWwindow * windowSetup() {
    return window;
 }
 
-void setupLimbs() {
-
-   // Set up the left arm
-   IKLimb limb;
-   // entBone.baseBoneIndices.push_back()
-   limb.reachBoneIndices.push_back(0);
-   limb.reachBoneIndices.push_back(1);
-   limb.reachBoneIndices.push_back(2);
-   limb.reachBoneIndices.push_back(3);
-   limb.reachBoneIndices.push_back(9);
-   limb.reachBoneIndices.push_back(10);
-   limb.reachBoneIndices.push_back(11);
-   limb.reachBoneIndices.push_back(12);
-   limb.reachBoneIndices.push_back(13);
-   limb.baseOffset = Eigen::Vector3f(0,0,0);
-   limb.reachOffset = Eigen::Vector3f(0,0,0);
-   limb.baseGoal = Eigen::Vector3f(0,0,0);
-   limb.reachGoal = Eigen::Vector3f(0,0,0);
-   guyModel->limbs.push_back(limb);
-}
-
 void updateCameraPosition(double timePassed) {
    float distTraveled = CAMERA_SPEED * timePassed;
 
@@ -199,6 +178,25 @@ void updateWorld(double timePassed) {
    // entities[0]->position += Eigen::Vector3f(0,0.5,0) * timePassed;
 }
 
+void setupLimbs() {
+   // Set up the left arm
+   IKLimb limb;
+   // limb.reachBoneIndices.push_back(0);
+   // limb.reachBoneIndices.push_back(1);
+   // limb.reachBoneIndices.push_back(2);
+   // limb.reachBoneIndices.push_back(3);
+   limb.reachBoneIndices.push_back(9);
+   limb.reachBoneIndices.push_back(10);
+   limb.reachBoneIndices.push_back(11);
+   limb.reachBoneIndices.push_back(12);
+   limb.reachBoneIndices.push_back(13);
+   // limb.baseOffset = Eigen::Vector3f(0,0,0);
+   // limb.reachOffset = Eigen::Vector3f(0,0,0);
+   // limb.baseGoal = Eigen::Vector3f(0,0,0);
+   // limb.reachGoal = Eigen::Vector3f(0,0,0);
+   guyModel->limbs.push_back(limb);
+}
+
 int main(int argc, char ** argv) {
    GLFWwindow * window = windowSetup();
 
@@ -206,27 +204,28 @@ int main(int argc, char ** argv) {
    camera = new Camera(Eigen::Vector3f(0,0,10), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
    setupLights();
 
-   guyModel = new Model();
-   guyModel->loadCIAB("assets/models/guy.ciab");
-   guyModel->loadTexture("assets/textures/guy_tex.bmp");
-   guyModel->loadConstraints("assets/models/guy.cns");
-   setupLimbs();
-   entities.push_back(new Entity(Eigen::Vector3f(0, 0, 0), guyModel));
-   // entities[0]->model->bones[0].limbIndex = 0;
+   Model * chebModel = new Model();
+   chebModel->loadOBJ("assets/cheb/cheb2.obj");
+   chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
+   entities.push_back(new BonelessEntity(Eigen::Vector3f(-8, 0, 5), chebModel));
+   entities[0]->playAnimation(0);
 
    Model * trexModel = new Model();
    trexModel->loadCIAB("assets/models/trex.ciab");
    trexModel->loadTexture("assets/textures/masonry.png");
    trexModel->loadNormalMap("assets/textures/masonry_normal.png");
-   entities.push_back(new Entity(Eigen::Vector3f(10, 0, -15), trexModel));
-   entities[1]->boneController->playAnimation(0, 0, true);
+   entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, -15), trexModel));
+   entities[1]->playAnimation(0);
 
-   Model * chebModel = new Model();
-   chebModel->loadOBJ("assets/cheb/cheb2.obj");
-   chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
-   entities.push_back(new Entity(Eigen::Vector3f(-8, 0, 5), chebModel));
-   entities[2]->boneController->playAnimation(0, 0, false);
+   guyModel = new Model();
+   guyModel->loadCIAB("assets/models/guy.ciab");
+   guyModel->loadTexture("assets/textures/guy_tex.bmp");
+   guyModel->loadConstraints("assets/models/guy.cns");
+   setupLimbs();
+   entities.push_back(new IKEntity(Eigen::Vector3f(0, 0, 0), guyModel));
+   entities[2]->playAnimation(0);
+
 
    double timePassed = 0;
    unsigned int numFrames = 0;
@@ -247,11 +246,11 @@ int main(int argc, char ** argv) {
       for (int i = 0; i < entities.size(); i++)
          shader->render(camera, & lightData, entities[i]);
 
-      if (keyToggles[GLFW_KEY_K]) {
-         shader->renderVertices(camera, entities[1]);
-         shader->renderBones(camera, entities[0]);
-      }
-      shader->renderPoint(camera, goals[goalIndex]);
+      // if (keyToggles[GLFW_KEY_K]) {
+      //    shader->renderVertices(camera, entities[1]);
+      //    shader->renderBones(camera, entities[0]);
+      // }
+      // shader->renderPoint(camera, goals[goalIndex]);
 
       glfwSwapBuffers(window);
       glfwPollEvents();

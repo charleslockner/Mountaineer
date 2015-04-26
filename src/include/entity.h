@@ -3,31 +3,92 @@
 
 #include "model.h"
 #include "shader.h"
-#include "bone_controller.h"
-
-#include "matrix_math.h"
 
 #include <vector>
 
 class EntityShader;
+
 
 class Entity {
 public:
    Eigen::Vector3f position;
    Eigen::Quaternionf rotation;
    Eigen::Vector3f scale;
-
    Model * model;
-   Eigen::Matrix4f boneTransforms[MAX_BONES];   // has all space transforms except for invBindPose
-   Eigen::Matrix4f animTransforms[MAX_BONES];   // invBindPose included
 
+   Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
    Entity(Eigen::Vector3f pos, Model * model);
    ~Entity();
 
-   void update(float time);
+   virtual void update(float timeDelta)=0;
    Eigen::Matrix4f generateModelM();
-
-   BoneController * boneController;
 };
+
+
+class AnimatedEntity : public Entity {
+public:
+   Eigen::Matrix4f animMs[MAX_BONES];   // invBindPose included
+
+   AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
+   AnimatedEntity(Eigen::Vector3f pos, Model * model);
+
+   virtual void playAnimation(int animNum)=0;
+   virtual void stopAnimation()=0;
+};
+
+class BonelessEntity : public AnimatedEntity {
+public:
+   BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
+   BonelessEntity(Eigen::Vector3f pos, Model * model);
+
+   void playAnimation(int animNum);
+   void stopAnimation();
+   void update(float timeDelta);
+
+private:
+   bool animIsPlaying;
+   int animNum;
+   float animTime;
+};
+
+
+class BonifiedEntity : public AnimatedEntity {
+public:
+   // has all space transforms except for invBindPose
+   std::vector<Eigen::Matrix4f> boneMs;
+
+   BonifiedEntity(Eigen::Vector3f pos, Model * model);
+   void playAnimation(int animNum);
+   void playAnimation(int animNum, int boneNum, bool recursive);
+   void stopAnimation();
+   void stopAnimation(int boneNum, bool recursive);
+   void update(float timeDelta);
+
+private:
+   std::vector<int> animNums;
+   std::vector<bool> bonesPlaying;
+   std::vector<float> animTimes;
+
+   void computeAnimMs(int boneIndex, Eigen::Matrix4f parentM);
+};
+
+
+class IKEntity : public BonifiedEntity {
+public:
+   IKEntity(Eigen::Vector3f pos, Model * model);
+   // void setLimbGoal(int limbIndex, Eigen::Vector3f goal);
+   // void update(float timeDelta);
+
+private:
+   std::vector<std::vector<float> > ikAngles;
+
+   // void computeAnimMs(int boneIndex, Eigen::Matrix4f parentM);
+   // std::vector<float *> constructAnglePtrs(int limbIndex);
+   // Eigen::Matrix4f constructJointMatrix(int boneIndex);
+};
+
 
 #endif // __ENTITY_H__

@@ -7,23 +7,24 @@
 #include "light.h"
 #include "entity.h"
 
-class Entity;
+class AnimatedEntity;
+class BonifiedEntity;
 
 // Generalized shader class for rendering entities
 class EntityShader {
 public:
-   virtual void render(Camera * camera, LightData * lightdata, Entity * entity) {};
+   virtual void render(Camera * camera, LightData * lightdata, AnimatedEntity * entity) {};
 
    // Debug Functions
-   void renderVertices(Camera * camera, Entity * entity);
-   void renderBones(Camera * camera, Entity * entity);
+   void renderVertices(Camera * camera, AnimatedEntity * entity);
+   void renderBones(Camera * camera, BonifiedEntity * entity);
    void renderPoint(Camera * camera, Eigen::Vector3f p);
 
 protected:
    typedef struct {
       unsigned int uHasNormals, uHasColors, uHasTexture, uHasNormalMap, uHasSpecularMap,
                    uModelM, uProjViewM, uCameraPosition, uLights, uTexture,
-                   uNormalMap, uSpecularMap, uBoneMs,
+                   uNormalMap, uSpecularMap, uAnimMs,
                    aPosition, aNormal, aColor, aUV, aTangent, aBitangent,
                    aBoneIndices0, aBoneIndices1, aBoneIndices2, aBoneIndices3,
                    aBoneWeights0, aBoneWeights1, aBoneWeights2, aBoneWeights3,
@@ -44,7 +45,7 @@ class ForwardShader: public EntityShader {
 public:
    ForwardShader();
    ~ForwardShader();
-   void render(Camera * camera, LightData * lightdata, Entity * entity);
+   void render(Camera * camera, LightData * lightdata, AnimatedEntity * entity);
 
 private:
    void fillHandleTable(HandleTable * table, unsigned int prog, bool animated);

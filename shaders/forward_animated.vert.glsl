@@ -1,7 +1,7 @@
 
 uniform mat4 uModelM;
 uniform mat4 uProjViewM;
-uniform mat4 uBoneMs[100];
+uniform mat4 uAnimMs[100];
 
 attribute vec3 aPosition;
 attribute vec3 aTangent;
@@ -49,7 +49,7 @@ void main(void) {
          weight = aBoneWeights3[i-12];
       }
 
-      animMatrix += weight * uBoneMs[index];
+      animMatrix += weight * uAnimMs[index];
    }
 
    mat4 modelM = uModelM * animMatrix;

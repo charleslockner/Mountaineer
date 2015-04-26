@@ -1,5 +1,5 @@
 OS := $(shell uname -s)
-CC=g++
+CC=icpc
 EXENAME=game
 
 BIN_DIR=bin
@@ -14,17 +14,15 @@ HEADER=-DMACOSX -MMD
 DEBUG=-g
 OPT=-O3
 WARN=-ansi -pedantic
+CFLAGS=-std=c++11 -c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER)
 
-CFLAGS=-c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER) $(PARA)
 LIB=-L$(LIB_DIR)
-
 ifeq ($(OS),Darwin)
 FRAME_FWS=-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
-# AUDIO_FWS=-framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreServices
-LIB+=-lceres_OSX -lglfw3_OSX $(FRAME_FWS)# $(AUDIO_FWS)
+LIB+=-lceres_OSX -lglfw3_OSX $(FRAME_FWS)
 endif
 ifeq ($(OS),Linux)
-LIB+=-lglfw3_LIN -lGL -lXrandr -lXi -lXinerama -lXcursor
+LIB+=-lceres_LIN -lglfw3_LIN -lGL -lXrandr -lXi -lXinerama -lXcursor
 endif
 
 SRC=$(shell find $(SRC_DIR) -maxdepth 1 -type f -name "*.cpp" -exec basename {} .po \;)
@@ -48,7 +46,7 @@ clean:
 -include $(OBJS:.o=.d)
 
 $(EXE): $(OBJS)
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(CC) -o $(EXE) $(OBJS) $(LIB)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
