@@ -12,9 +12,9 @@
 Entity::Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
 : position(pos), rotation(rot), scale(scl), model(model) {}
 Entity::Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-: Entity(pos, rot, Eigen::Vector3f(1,1,1), model) {}
+: position(pos), rotation(rot), scale(Eigen::Vector3f(1,1,1)), model(model) {}
 Entity::Entity(Eigen::Vector3f pos, Model * model)
-: Entity(pos, Eigen::Quaternionf(1,0,0,0), Eigen::Vector3f(1,1,1), model) {}
+: position(pos), rotation(Eigen::Quaternionf(1,0,0,0)), scale(Eigen::Vector3f(1,1,1)), model(model) {}
 Entity::~Entity() {}
 
 Eigen::Matrix4f Entity::generateModelM() {
@@ -24,16 +24,16 @@ Eigen::Matrix4f Entity::generateModelM() {
 // --------------------------------------------------------- //
 // ==================== Animated Entity ==================== //
 // --------------------------------------------------------- //
-AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
-: Entity(pos, rot, scl, model) {
-   for (int i = 0; i < MAX_BONES; i++)
-      this->animMs[i] = Eigen::Matrix4f::Identity();
-}
-AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-: Entity(pos, rot, model) {
-   for (int i = 0; i < MAX_BONES; i++)
-      this->animMs[i] = Eigen::Matrix4f::Identity();
-}
+// AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
+// : Entity(pos, rot, scl, model) {
+//    for (int i = 0; i < MAX_BONES; i++)
+//       this->animMs[i] = Eigen::Matrix4f::Identity();
+// }
+// AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
+// : Entity(pos, rot, model) {
+//    for (int i = 0; i < MAX_BONES; i++)
+//       this->animMs[i] = Eigen::Matrix4f::Identity();
+// }
 AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Model * model)
 : Entity(pos, model) {
    for (int i = 0; i < MAX_BONES; i++)
@@ -43,12 +43,12 @@ AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Model * model)
 // --------------------------------------------------------- //
 // ==================== Boneless Entity ==================== //
 // --------------------------------------------------------- //
-BonelessEntity::BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
-: AnimatedEntity(pos, rot, scl, model),
-  animNum(0), animTime(0), animIsPlaying(false) {}
-BonelessEntity::BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-: AnimatedEntity(pos, rot, model),
-  animNum(0), animTime(0), animIsPlaying(false) {}
+// BonelessEntity::BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
+// : AnimatedEntity(pos, rot, scl, model),
+//   animNum(0), animTime(0), animIsPlaying(false) {}
+// BonelessEntity::BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
+// : AnimatedEntity(pos, rot, model),
+//   animNum(0), animTime(0), animIsPlaying(false) {}
 BonelessEntity::BonelessEntity(Eigen::Vector3f pos, Model * model)
 : AnimatedEntity(pos, model),
   animNum(0), animTime(0), animIsPlaying(false) {}
@@ -84,7 +84,7 @@ void BonelessEntity::update(float tickDelta) {
 
 
 // --------------------------------------------------------- //
-// ==================== Boneified Entity =================== //
+// ==================== Bonified Entity =================== //
 // --------------------------------------------------------- //
 BonifiedEntity::BonifiedEntity(Eigen::Vector3f pos, Model * model)
 : AnimatedEntity(pos, model) {
@@ -130,6 +130,12 @@ void BonifiedEntity::stopAnimation(int boneNum, bool isRecursive) {
 
 void BonifiedEntity::update(float tickDelta) {
    // Start replaying animation if finished
+   replayIfNeeded(tickDelta);
+   // Recursively fill in the animMs
+   computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());
+}
+
+void BonifiedEntity::replayIfNeeded(float tickDelta) {
    for (int i = 0; i < model->boneCount; i++) {
       if (!model->hasBoneTree || bonesPlaying[i]) {
          float duration = model->animations[animNums[i]].duration;
@@ -139,9 +145,6 @@ void BonifiedEntity::update(float tickDelta) {
             animTimes[i] -= duration;
       }
    }
-
-   // Recursively fill in the animMs
-   computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());
 }
 
 void BonifiedEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
@@ -162,93 +165,91 @@ void BonifiedEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
       computeAnimMs(bone->childIndices[i], boneMs[boneIndex]);
 }
 
+// ------------------------ IK Bone ------------------------ //
+IKLimb::IKLimb() {}
+IKLimb::~IKLimb() {}
 // --------------------------------------------------------- //
 // ======================= IK Entity ======================= //
 // --------------------------------------------------------- //
 IKEntity::IKEntity(Eigen::Vector3f pos, Model * model)
 : BonifiedEntity(pos, model) {
-   this->ikAngles = std::vector<std::vector<float> >(model->boneCount);
-   for (int i = 0; i < model->boneCount; i++)
-      this->ikAngles[i] = std::vector<float>(model->bones[i].joints.size());
+   this->ikLimbs = std::vector<IKLimb *>(0);
+   this->ikBones = std::vector<IKBone>(model->boneCount);
+   for (int i = 0; i < model->boneCount; i++) {
+      this->ikBones[i].angles = std::vector<double>(model->bones[i].joints.size());
+      this->ikBones[i].limbs = std::vector<IKLimb *>(0);
+   }
 }
 
-// void BonifiedEntity::update(float tickDelta) {
-//    // Start replaying animation if finished
-//    for (int i = 0; i < model->boneCount; i++) {
-//       if (!model->hasBoneTree || bonesPlaying[i]) {
-//          float duration = model->animations[animNums[i]].duration;
+void IKEntity::addLimb(std::vector<int> boneIndices, Eigen::Vector3f offset, bool isBase) {
+   assert(boneIndices.size() > 0);
 
-//          animTimes[i] += tickDelta;
-//          if (animTimes[i] > duration)
-//             animTimes[i] -= duration;
-//       }
-//    }
+   IKLimb * limb = new IKLimb();
+   limb->isBase = isBase;
+   limb->boneIndices = boneIndices;
+   limb->offset = offset;
+   limb->goal = Eigen::Vector3f(0,0,0);
+   limb->jointAngles = constructJointAnglePtrs(boneIndices);
+   this->ikBones[boneIndices[0]].limbs.push_back(limb);
+   this->ikLimbs.push_back(limb);
+}
 
-//    // Recursively fill in the animMs
-//    computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());
-// }
+void IKEntity::setLimbGoal(int limbIndex, Eigen::Vector3f goal) {
+   this->ikLimbs[limbIndex]->goal = goal;
+}
 
-// // std::vector<float *> BoneController::constructAnglePtrs(int limbIndex) {
-// //    std::vector<float *> angles = std::vector<float *>();
-// //    std::vector<short> boneIndices = limbs[limbIndex].reachBoneIndices;
-// //    for (int i = 0; i < boneIndices.size(); i++) {
-// //       EntityBone * bone = & bones[boneIndices[i]];
-// //       for (int j = 0; j < bone->angles.size(); j++)
-// //          angles.push_back(& bone->angles[j]);
-// //    }
-// //    return angles;
-// // }
+void IKEntity::update(float tickDelta) {
+   // printf("Goal 0 = %f %f %f\n", ikLimbs[0]->goal(0), ikLimbs[0]->goal(1), ikLimbs[0]->goal(2));
+   // printf("Goal 1 = %f %f %f\n", ikLimbs[1]->goal(0), ikLimbs[1]->goal(1), ikLimbs[1]->goal(2));
 
-// // Eigen::Matrix4f BoneController::constructJointMatrix(int boneIndex) {
-// //    Bone * bone = & model->bones[boneIndex];
-// //    EntityBone * entBone = & bones[boneIndex];
+   BonifiedEntity::replayIfNeeded(tickDelta);
+   computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());
+}
 
-// //    Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
-// //    for (int i = 0; i < bone->joints.size(); i++) {
-// //       assert(bone->joints.size() == entBone->angles.size());
-// //       jointRotationM *= Mmath::AngleAxisMatrix<float>(entBone->angles[i], bone->joints[i].axis);
-// //    }
+void IKEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
+   int animNum = this->animNums[boneIndex];
+   float tickTime = this->animTimes[boneIndex];
 
-// //    return bone->parentOffset * jointRotationM;
-// // }
+   Bone * bone = & model->bones[boneIndex];
+   IKBone * ikBone = & this->ikBones[boneIndex];
+   Animation * anim = & model->animations[animNum];
+   AnimBone * animBone = & anim->animBones[boneIndex];
 
+   // Compute rotation angles for all limbs who's root starts at this bone
+   if (ikBone->limbs.size())
+      solveLimbs(parentM, ikBone->limbs);
 
-// void BonifiedEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
-//    int animNum = bones[boneIndex].animIndex;
-//    float tickTime = bones[boneIndex].animTime;
+   // If this bone has a computed ik rotation, use it, otherwise use the animation rotation
+   Eigen::Matrix4f rotM = bone->joints.size() > 0 ?
+      constructJointMatrix(boneIndex) :
+      AN::ComputeKeyframeTransform(animBone, anim->keyCount, tickTime, anim->duration);
 
-//    Bone * bone = & model->bones[boneIndex];
-//    Animation * anim = & model->animations[animNum];
-//    AnimBone * animBone = & anim->animBones[boneIndex];
+   boneMs[boneIndex] = parentM * rotM;
+   animMs[boneIndex] = boneMs[boneIndex] * bone->invBonePose;
 
-//    // if this bone is the root of a limb, compute the limb's ik rotation angles.
-//    // if (bone->limbIndex >= 0) {
-//    //    EntityLimb * limb = & this->limbs[bone->limbIndex];
-//    //    std::vector<short> boneIndices = limb->reachBoneIndices;
-//    //    Eigen::Vector3f goal = limb->reachGoal;
-//    //    std::vector<float *> angles = constructAnglePtrs(bone->limbIndex);
-//    //    Eigen::Matrix4f baseM = modelM * parentM;
-//    //    IK::SolveSegment(model, baseM, goal, angles, boneIndices);
-//    // }
+   for (int i = 0; i < bone->childCount; i++)
+      computeAnimMs(bone->childIndices[i], boneMs[boneIndex]);
+}
 
-//    // if this bone has a computed ik rotation, use it, otherwise use the animation
-//    // Eigen::Matrix4f accumM = bone->joints.size() > 0 ?
-//    //    parentM * constructJointMatrix(boneIndex) :
-//    //    parentM * AN::ComputeKeyframeTransform(animBone, anim->keyCount, tickTime, anim->duration);
+std::vector<double *> IKEntity::constructJointAnglePtrs(std::vector<int>& boneIndices) {
+   std::vector<double *> jointAngles = std::vector<double *>();
+   for (int i = 0; i < boneIndices.size(); i++) {
+      IKBone * ikBone = & ikBones[boneIndices[i]];
+      for (int j = 0; j < ikBone->angles.size(); j++)
+         jointAngles.push_back(& ikBone->angles[j]);
+   }
+   return jointAngles;
+}
 
-//    Eigen::Matrix4f accumM = parentM * AN::ComputeKeyframeTransform(animBone, anim->keyCount, tickTime, anim->duration);
-//    boneMs[boneIndex] = accumM;
-//    animMs[boneIndex] = accumM * bone->invBonePose;
+Eigen::Matrix4f IKEntity::constructJointMatrix(int boneIndex) {
+   Bone * bone = & model->bones[boneIndex];
+   IKBone * ikBone = & ikBones[boneIndex];
 
-//    for (int i = 0; i < bone->childCount; i++)
-//       computeRecursiveTransforms(bone->childIndices[i], accumM);
-// }
+   Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
+   for (int i = 0; i < bone->joints.size(); i++) {
+      assert(bone->joints.size() == ikBone->angles.size());
+      jointRotationM *= Mmath::AngleAxisMatrix<float>(ikBone->angles[i], bone->joints[i].axis);
+   }
 
-// void BonifiedEntity::setLimbGoal(int limbIndex, Eigen::Vector3f goal) {
-//    // this->limbs[limbIndex].reachGoal = goal;
-// }
-
-
-
-
-
+   return bone->parentOffset * jointRotationM;
+}

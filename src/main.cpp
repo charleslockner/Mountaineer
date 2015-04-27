@@ -27,6 +27,7 @@ bool playing = false;
 bool keyToggles[512] = {false};
 
 Model * guyModel;
+IKEntity * guyEnt;
 
 static void error_callback(int error, const char* description) {
    fputs(description, stderr);
@@ -52,11 +53,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       switch (key) {
          case GLFW_KEY_Q:
             playing = !playing;
-            // if (playing)
-            //    entities[0]->playAnimation(0, 0, true);
-            // else
-            //    entities[0]->stopAnimation(0, true);
-            // break;
+            if (playing)
+               guyEnt->playAnimation(0, 0, true);
+            else
+               guyEnt->stopAnimation(0, true);
+            break;
          case GLFW_KEY_E:
             goalIndex = goalIndex == 0 ? 1 : 0;
             break;
@@ -172,29 +173,10 @@ void updateWorld(double timePassed) {
          goals[goalIndex](2) = goals[goalIndex](2) + timePassed * speed;
    }
 
-   // entities[0]->boneController->setLimbGoal(0, goals[0]);
-   // entities[0]->boneController->setLimbGoal(1, goals[1]);
+   guyEnt->setLimbGoal(0, goals[0]);
+   guyEnt->setLimbGoal(1, goals[1]);
 
-   // entities[0]->position += Eigen::Vector3f(0,0.5,0) * timePassed;
-}
-
-void setupLimbs() {
-   // Set up the left arm
-   IKLimb limb;
-   // limb.reachBoneIndices.push_back(0);
-   // limb.reachBoneIndices.push_back(1);
-   // limb.reachBoneIndices.push_back(2);
-   // limb.reachBoneIndices.push_back(3);
-   limb.reachBoneIndices.push_back(9);
-   limb.reachBoneIndices.push_back(10);
-   limb.reachBoneIndices.push_back(11);
-   limb.reachBoneIndices.push_back(12);
-   limb.reachBoneIndices.push_back(13);
-   // limb.baseOffset = Eigen::Vector3f(0,0,0);
-   // limb.reachOffset = Eigen::Vector3f(0,0,0);
-   // limb.baseGoal = Eigen::Vector3f(0,0,0);
-   // limb.reachGoal = Eigen::Vector3f(0,0,0);
-   guyModel->limbs.push_back(limb);
+   guyEnt->position(1) += 0.02;
 }
 
 int main(int argc, char ** argv) {
@@ -218,13 +200,35 @@ int main(int argc, char ** argv) {
    entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, -15), trexModel));
    entities[1]->playAnimation(0);
 
+
    guyModel = new Model();
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_tex.bmp");
    guyModel->loadConstraints("assets/models/guy.cns");
-   setupLimbs();
-   entities.push_back(new IKEntity(Eigen::Vector3f(0, 0, 0), guyModel));
-   entities[2]->playAnimation(0);
+   guyEnt = new IKEntity(Eigen::Vector3f(0, 0, 0), guyModel);
+
+   std::vector<int> boneIndices = std::vector<int>(0);
+   boneIndices.push_back(0);
+   boneIndices.push_back(26);
+   boneIndices.push_back(27);
+   boneIndices.push_back(28);
+   boneIndices.push_back(29);
+   boneIndices.push_back(30);
+   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   boneIndices.clear();
+   boneIndices.push_back(0);
+   boneIndices.push_back(1);
+   boneIndices.push_back(2);
+   boneIndices.push_back(3);
+   boneIndices.push_back(9);
+   boneIndices.push_back(10);
+   boneIndices.push_back(11);
+   boneIndices.push_back(12);
+   boneIndices.push_back(13);
+   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+
+   entities.push_back(guyEnt);
+   guyEnt->playAnimation(0);
 
 
    double timePassed = 0;
@@ -246,11 +250,13 @@ int main(int argc, char ** argv) {
       for (int i = 0; i < entities.size(); i++)
          shader->render(camera, & lightData, entities[i]);
 
-      // if (keyToggles[GLFW_KEY_K]) {
-      //    shader->renderVertices(camera, entities[1]);
-      //    shader->renderBones(camera, entities[0]);
-      // }
-      // shader->renderPoint(camera, goals[goalIndex]);
+      if (keyToggles[GLFW_KEY_K]) {
+         shader->renderVertices(camera, entities[0]);
+         shader->renderBones(camera, (BonifiedEntity *)(entities[1]));
+         shader->renderBones(camera, guyEnt);
+      }
+
+      shader->renderPoint(camera, goals[goalIndex]);
 
       glfwSwapBuffers(window);
       glfwPollEvents();

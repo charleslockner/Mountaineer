@@ -210,7 +210,6 @@ static void readBoneTree(FILE *fp, Model * model) {
 
       fread(& bone->invBonePose, sizeof(Eigen::Matrix4f), 1, fp);
       fread(& bone->parentOffset, sizeof(Eigen::Matrix4f), 1, fp);
-      bone->limbIndex = -1;
    }
 }
 

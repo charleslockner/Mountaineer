@@ -1,5 +1,8 @@
 
-#include "ik_solver.h"
+#include "entity.h"
+#include "matrix_math.h"
+#include "model.h"
+#include "ceres/ceres.h"
 
 #include <iostream>
 #include <vector>
@@ -13,7 +16,7 @@ Matrix<T,3,1> solveEndEffector(
    Model * model,
    T const* angles,
    int angleCount,
-   const std::vector<short>& boneIndices,
+   const std::vector<int>& boneIndices,
    Matrix<T,4,4>& baseM,
    Matrix<T,3,1>& offset
 ) {
@@ -50,175 +53,166 @@ Matrix<T,3,1> solveEndEffector(
 class LimbCostFunctor {
 private:
    Model * model;
-   std::vector<short> boneIndices;
+   std::vector<int> boneIndices;
+   Matrix4f baseM;
+   Eigen::Vector3f goal;
    int numAngles;
 
 public:
    LimbCostFunctor(
       Model * model,
-      std::vector<short> boneIndices,
+      std::vector<int>& boneIndices,
+      Matrix4f baseM,
+      Vector3f goal,
       int numAngles
    ) {
       this->model = model;
       this->boneIndices = boneIndices;
+      this->baseM = baseM;
+      this->goal = goal;
       this->numAngles = numAngles;
    }
 
    template<typename T>
-   bool operator()(T const* const* p, T* residuals) const {
-      T const* angles = p[0];
-      Matrix<T,4,4> baseM = Map<const Matrix<T,4,4> >(p[1], 4, 4);
-      Matrix<T,3,1> goal = Map<const Matrix<T,3,1> >(p[2], 3, 1);
+   bool operator()(T const* const* params, T* residuals) const {
+      T const* angles = params[0];
+      Matrix<T,4,4> baseM_T = baseM.cast<T>();
+      Matrix<T,3,1> goalT = goal.cast<T>();
       Matrix<T,3,1> offset = Matrix<T,3,1>(T(0), T(0), T(0));
-      Matrix<T,3,1> endPoint = solveEndEffector(model, angles, numAngles, boneIndices, baseM, offset);
+      Matrix<T,3,1> endPoint = solveEndEffector(model, angles, numAngles, boneIndices, baseM_T, offset);
 
-      residuals[0] = goal(0) - endPoint(0);
-      residuals[1] = goal(1) - endPoint(1);
-      residuals[2] = goal(2) - endPoint(2);
+      residuals[0] = goalT(0) - endPoint(0);
+      residuals[1] = goalT(1) - endPoint(1);
+      residuals[2] = goalT(2) - endPoint(2);
       return true;
    }
 };
 
-
-class RootLimbCostFunctor {
+class BaseLimbCostFunctor {
 private:
    Model * model;
-   std::vector<short> baseBoneIndices;
-   std::vector<short> reachBoneIndices;
-   int numBaseAngles, numReachAngles;
+   std::vector<int> boneIndices;
+   Matrix4f rotScaleParentM;
+   Eigen::Vector3f goal;
+   int numAngles;
 
 public:
-   RootLimbCostFunctor(
+   BaseLimbCostFunctor(
       Model * model,
-      std::vector<short> baseBoneIndices,
-      std::vector<short> reachBoneIndices,
-      int numBaseAngles,
-      int numReachAngles
+      std::vector<int>& boneIndices,
+      Matrix4f rotScaleParentM,
+      Vector3f goal,
+      int numAngles
    ) {
       this->model = model;
-      this->baseBoneIndices = baseBoneIndices;
-      this->reachBoneIndices = reachBoneIndices;
-      this->numBaseAngles = numBaseAngles;
-      this->numReachAngles = numReachAngles;
+      this->boneIndices = boneIndices;
+      this->rotScaleParentM = rotScaleParentM;
+      this->goal = goal;
+      this->numAngles = numAngles;
    }
 
    template<typename T>
    bool operator()(T const* const* params, T* residuals) const {
-      // Setup variable parameters
-      T const* baseAngles = params[0];
-      T const* reachAngles = params[1];
-      Matrix<T,3,1> modelTrans = Map<const Matrix<T,3,1> >(params[2], 3, 1);
-      Matrix<T,4,4> transM = Mmath::TranslationMatrix(modelTrans);
+      T const* angles = params[0];
+      Matrix<T,3,1> worldPos = Map<const Matrix<T,3,1> >(params[1], 3, 1);
+      Matrix<T,4,4> baseM = Mmath::TranslationMatrix(worldPos) * rotScaleParentM.cast<T>();
+      Matrix<T,3,1> goalT = goal.cast<T>();
+      Matrix<T,3,1> offset = Matrix<T,3,1>(T(0), T(0), T(0));
+      Matrix<T,3,1> endPoint = solveEndEffector(model, angles, numAngles, boneIndices, baseM, offset);
 
-      // Setup constant parameters
-      Matrix<T,4,4> modelM = Map<const Matrix<T,4,4> >(params[3], 4, 4);
-      Matrix<T,3,1> baseOffset = Map<const Matrix<T,3,1> >(params[4], 3, 1);
-      Matrix<T,3,1> reachOffset = Map<const Matrix<T,3,1> >(params[5], 3, 1);
-      Matrix<T,3,1> baseGoal = Map<const Matrix<T,3,1> >(params[6], 3, 1);
-      Matrix<T,3,1> reachGoal = Map<const Matrix<T,3,1> >(params[7], 3, 1);
-
-      // Multiply by the variable transM (the root bone can move around in world space)
-      Matrix<T,4,4> baseM = modelM * transM;
-
-      // Solve for the end effectors from the base and reach limbs
-      Matrix<T,3,1> basePoint = solveEndEffector(model, baseAngles, numBaseAngles,
-                                                 baseBoneIndices, baseM, baseOffset);
-      Matrix<T,3,1> reachPoint = solveEndEffector(model, reachAngles, numReachAngles,
-                                                  reachBoneIndices, baseM, reachOffset);
-
-      // minimize distances to end effectors from goals
-      residuals[0] = baseGoal(0) - basePoint(0);
-      residuals[1] = baseGoal(1) - basePoint(1);
-      residuals[2] = baseGoal(2) - basePoint(2);
-      residuals[3] = reachGoal(0) - reachPoint(0);
-      residuals[4] = reachGoal(1) - reachPoint(1);
-      residuals[5] = reachGoal(2) - reachPoint(2);
+      // Should change this so we get the endPoint first and then move the root so that
+      // the end point is constant no matter what
+      residuals[0] = goalT(0) - endPoint(0);
+      residuals[1] = goalT(1) - endPoint(1);
+      residuals[2] = goalT(2) - endPoint(2);
       return true;
    }
 };
 
-namespace IK {
+void IKEntity::solveLimbs(Eigen::Matrix4f parentM, std::vector<IKLimb *> limbs) {
+   ceres::Problem problem;
 
-   void SolveSegment(
-      Model * model,
-      Matrix4f baseM,
-      Vector3f goal,
-      std::vector<float *> entAngles,
-      std::vector<short> boneIndices
-   ) {
-      int angleCount = 0;
-      int boneCount = boneIndices.size();
-      for (int i = 0; i < boneCount; i++)
-         angleCount += model->bones[boneIndices[i]].joints.size();
+   // Setup the position as a double vec3
+   Vector3d positionD = position.cast<double>();
+   double * posData = positionD.data();
 
-      // Create the cost functor and pass in the constant arguments
-      ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 3> * costFunction =
-         new ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 3>(
-            new LimbCostFunctor(model, boneIndices, angleCount));
+   std::vector<std::vector<double> > angleValuesByLimb = std::vector<std::vector<double> >(limbs.size());
 
-      // Set up the cost function parameter and residual blocks
-      costFunction->AddParameterBlock(angleCount); // angles
-      costFunction->AddParameterBlock(16);         // baseMatrix
-      costFunction->AddParameterBlock(3);          // goal
-      costFunction->SetNumResiduals(3);            // residuals
+   for (int limbNum = 0; limbNum < limbs.size(); limbNum++) {
+      IKLimb * limb = limbs[limbNum];
+      angleValuesByLimb[limbNum] = std::vector<double>(0);
 
-      // Setup up the parameter data blocks
-      std::vector<double> angleValues = std::vector<double>();
-      for (int i = 0; i < entAngles.size(); i++)
-         angleValues.push_back(double(*(entAngles[i])));
-      Matrix4d baseMValues = baseM.cast<double>();
-      Vector3d goalValues = goal.cast<double>();
+      // Quick reference for angle and bone counts
+      int angleCount = limb->jointAngles.size();
+      int boneCount = limb->boneIndices.size();
 
-      assert(entAngles.size() == angleCount);
+      // Set up the angles data ptr
+      std::vector<double>* angleValues = & angleValuesByLimb[limbNum];
+      for (int i = 0; i < limb->jointAngles.size(); i++)
+         angleValues->push_back(double(*(limb->jointAngles[i])));
+      double * angleData = angleValues->data();
 
-      double * angleData = angleValues.data();
-      double * baseMData = baseMValues.data();
-      double * goalData = goalValues.data();
+      // Create the cost functor and problem
+      if (limb->isBase) {
+         // Create the rotScaleParent part of the base matrix
+         Matrix4f rotM = Mmath::RotationMatrix(rotation);
+         Matrix4f sclM = Mmath::ScaleMatrix(scale);
+         Matrix4f rotScaleParentM = rotM * sclM * parentM;
 
-      ceres::Problem problem;
-      problem.AddParameterBlock(angleData, angleCount);
-      problem.AddParameterBlock(baseMData, 16);
-      problem.AddParameterBlock(goalData, 3);
-      problem.AddResidualBlock(costFunction, NULL, angleData, baseMData, goalData);
+         // Create the Cost function
+         ceres::DynamicAutoDiffCostFunction<BaseLimbCostFunctor, 4> * costFunction =
+            new ceres::DynamicAutoDiffCostFunction<BaseLimbCostFunctor, 4>(
+               new BaseLimbCostFunctor(this->model, limb->boneIndices, rotScaleParentM, limb->goal, angleCount));
+
+         // Set up the cost function parameter and residual blocks
+         costFunction->AddParameterBlock(angleCount); // angles
+         costFunction->AddParameterBlock(3);          // position
+         costFunction->SetNumResiduals(3);            // residuals
+         problem.AddResidualBlock(costFunction, NULL, angleData, posData);
+
+      } else {
+         // Set up the base matrix
+         Matrix4f modelM = Mmath::TransformationMatrix(position, rotation, scale);
+         Matrix4f baseM = modelM * parentM;
+
+         // Create the Cost function
+         ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 4> * costFunction =
+            new ceres::DynamicAutoDiffCostFunction<LimbCostFunctor, 4>(
+               new LimbCostFunctor(this->model, limb->boneIndices, baseM, limb->goal, angleCount));
+
+         // Set up the cost function parameter and residual blocks
+         costFunction->AddParameterBlock(angleCount); // angles
+         costFunction->SetNumResiduals(3);            // residuals
+         problem.AddResidualBlock(costFunction, NULL, angleData);
+      }
 
       // set min and max values of each angle
       int angleIndex = 0;
       for (int i = 0; i < boneCount; i++) {
-         Bone * bone = & model->bones[boneIndices[i]];
+         Bone * bone = & model->bones[limb->boneIndices[i]];
          for (int j = 0; j < bone->joints.size(); j++) {
             problem.SetParameterLowerBound(angleData, angleIndex, bone->joints[j].minAngle);
             problem.SetParameterUpperBound(angleData, angleIndex, bone->joints[j].maxAngle);
             angleIndex++;
          }
       }
-
-      // Set everything constant except for the endAngles
-      problem.SetParameterBlockVariable(angleData);
-      problem.SetParameterBlockConstant(baseMData);
-      problem.SetParameterBlockConstant(goalData);
-
-      // Solve for the endAngles
-      ceres::Solver::Options options;
-      options.linear_solver_type = ceres::DENSE_QR;
-      ceres::Solver::Summary summary;
-      ceres::Solve(options, &problem, &summary);
-
-      // Set the calculated angles
-      for (int i = 0; i < entAngles.size(); i++)
-         *(entAngles[i]) = angleValues[i];
    }
 
-   void SolveThroughRoot(
-      Model * model,
-      Eigen::Matrix4f baseSclRotM,
-      Eigen::Vector3f * basePosition,
-      Eigen::Vector3f baseGoal,
-      Eigen::Vector3f reachGoal,
-      std::vector<float *> baseAngles,
-      std::vector<float *> reachAngles,
-      std::vector<short> baseBoneIndices,
-      std::vector<short> reachBoneIndices
-   ) {
+   // Solve for the angles
+   ceres::Solver::Options options;
+   options.linear_solver_type = ceres::DENSE_QR;
+   ceres::Solver::Summary summary;
+   ceres::Solve(options, &problem, &summary);
 
+   // Set the calculated angles
+   for (int limbNum = 0; limbNum < limbs.size(); limbNum++) {
+      IKLimb * limb = limbs[limbNum];
+      std::vector<double>* angleValues = & angleValuesByLimb[limbNum];
+
+      for (int i = 0; i < limb->jointAngles.size(); i++)
+         *(limb->jointAngles[i]) = (*angleValues)[i];
    }
+
+   // Update the entity's position in case a base limb was used
+   position = positionD.cast<float>();
 }

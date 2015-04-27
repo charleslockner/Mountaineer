@@ -28,13 +28,6 @@ typedef struct {
 } Animation;
 
 typedef struct {
-   std::vector<short> baseBoneIndices; // bones that move the root around
-   std::vector<short> reachBoneIndices; // bones that move the end effector
-   Eigen::Vector3f baseOffset;
-   Eigen::Vector3f reachOffset;
-} IKLimb;
-
-typedef struct {
    Eigen::Vector3f axis;
    float minAngle;
    float maxAngle;
@@ -46,7 +39,6 @@ typedef struct {
    std::vector<short> childIndices;
    Eigen::Matrix4f invBonePose;
    Eigen::Matrix4f parentOffset;
-   short limbIndex;
    std::vector<IKJoint> joints;
 } Bone;
 
@@ -115,7 +107,6 @@ public:
    std::vector<Face> faces;
    std::vector<Bone> bones;
    std::vector<Animation> animations;
-   std::vector<IKLimb> limbs;
 };
 
 #endif // __MODEL_H__
