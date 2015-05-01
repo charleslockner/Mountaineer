@@ -49,19 +49,18 @@ typedef struct {
 
 typedef struct {
    Eigen::Vector3f position;
+   Eigen::Vector3f normal;
    Eigen::Vector3f tangent;
    Eigen::Vector3f bitangent;
-   Eigen::Vector3f normal;
    Eigen::Vector3f color;
    Eigen::Vector2f uv;
-
-   std::vector<BoneWeight> boneWeights;
-   unsigned int boneInfluencesCount;
+   float boneInfluencesCount;
+   float boneIndices[MAX_INFLUENCES];
+   float boneWeights[MAX_INFLUENCES];
 } Vertex;
 
 typedef struct {
-   unsigned int vertices[NUM_FACE_EDGES];
-   // Eigen::Vector3f normal;
+   unsigned int vertIndices[NUM_FACE_EDGES];
 } Face;
 
 // typedef struct {
@@ -82,6 +81,7 @@ public:
    Model();
    ~Model();
 
+   void loadVBV(const char * path);
    void loadCIAB(const char * path);
    void loadTexture(const char * path);
    void loadNormalMap(const char * path);
@@ -91,13 +91,15 @@ public:
    void loadAnimationPIN(const char * path);
    void loadConstraints(const char * path);
 
+   void bufferVertices(); // Send the vertex data to the GPU memory
+   void bufferIndices(); // Send the index array to the GPU
+
    void printBoneTree();
    void printAnimations();
 
    unsigned int vertexCount, faceCount, boneCount, animationCount;
 
-   unsigned int posID, normID, colorID, uvID, tanID, bitanID,
-                indID, texID, nmapID, smapID, bIndID, bWeightID, bNumInfID;
+   unsigned int vertexID, indexID, texID, nmapID, smapID;
 
    bool hasNormals, hasColors, hasTexCoords, hasTexture, hasNormalMap, hasSpecularMap,
         hasTansAndBitans, hasBoneWeights, hasBoneTree, hasAnimations, isAnimated;

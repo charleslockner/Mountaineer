@@ -33,7 +33,7 @@ OBJS=$(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
 exe: $(EXE)
 
 model: $(EXE)
-	make -C model_converter run
+	make -C converter run
 	./$(EXE)
 
 run: $(EXE)
@@ -41,7 +41,7 @@ run: $(EXE)
 
 clean:
 	rm -rf $(BIN_DIR) $(OBJ_DIR) *.DS_Store *~
-	make -C model_converter clean
+	make -C converter clean
 
 -include $(OBJS:.o=.d)
 

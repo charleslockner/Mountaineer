@@ -1,26 +1,25 @@
 
 #include "shader.h"
 
-void EntityShader::sendVertexAttribArray(unsigned int handle, unsigned int vbo, int size) {
+void EntityShader::sendVertexAttribArray(unsigned int handle, unsigned int id,
+                                                  int size, unsigned int offset) {
    glEnableVertexAttribArray(handle);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glVertexAttribPointer(handle, size, GL_FLOAT, GL_FALSE, 0, 0);
+   glBindBuffer(GL_ARRAY_BUFFER, id);
+   glVertexAttribPointer(handle, size, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offset);
 }
 
 void EntityShader::sendLargeVertexAttribArray(unsigned int handle0, unsigned int handle1,
                                               unsigned int handle2, unsigned int handle3,
-                                              unsigned int vbo) {
-   unsigned stride = MAX_INFLUENCES * sizeof(float);
-
+                                              unsigned int id, unsigned int offset) {
    glEnableVertexAttribArray(handle0);
    glEnableVertexAttribArray(handle1);
    glEnableVertexAttribArray(handle2);
    glEnableVertexAttribArray(handle3);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glVertexAttribPointer(handle0, 4, GL_FLOAT, GL_FALSE, stride, (const void *)( 0*sizeof(float)));
-   glVertexAttribPointer(handle1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)( 4*sizeof(float)));
-   glVertexAttribPointer(handle2, 4, GL_FLOAT, GL_FALSE, stride, (const void *)( 8*sizeof(float)));
-   glVertexAttribPointer(handle3, 4, GL_FLOAT, GL_FALSE, stride, (const void *)(12*sizeof(float)));
+   glBindBuffer(GL_ARRAY_BUFFER, id);
+   glVertexAttribPointer(handle0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offset+0*sizeof(float)));
+   glVertexAttribPointer(handle1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offset+4*sizeof(float)));
+   glVertexAttribPointer(handle2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offset+8*sizeof(float)));
+   glVertexAttribPointer(handle3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offset+12*sizeof(float)));
 }
 
 void EntityShader::sendTexture(unsigned int handle, unsigned int id, GLenum unit) {

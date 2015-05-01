@@ -1,5 +1,6 @@
 #include "model.h"
 #include "stdio.h"
+#include "safe_gl.h"
 
 Model::Model() {
    hasNormals = false;
@@ -13,6 +14,8 @@ Model::Model() {
    hasBoneTree = false;
    hasAnimations = false;
    isAnimated = false;
+
+   glGenBuffers(1, & vertexID);
 }
 
 Model::~Model() {
@@ -27,6 +30,24 @@ Model::~Model() {
       // free(animations[i].animBones);
    // }
    // free(animations);
+}
+
+void Model::bufferVertices() {
+   glBindBuffer(GL_ARRAY_BUFFER, vertexID);
+   glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+}
+
+void Model::bufferIndices() {
+   int numIndices = sizeof(unsigned int) * NUM_FACE_EDGES * faces.size();
+   unsigned int * indices = (unsigned int *)malloc(numIndices);
+   for (int i = 0; i < faces.size(); i++)
+      for (int j = 0; j < NUM_FACE_EDGES; j++)
+         indices[3*i+j] = faces[i].vertIndices[j];
+
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexID);
+   glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices, indices, GL_STATIC_DRAW);
+
+   free(indices);
 }
 
 void Model::printBoneTree() {

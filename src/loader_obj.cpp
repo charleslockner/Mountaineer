@@ -5,6 +5,7 @@
 
 #include "tiny_obj_loader.h"
 #include "safe_gl.h"
+#include "matrix_math.h"
 #include "model.h"
 
 void Model::loadOBJ(const char * path)
@@ -24,37 +25,35 @@ void Model::loadOBJ(const char * path)
    this->hasTexCoords = !texBuf.empty();
 
    this->vertexCount = posBuf.size() / 3;
-   this->faceCount = indBuf.size();
+   this->faceCount = indBuf.size() / NUM_FACE_EDGES;
    this->boneCount = 0;
    this->animationCount = 0;
 
-   // Send the position array to the GPU
-   glGenBuffers(1, & this->posID);
-   glBindBuffer(GL_ARRAY_BUFFER, this->posID);
-   glBufferData(GL_ARRAY_BUFFER, posBuf.size()*sizeof(float), &posBuf[0], GL_STATIC_DRAW);
+   this->vertices = std::vector<Vertex>(this->vertexCount);
+   this->faces = std::vector<Face>(this->faceCount);
 
-   // Send the normal array (if it exists) to the GPU
-   if(!norBuf.empty()) {
-      glGenBuffers(1, & this->normID);
-      glBindBuffer(GL_ARRAY_BUFFER, this->normID);
-      glBufferData(GL_ARRAY_BUFFER, norBuf.size()*sizeof(float), &norBuf[0], GL_STATIC_DRAW);
-   }
+   for (int i = 0; i < this->vertexCount; i++)
+      this->vertices[i].position = Eigen::Vector3f(posBuf[3*i], posBuf[3*i+1], posBuf[3*i+2]);
 
-   // Send the texture coordinates array (if it exists) to the GPU
-   if(!texBuf.empty()) {
-      glGenBuffers(1, & this->uvID);
-      glBindBuffer(GL_ARRAY_BUFFER, this->uvID);
-      glBufferData(GL_ARRAY_BUFFER, texBuf.size()*sizeof(float), &texBuf[0], GL_STATIC_DRAW);
-   }
+   if (!norBuf.empty())
+      for (int i = 0; i < this->vertexCount; i++)
+         this->vertices[i].normal = Eigen::Vector3f(norBuf[3*i], norBuf[3*i+1], norBuf[3*i+2]);
+
+   if (!texBuf.empty())
+      for (int i = 0; i < this->vertexCount; i++)
+         this->vertices[i].uv = Eigen::Vector2f(texBuf[2*i], texBuf[2*i+1]);
+
+   for (int i = 0; i < this->faceCount; i++)
+      for (int j = 0; j < NUM_FACE_EDGES; j++)
+         this->faces[i].vertIndices[j] = indBuf[3*i+j];
+
+   // Send vertex data to the GPU
+   bufferVertices();
 
    // Send the index array to the GPU
-   glGenBuffers(1, & this->indID);
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indID);
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indBuf.size()*sizeof(unsigned int), &indBuf[0], GL_STATIC_DRAW);
-
-   // Unbind the arrays
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+   glGenBuffers(1, & this->indexID);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexID);
+   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indBuf.size()*sizeof(unsigned int), indBuf.data(), GL_STATIC_DRAW);
 
    checkOpenGLError();
 

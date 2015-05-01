@@ -29,31 +29,13 @@ static void readHeader(FILE *fp, Model * model) {
    fread(& model->boneCount, sizeof(unsigned int), 1, fp);
    fread(& model->animationCount, sizeof(unsigned int), 1, fp);
 
-   // printf("verts: %d, faces: %d, bones: %d, anims: %d\n",
-   //    model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
-
    if (model->boneCount > MAX_BONES) {
       printf("There are %d bones and the max is %d\n", model->boneCount, MAX_BONES);
       exit(1);
    }
 
    model->vertices = std::vector<Vertex>(model->vertexCount);
-   // printf("numVertices = %d, size = %d\n", model->vertexCount, model->vertices.size());
    model->faces = std::vector<Face>(model->faceCount);
-}
-
-static unsigned int createVBO(FILE *fp, int count, int size) {
-   void * data = (void *)malloc(count * size);
-   fread(data, size, count, fp);
-
-   unsigned int vbo;
-   glGenBuffers(1, & vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
-
-   free(data);
-
-   return vbo;
 }
 
 static void readPositions(FILE *fp, Model * model) {
@@ -66,14 +48,7 @@ static void readPositions(FILE *fp, Model * model) {
    for (int i = 0; i < model->vertexCount; i++)
       model->vertices[i].position = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
-   unsigned int vbo;
-   glGenBuffers(1, & vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
-
    free(data);
-
-   model->posID = vbo;
 }
 
 static void readNormals(FILE *fp, Model * model) {
@@ -86,22 +61,33 @@ static void readNormals(FILE *fp, Model * model) {
    for (int i = 0; i < model->vertexCount; i++)
       model->vertices[i].normal = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
-   unsigned int vbo;
-   glGenBuffers(1, & vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
-
    free(data);
-
-   model->normID = vbo;
 }
 
 static void readColors(FILE *fp, Model * model) {
-   model->colorID = createVBO(fp, 3 * model->vertexCount, sizeof(float));
+   int count = 3 * model->vertexCount;
+   int size = sizeof(float);
+
+   float * data = (float *)malloc(count * size);
+   fread(data, size, count, fp);
+
+   for (int i = 0; i < model->vertexCount; i++)
+      model->vertices[i].color = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+
+   free(data);
 }
 
 static void readTexCoords(FILE *fp, Model * model) {
-   model->uvID = createVBO(fp, 2 * model->vertexCount, sizeof(float));
+   int count = 2 * model->vertexCount;
+   int size = sizeof(float);
+
+   float * data = (float *)malloc(count * size);
+   fread(data, size, count, fp);
+
+   for (int i = 0; i < model->vertexCount; i++)
+      model->vertices[i].uv = Eigen::Vector2f(data[2*i], data[2*i+1]);
+
+   free(data);
 }
 
 static void readTangents(FILE *fp, Model * model) {
@@ -114,14 +100,7 @@ static void readTangents(FILE *fp, Model * model) {
    for (int i = 0; i < model->vertexCount; i++)
       model->vertices[i].tangent = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
-   unsigned int vbo;
-   glGenBuffers(1, & vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
-
    free(data);
-
-   model->tanID = vbo;
 }
 
 static void readBitangents(FILE *fp, Model * model) {
@@ -134,18 +113,25 @@ static void readBitangents(FILE *fp, Model * model) {
    for (int i = 0; i < model->vertexCount; i++)
       model->vertices[i].bitangent = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
-   unsigned int vbo;
-   glGenBuffers(1, & vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
-
    free(data);
-
-   model->bitanID = vbo;
 }
 
 static void readIndices(FILE *fp, Model * model) {
-   model->indID = createVBO(fp, 3 * model->faceCount, sizeof(unsigned int));
+   int count = 3 * model->faceCount;
+   int size = sizeof(unsigned int);
+
+   float * data = (float *)malloc(count * size);
+   fread(data, size, count, fp);
+
+   for (int i = 0; i < model->faceCount; i++)
+      for (int j = 0; j < NUM_FACE_EDGES; j++)
+         model->faces[i].vertIndices[j] = data[3*i+j];
+
+   glGenBuffers(1, & model->indexID);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indexID);
+   glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
+
+   free(data);
 }
 
 static void readBoneIndices(FILE *fp, Model * model) {
@@ -159,10 +145,9 @@ static void readBoneIndices(FILE *fp, Model * model) {
    for (int i = 0; i < count; i++)
       floatData[i] = ushortData[i];
 
-   // generate the buffer
-   glGenBuffers(1, & model->bIndID);
-   glBindBuffer(GL_ARRAY_BUFFER, model->bIndID);
-   glBufferData(GL_ARRAY_BUFFER, count * sizeof(float), floatData, GL_STATIC_DRAW);
+   for (int i = 0; i < model->vertexCount; i++)
+      for (int j = 0; j < MAX_INFLUENCES; j++)
+         model->vertices[i].boneIndices[j] = floatData[MAX_INFLUENCES * i + j];
 
    // free the data blocks
    free(ushortData);
@@ -170,7 +155,17 @@ static void readBoneIndices(FILE *fp, Model * model) {
 }
 
 static void readBoneWeights(FILE *fp, Model * model) {
-   model->bWeightID = createVBO(fp, MAX_INFLUENCES * model->vertexCount, sizeof(float));
+   int count = MAX_INFLUENCES * model->vertexCount;
+   int size = sizeof(float);
+
+   float * data = (float *)malloc(count * size);
+   fread(data, size, count, fp);
+
+   for (int i = 0; i < model->vertexCount; i++)
+      for (int j = 0; j < MAX_INFLUENCES; j++)
+         model->vertices[i].boneWeights[j] = data[MAX_INFLUENCES * i + j];
+
+   free(data);
 }
 
 static void readBoneInfluences(FILE *fp, Model * model) {
@@ -184,10 +179,8 @@ static void readBoneInfluences(FILE *fp, Model * model) {
    for (int i = 0; i < count; i++)
       floatData[i] = ushortData[i];
 
-   // generate the buffer
-   glGenBuffers(1, & model->bNumInfID);
-   glBindBuffer(GL_ARRAY_BUFFER, model->bNumInfID);
-   glBufferData(GL_ARRAY_BUFFER, count * sizeof(float), floatData, GL_STATIC_DRAW);
+   for (int i = 0; i < model->vertexCount; i++)
+      model->vertices[i].boneInfluencesCount = floatData[i];
 
    // free the data blocks
    free(ushortData);
@@ -315,6 +308,8 @@ static void loadMeshData(FILE *fp, Model * model) {
 
       // printf("Loading field %d\n", fieldType);
    }
+
+   model->bufferVertices();
 
    checkPresentFields(model, receivedFlags);
    model->isAnimated = model->hasBoneWeights && model->hasAnimations;

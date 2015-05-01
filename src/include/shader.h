@@ -31,10 +31,10 @@ protected:
                    aNumInfluences;
    } HandleTable;
 
-   void sendVertexAttribArray(unsigned int handle, unsigned int vbo, int size);
+   void sendVertexAttribArray(unsigned int handle, unsigned int id, int size, unsigned int offset);
    void sendLargeVertexAttribArray(unsigned int handle0, unsigned int handle1,
                                    unsigned int handle2, unsigned int handle3,
-                                   unsigned int vbo);
+                                   unsigned int id, unsigned int offset);
    void sendTexture(unsigned int handle, unsigned int id, GLenum texture);
 
    HandleTable animTable, statTable;

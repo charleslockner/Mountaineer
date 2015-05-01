@@ -48,21 +48,23 @@ void main(void) {
       finalColor = vec3(0.0);
 
       // loop through each light
-      for (int i = 0; i < 1; i++) {
-         lightPosition = uLights[4*i];
+      for (int i = 0; i < 2; i++) {
+         // lightPosition = uLights[4*i];
+         lightDirection = uLights[4*i+1];
          lightColor = uLights[4*i+2];
-         lightAttr = uLights[4*i+3];
-         lightStrength = lightAttr.x;
+         // lightAttr = uLights[4*i+3];
+         // lightStrength = lightAttr.x;
 
-         lightDirection = normalize(vWorldPosition - lightPosition);
+         // lightDirection = normalize(vWorldPosition - lightPosition);
 
          reflection = normalize(2.0 * normal * dot(normal, lightDirection) - lightDirection);
-         lightDistance = length(vWorldPosition - lightPosition);
-         illumination = lightStrength / (1.0 + 2.0*lightDistance + lightDistance*lightDistance);
+         // lightDistance = length(vWorldPosition - lightPosition);
+         // illumination = lightStrength / (1.0 + 2.0*lightDistance + lightDistance*lightDistance);
 
          diffuse = skinColor * clamp(dot(normal, -lightDirection), 0.0, 1.0);
          specular = skinColor * pow(clamp(dot(reflection, viewDirection), 0.0, 1.0), shine);
-         finalColor += illumination * lightColor * (specular + diffuse + ambient);
+         // finalColor += illumination * lightColor * (specular + diffuse + ambient);
+         finalColor += lightColor * (specular + diffuse + ambient);
       }
    } else
       finalColor = skinColor;

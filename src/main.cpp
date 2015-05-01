@@ -93,12 +93,20 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 
 void setupLights() {
    lightData.lights[0].position = Eigen::Vector3f(18.0, 10.0, 10.0);
-   lightData.lights[0].direction = Eigen::Vector3f(1.0, 0.0, 0.0);
-   lightData.lights[0].color = Eigen::Vector3f(1.0, 1.0, 1.0);
+   lightData.lights[0].direction = Eigen::Vector3f(1.0, 0.5, 0.0).normalized();
+   lightData.lights[0].color = Eigen::Vector3f(0.9, 0.45, 0.6);
    lightData.lights[0].strength = 250;
    lightData.lights[0].attenuation = 50.0;
    lightData.lights[0].spread = 15;
-   lightData.numLights = 1;
+
+   lightData.lights[1].position = Eigen::Vector3f(18.0, 10.0, 10.0);
+   lightData.lights[1].direction = Eigen::Vector3f(-1.0, -0.5, 0.0).normalized();
+   lightData.lights[1].color = Eigen::Vector3f(0.6, 0.7, 0.85);
+   lightData.lights[1].strength = 250;
+   lightData.lights[1].attenuation = 50.0;
+   lightData.lights[1].spread = 15;
+
+   lightData.numLights = 2;
 }
 
 
@@ -173,10 +181,12 @@ void updateWorld(double timePassed) {
          goals[goalIndex](2) = goals[goalIndex](2) + timePassed * speed;
    }
 
+   goals[goalIndex] = camera->position + 10 * camera->direction.normalized();
+
    guyEnt->setLimbGoal(0, goals[0]);
    guyEnt->setLimbGoal(1, goals[1]);
 
-   guyEnt->position(1) += 0.02;
+   // guyEnt->position(1) += 0.02;
 }
 
 int main(int argc, char ** argv) {
@@ -189,6 +199,7 @@ int main(int argc, char ** argv) {
    Model * chebModel = new Model();
    chebModel->loadOBJ("assets/cheb/cheb2.obj");
    chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   // chebModel->bufferVertices();
    chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
    entities.push_back(new BonelessEntity(Eigen::Vector3f(-8, 0, 5), chebModel));
    entities[0]->playAnimation(0);
@@ -200,12 +211,12 @@ int main(int argc, char ** argv) {
    entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, -15), trexModel));
    entities[1]->playAnimation(0);
 
-
    guyModel = new Model();
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_tex.bmp");
    guyModel->loadConstraints("assets/models/guy.cns");
    guyEnt = new IKEntity(Eigen::Vector3f(0, 0, 0), guyModel);
+
 
    std::vector<int> boneIndices = std::vector<int>(0);
    boneIndices.push_back(0);
@@ -225,7 +236,7 @@ int main(int argc, char ** argv) {
    boneIndices.push_back(11);
    boneIndices.push_back(12);
    boneIndices.push_back(13);
-   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), GL_TRUE);
 
    entities.push_back(guyEnt);
    guyEnt->playAnimation(0);

@@ -70,29 +70,30 @@ static void bindBoneWeights(Model * model, std::vector<float> & inWeights, int n
    int numVertices = inWeights.size() / numBones;
    std::vector<VertexWeight> verts = std::vector<VertexWeight>(numVertices);
    int numWeights = numVertices * MAX_INFLUENCES;
+   float * bNumInfluences = (float *)malloc(numVertices * sizeof(float));
    float * bIndices = (float *)malloc(numWeights * sizeof(float));
    float * bWeights = (float *)malloc(numWeights * sizeof(float));
-   float * bNumInfluences = (float *)malloc(numVertices * sizeof(float));
 
    fillVertexArray(inWeights, verts);
    sortBoneWeights(verts);
    normalizeBoneWeights(verts);
    parseVertexWeights(verts, bIndices, bWeights, bNumInfluences);
 
-   glGenBuffers(1, & model->bIndID);
-   glBindBuffer(GL_ARRAY_BUFFER, model->bIndID);
-   glBufferData(GL_ARRAY_BUFFER, numWeights * sizeof(float), & bIndices[0], GL_STATIC_DRAW);
+   for (int i = 0; i < numVertices; i++)
+      model->vertices[i].boneInfluencesCount = bNumInfluences[i];
 
-   glGenBuffers(1, & model->bWeightID);
-   glBindBuffer(GL_ARRAY_BUFFER, model->bWeightID);
-   glBufferData(GL_ARRAY_BUFFER, numWeights * sizeof(float), & bWeights[0], GL_STATIC_DRAW);
+   for (int i = 0; i < numVertices; i++)
+      for (int j = 0; j < MAX_INFLUENCES; j++)
+         model->vertices[i].boneIndices[j] = bIndices[MAX_INFLUENCES*i+j];
 
-   glGenBuffers(1, & model->bNumInfID);
-   glBindBuffer(GL_ARRAY_BUFFER, model->bNumInfID);
-   glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(float), & bNumInfluences[0], GL_STATIC_DRAW);
+   for (int i = 0; i < numVertices; i++)
+      for (int j = 0; j < MAX_INFLUENCES; j++)
+         model->vertices[i].boneWeights[j] = bWeights[MAX_INFLUENCES*i+j];
 
    model->boneCount = numBones;
    model->hasBoneWeights = true;
+
+   model->bufferVertices();
 
    free(bIndices);
    free(bWeights);
