@@ -201,7 +201,8 @@ int main(int argc, char ** argv) {
    TerrainGenerator * terrainGenerator = new TerrainGenerator();
    Model * terrainModel = terrainGenerator->generateRockFace();
    terrainModel->loadTexture("assets/textures/rock.png", true);
-   terrainModel->loadNormalMap("assets/textures/rock_normal.png", true);
+   terrainModel->loadNormalMap("assets/textures/rock_NORM.png", true);
+   terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
    staticEntities.push_back(new StaticEntity(Eigen::Vector3f(0, 0, -15), terrainModel));
 
    Model * chebModel = new Model();
@@ -214,7 +215,7 @@ int main(int argc, char ** argv) {
    Model * trexModel = new Model();
    trexModel->loadCIAB("assets/models/trex.ciab");
    trexModel->loadTexture("assets/textures/masonry.png", false);
-   trexModel->loadNormalMap("assets/textures/masonry_normal.png", false);
+   trexModel->loadNormalMap("assets/textures/masonry_NORM.png", false);
    entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
    entities[1]->playAnimation(0);
    trexModel->bufferIndices();

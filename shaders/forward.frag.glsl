@@ -24,7 +24,7 @@ void main(void) {
    vec3 skinColor, normal, reflection, viewDirection;
    vec3 ambient, diffuse, specular, finalColor;
    float specDot, lightStrength, lightAttenuation, lightRadius, lightDistance, illumination;
-   float shine = 400.0;
+   float shine;
 
    if (uHasColors && uHasTexture)
       skinColor = vec3(texture2D(uTexture, vUV)) * vColor;
@@ -38,11 +38,9 @@ void main(void) {
    if (uHasNormals) {
       viewDirection = normalize(vWorldPosition - uCameraPosition);
 
-      if (uHasNormalMap) {
-         mat3 TBN = mat3(normalize(vWorldTangent), normalize(vWorldBitangent), normalize(vWorldNormal));
-         normal = TBN * normalize(texture2D(uNormalMap, vUV).rgb * 2.0 - 1.0);
-      } else
-         normal = normalize(vWorldNormal);
+      mat3 TBN = mat3(normalize(vWorldTangent), normalize(vWorldBitangent), normalize(vWorldNormal));
+      normal = uHasNormalMap ? TBN * normalize(texture2D(uNormalMap, vUV).rgb * 2.0 - 1.0) : normalize(vWorldNormal);
+      shine = uHasSpecularMap ? texture2D(uSpecularMap, vUV).r * 255.0 + 1.0: 100.0;
 
       ambient = skinColor * 0.25;
       finalColor = vec3(0.0);
