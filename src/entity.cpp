@@ -22,6 +22,13 @@ Eigen::Matrix4f Entity::generateModelM() {
 }
 
 // --------------------------------------------------------- //
+// ===================== Static Entity ===================== //
+// --------------------------------------------------------- //
+StaticEntity::StaticEntity(Eigen::Vector3f pos, Model * model)
+: Entity(pos, model) {}
+StaticEntity::~StaticEntity() {}
+
+// --------------------------------------------------------- //
 // ==================== Animated Entity ==================== //
 // --------------------------------------------------------- //
 // AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
@@ -39,30 +46,30 @@ AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Model * model)
    for (int i = 0; i < MAX_BONES; i++)
       this->animMs[i] = Eigen::Matrix4f::Identity();
 }
-
+AnimatedEntity::~AnimatedEntity() {}
 // --------------------------------------------------------- //
-// ==================== Boneless Entity ==================== //
+// ====================== Mocap Entity ===================== //
 // --------------------------------------------------------- //
-// BonelessEntity::BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
+// MocapEntity::MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
 // : AnimatedEntity(pos, rot, scl, model),
 //   animNum(0), animTime(0), animIsPlaying(false) {}
-// BonelessEntity::BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
+// MocapEntity::MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
 // : AnimatedEntity(pos, rot, model),
 //   animNum(0), animTime(0), animIsPlaying(false) {}
-BonelessEntity::BonelessEntity(Eigen::Vector3f pos, Model * model)
+MocapEntity::MocapEntity(Eigen::Vector3f pos, Model * model)
 : AnimatedEntity(pos, model),
   animNum(0), animTime(0), animIsPlaying(false) {}
 
-void BonelessEntity::playAnimation(int animNum) {
+void MocapEntity::playAnimation(int animNum) {
    animIsPlaying = true;
    this->animNum = animNum;
 }
 
-void BonelessEntity::stopAnimation() {
+void MocapEntity::stopAnimation() {
    animIsPlaying = false;
 }
 
-void BonelessEntity::update(float tickDelta) {
+void MocapEntity::update(float tickDelta) {
    if (model->hasAnimations) {
       // Move forward the animation time
       float duration = model->animations[animNum].duration;

@@ -47,13 +47,9 @@ void Model::loadOBJ(const char * path)
       for (int j = 0; j < NUM_FACE_EDGES; j++)
          this->faces[i].vertIndices[j] = indBuf[3*i+j];
 
-   // Send vertex data to the GPU
+   // Send vertex and face data to the GPU
    bufferVertices();
-
-   // Send the index array to the GPU
-   glGenBuffers(1, & this->indexID);
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexID);
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indBuf.size()*sizeof(unsigned int), indBuf.data(), GL_STATIC_DRAW);
+   bufferIndices();
 
    checkOpenGLError();
 

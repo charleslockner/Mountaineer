@@ -12,7 +12,7 @@ static void swapBytes(unsigned char * buf1, unsigned char * buf2, int numBytes) 
 
 }
 
-static unsigned int loadImage(const char * filename) {
+static unsigned int loadImage(const char * filename, bool repeat) {
    unsigned int id;
 
    // Load texture
@@ -50,11 +50,13 @@ static unsigned int loadImage(const char * filename) {
    // Generate image pyramid
    glGenerateMipmap(GL_TEXTURE_2D);
    // Set texture wrap modes for the S and T directions
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   int glRepeatConst = repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glRepeatConst);
+   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glRepeatConst);
    // Set filtering mode for magnification and minimification
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
    // Unbind
    glBindTexture(GL_TEXTURE_2D, 0);
    // Free the image data, since the data is now on the GPU
@@ -63,20 +65,20 @@ static unsigned int loadImage(const char * filename) {
    return id;
 }
 
-void Model::loadTexture(const char * filename) {
-   this->texID = loadImage(filename);
+void Model::loadTexture(const char * filename, bool repeat) {
+   this->texID = loadImage(filename, repeat);
    this->hasTexture = true;
    std::cerr << "Loaded texture: " << filename << "\n";
 }
 
-void Model::loadNormalMap(const char * filename) {
-   this->nmapID = loadImage(filename);
+void Model::loadNormalMap(const char * filename, bool repeat) {
+   this->nmapID = loadImage(filename, repeat);
    this->hasNormalMap = true;
    std::cerr << "Loaded normal map: " << filename << "\n";
 }
 
-void Model::loadSpecularMap(const char * filename) {
-   this->smapID = loadImage(filename);
+void Model::loadSpecularMap(const char * filename, bool repeat) {
+   this->smapID = loadImage(filename, repeat);
    this->hasSpecularMap = true;
    std::cerr << "Loaded specular map: " << filename << "\n";
 }

@@ -20,12 +20,17 @@ public:
    Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
    Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
    Entity(Eigen::Vector3f pos, Model * model);
-   ~Entity();
-
-   virtual void update(float timeDelta)=0;
+   virtual ~Entity();
    Eigen::Matrix4f generateModelM();
 };
 
+class StaticEntity : public Entity {
+public:
+   // AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   // AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
+   StaticEntity(Eigen::Vector3f pos, Model * model);
+   ~StaticEntity();
+};
 
 class AnimatedEntity : public Entity {
 public:
@@ -34,16 +39,17 @@ public:
    // AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
    // AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
    AnimatedEntity(Eigen::Vector3f pos, Model * model);
-
+   ~AnimatedEntity();
+   virtual void update(float timeDelta)=0;
    virtual void playAnimation(int animNum)=0;
    virtual void stopAnimation()=0;
 };
 
-class BonelessEntity : public AnimatedEntity {
+class MocapEntity : public AnimatedEntity {
 public:
-   // BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
-   // BonelessEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
-   BonelessEntity(Eigen::Vector3f pos, Model * model);
+   // MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   // MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
+   MocapEntity(Eigen::Vector3f pos, Model * model);
 
    void playAnimation(int animNum);
    void stopAnimation();
@@ -54,7 +60,6 @@ private:
    int animNum;
    float animTime;
 };
-
 
 class BonifiedEntity : public AnimatedEntity {
 public:

@@ -6,6 +6,7 @@
 #include "light.h"
 #include "model.h"
 #include "entity.h"
+#include "terrain.h"
 
 #include <vector>
 
@@ -16,6 +17,7 @@
 
 LightData lightData;
 Camera * camera;
+std::vector<StaticEntity *> staticEntities;
 std::vector<AnimatedEntity *> entities;
 
 double lastScreenX;
@@ -93,15 +95,15 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 
 void setupLights() {
    lightData.lights[0].position = Eigen::Vector3f(18.0, 10.0, 10.0);
-   lightData.lights[0].direction = Eigen::Vector3f(1.0, 0.5, 0.0).normalized();
-   lightData.lights[0].color = Eigen::Vector3f(0.9, 0.45, 0.6);
+   lightData.lights[0].direction = Eigen::Vector3f(-1.0, -0.5, -0.3).normalized();
+   lightData.lights[0].color = Eigen::Vector3f(0.8, 0.7, 0.6);
    lightData.lights[0].strength = 250;
    lightData.lights[0].attenuation = 50.0;
    lightData.lights[0].spread = 15;
 
    lightData.lights[1].position = Eigen::Vector3f(18.0, 10.0, 10.0);
-   lightData.lights[1].direction = Eigen::Vector3f(-1.0, -0.5, 0.0).normalized();
-   lightData.lights[1].color = Eigen::Vector3f(0.6, 0.7, 0.85);
+   lightData.lights[1].direction = Eigen::Vector3f(1.0, 0.5, 0.3).normalized();
+   lightData.lights[1].color = Eigen::Vector3f(0.15, 0.12, 0.27);
    lightData.lights[1].strength = 250;
    lightData.lights[1].attenuation = 50.0;
    lightData.lights[1].spread = 15;
@@ -135,7 +137,7 @@ GLFWwindow * windowSetup() {
 
    glEnable(GL_DEPTH_TEST);
    glDepthFunc(GL_LEQUAL);
-   glClearColor(0.4,0.2,0.2,1.0);
+   glClearColor(0,0,0,1.0);
 
    return window;
 }
@@ -181,7 +183,7 @@ void updateWorld(double timePassed) {
          goals[goalIndex](2) = goals[goalIndex](2) + timePassed * speed;
    }
 
-   goals[goalIndex] = camera->position + 10 * camera->direction.normalized();
+   // goals[goalIndex] = camera->position + 10 * camera->direction.normalized();
 
    guyEnt->setLimbGoal(0, goals[0]);
    guyEnt->setLimbGoal(1, goals[1]);
@@ -196,27 +198,33 @@ int main(int argc, char ** argv) {
    camera = new Camera(Eigen::Vector3f(0,0,10), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
    setupLights();
 
+   TerrainGenerator * terrainGenerator = new TerrainGenerator();
+   Model * terrainModel = terrainGenerator->generateRockFace();
+   terrainModel->loadTexture("assets/textures/rock.png", true);
+   terrainModel->loadNormalMap("assets/textures/rock_normal.png", true);
+   staticEntities.push_back(new StaticEntity(Eigen::Vector3f(0, 0, -15), terrainModel));
+
    Model * chebModel = new Model();
    chebModel->loadOBJ("assets/cheb/cheb2.obj");
    chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   // chebModel->bufferVertices();
    chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
-   entities.push_back(new BonelessEntity(Eigen::Vector3f(-8, 0, 5), chebModel));
+   entities.push_back(new MocapEntity(Eigen::Vector3f(-10, 0, 0), chebModel));
    entities[0]->playAnimation(0);
 
    Model * trexModel = new Model();
    trexModel->loadCIAB("assets/models/trex.ciab");
-   trexModel->loadTexture("assets/textures/masonry.png");
-   trexModel->loadNormalMap("assets/textures/masonry_normal.png");
-   entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, -15), trexModel));
+   trexModel->loadTexture("assets/textures/masonry.png", false);
+   trexModel->loadNormalMap("assets/textures/masonry_normal.png", false);
+   entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
    entities[1]->playAnimation(0);
+   trexModel->bufferIndices();
 
    guyModel = new Model();
    guyModel->loadCIAB("assets/models/guy.ciab");
-   guyModel->loadTexture("assets/textures/guy_tex.bmp");
+   guyModel->loadTexture("assets/textures/guy_tex.bmp", false);
    guyModel->loadConstraints("assets/models/guy.cns");
    guyEnt = new IKEntity(Eigen::Vector3f(0, 0, 0), guyModel);
-
+   trexModel->bufferIndices();
 
    std::vector<int> boneIndices = std::vector<int>(0);
    boneIndices.push_back(0);
@@ -256,13 +264,17 @@ int main(int argc, char ** argv) {
       updateCameraPosition(deltaTime);
       updateWorld(deltaTime);
 
+      for (int i = 0; i < staticEntities.size(); i++)
+         shader->render(camera, & lightData, staticEntities[i]);
+
       for (int i = 0; i < entities.size(); i++)
          entities[i]->update(deltaTime);
       for (int i = 0; i < entities.size(); i++)
          shader->render(camera, & lightData, entities[i]);
 
       if (keyToggles[GLFW_KEY_K]) {
-         shader->renderVertices(camera, entities[0]);
+         shader->renderVertices(camera, staticEntities[0]);
+         shader->renderVertices(camera, entities[1]);
          shader->renderBones(camera, (BonifiedEntity *)(entities[1]));
          shader->renderBones(camera, guyEnt);
       }

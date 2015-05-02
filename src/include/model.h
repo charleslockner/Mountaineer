@@ -61,6 +61,7 @@ typedef struct {
 
 typedef struct {
    unsigned int vertIndices[NUM_FACE_EDGES];
+   Eigen::Vector3f normal;
 } Face;
 
 // typedef struct {
@@ -83,17 +84,20 @@ public:
 
    void loadVBV(const char * path);
    void loadCIAB(const char * path);
-   void loadTexture(const char * path);
-   void loadNormalMap(const char * path);
-   void loadSpecularMap(const char * path);
+   void loadTexture(const char * path, bool repeat);
+   void loadNormalMap(const char * path, bool repeat);
+   void loadSpecularMap(const char * path, bool repeat);
    void loadOBJ(const char * path);
    void loadSkinningPIN(const char * path);
    void loadAnimationPIN(const char * path);
    void loadConstraints(const char * path);
 
+   void CalculateNormals(); // Calculate vertex and face normals from vertex positions
    void bufferVertices(); // Send the vertex data to the GPU memory
    void bufferIndices(); // Send the index array to the GPU
 
+   void printVertices();
+   void printFaces();
    void printBoneTree();
    void printAnimations();
 

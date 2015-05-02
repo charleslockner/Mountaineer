@@ -16,6 +16,7 @@ Model::Model() {
    isAnimated = false;
 
    glGenBuffers(1, & vertexID);
+   glGenBuffers(1, & indexID);
 }
 
 Model::~Model() {
@@ -32,22 +33,63 @@ Model::~Model() {
    // free(animations);
 }
 
+void Model::CalculateNormals() {
+   // Zero out vertex normals so we can sum from face normals starting at 0
+   for (int i = 0; i < vertices.size(); i++)
+      vertices[i].normal = Eigen::Vector3f(0,0,0);
+
+   // Calculated face normals and add these to neighboring vertex normals
+   for (int i = 0; i < faces.size(); i++) {
+      Face * face = & faces[i];
+      Vertex * v1 = & vertices[face->vertIndices[0]];
+      Vertex * v2 = & vertices[face->vertIndices[1]];
+      Vertex * v3 = & vertices[face->vertIndices[2]];
+
+      // Fill in face normals
+      face->normal = ((v3->position - v2->position).cross(v1->position - v2->position)).normalized();
+      // Add face normal to neighboring vertex normals
+      v1->normal += face->normal;
+      v2->normal += face->normal;
+      v3->normal += face->normal;
+   }
+
+   // Normalize the new vertex normals
+   for (int i = 0; i < vertices.size(); i++)
+      vertices[i].normal.normalize();
+}
+
 void Model::bufferVertices() {
    glBindBuffer(GL_ARRAY_BUFFER, vertexID);
    glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 }
 
 void Model::bufferIndices() {
-   int numIndices = sizeof(unsigned int) * NUM_FACE_EDGES * faces.size();
-   unsigned int * indices = (unsigned int *)malloc(numIndices);
+   int numBytes = sizeof(unsigned int) * NUM_FACE_EDGES * faces.size();
+   unsigned int * indices = (unsigned int *)malloc(numBytes);
    for (int i = 0; i < faces.size(); i++)
       for (int j = 0; j < NUM_FACE_EDGES; j++)
-         indices[3*i+j] = faces[i].vertIndices[j];
+         indices[NUM_FACE_EDGES*i+j] = faces[i].vertIndices[j];
 
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexID);
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices, indices, GL_STATIC_DRAW);
+   glBufferData(GL_ELEMENT_ARRAY_BUFFER, numBytes, indices, GL_STATIC_DRAW);
 
    free(indices);
+}
+
+void Model::printVertices() {
+   for (int i = 0; i < vertexCount; i++) {
+      Vertex * v = & vertices[i];
+      printf("Vertex %d:\n", i);
+      printf("  position = %f %f %f\n", v->position(0), v->position(1), v->position(2));
+      printf("  normal = %f %f %f\n", v->normal(0), v->normal(1), v->normal(2));
+   }
+}
+
+void Model::printFaces() {
+   for (int i = 0; i < faceCount; i++) {
+      printf("Face %d:\n", i);
+      printf("  vertIndices: %d %d %d\n", faces[i].vertIndices[0], faces[i].vertIndices[1], faces[i].vertIndices[2]);
+   }
 }
 
 void Model::printBoneTree() {

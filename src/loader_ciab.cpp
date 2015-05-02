@@ -120,16 +120,12 @@ static void readIndices(FILE *fp, Model * model) {
    int count = 3 * model->faceCount;
    int size = sizeof(unsigned int);
 
-   float * data = (float *)malloc(count * size);
+   unsigned int * data = (unsigned int *)malloc(count * size);
    fread(data, size, count, fp);
 
    for (int i = 0; i < model->faceCount; i++)
       for (int j = 0; j < NUM_FACE_EDGES; j++)
          model->faces[i].vertIndices[j] = data[3*i+j];
-
-   glGenBuffers(1, & model->indexID);
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indexID);
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * size, data, GL_STATIC_DRAW);
 
    free(data);
 }
@@ -310,6 +306,7 @@ static void loadMeshData(FILE *fp, Model * model) {
    }
 
    model->bufferVertices();
+   model->bufferIndices();
 
    checkPresentFields(model, receivedFlags);
    model->isAnimated = model->hasBoneWeights && model->hasAnimations;

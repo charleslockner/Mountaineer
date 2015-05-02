@@ -51,8 +51,9 @@ void ForwardShader::fillHandleTable(HandleTable * table, unsigned int program, b
    }
 }
 
-void ForwardShader::render(Camera * camera, LightData * lightData, AnimatedEntity * entity) {
-   Model * model = entity->model;
+void ForwardShader::render(Camera * camera, LightData * lightData, Entity * entityBase) {
+
+   Model * model = entityBase->model;
 
    unsigned int program = model->isAnimated ? animProg : statProg;
    HandleTable * table = model->isAnimated ? & animTable : & statTable;
@@ -62,7 +63,7 @@ void ForwardShader::render(Camera * camera, LightData * lightData, AnimatedEntit
    // Send Projection, View, and Model matrices
    Eigen::Matrix4f projViewM = camera->getProjectionM() * camera->getViewM();
    glUniformMatrix4fv(table->uProjViewM, 1, GL_FALSE, projViewM.data());
-   glUniformMatrix4fv(table->uModelM, 1, GL_FALSE, entity->generateModelM().data());
+   glUniformMatrix4fv(table->uModelM, 1, GL_FALSE, entityBase->generateModelM().data());
 
    // Send camera and light data
    glUniform3fv(table->uCameraPosition, 1, camera->position.data());
@@ -107,8 +108,8 @@ void ForwardShader::render(Camera * camera, LightData * lightData, AnimatedEntit
       sendLargeVertexAttribArray(table->aBoneWeights0, table->aBoneWeights1,
                                  table->aBoneWeights2, table->aBoneWeights3,
                                  model->vertexID, offsetof(Vertex, boneWeights));
-
-      glUniformMatrix4fv(table->uAnimMs, MAX_BONES, GL_FALSE, (GLfloat *)(entity->animMs));
+      AnimatedEntity * entityAnim = dynamic_cast<AnimatedEntity *>(entityBase);
+      glUniformMatrix4fv(table->uAnimMs, MAX_BONES, GL_FALSE, (GLfloat *)(entityAnim->animMs));
    }
 
    // Draw the damn thing!

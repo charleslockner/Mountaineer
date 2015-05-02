@@ -7,16 +7,17 @@
 #include "light.h"
 #include "entity.h"
 
+class Entity;
 class AnimatedEntity;
 class BonifiedEntity;
 
 // Generalized shader class for rendering entities
 class EntityShader {
 public:
-   virtual void render(Camera * camera, LightData * lightdata, AnimatedEntity * entity) {};
+   virtual void render(Camera * camera, LightData * lightdata, Entity * entity) {};
 
    // Debug Functions
-   void renderVertices(Camera * camera, AnimatedEntity * entity);
+   void renderVertices(Camera * camera, Entity * entity);
    void renderBones(Camera * camera, BonifiedEntity * entity);
    void renderPoint(Camera * camera, Eigen::Vector3f p);
 
@@ -45,7 +46,7 @@ class ForwardShader: public EntityShader {
 public:
    ForwardShader();
    ~ForwardShader();
-   void render(Camera * camera, LightData * lightdata, AnimatedEntity * entity);
+   void render(Camera * camera, LightData * lightdata, Entity * entity);
 
 private:
    void fillHandleTable(HandleTable * table, unsigned int prog, bool animated);
