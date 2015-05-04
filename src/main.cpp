@@ -7,6 +7,7 @@
 #include "model.h"
 #include "entity.h"
 #include "terrain.h"
+#include "grid.h"
 
 #include <vector>
 
@@ -30,6 +31,9 @@ bool keyToggles[512] = {false};
 
 Model * guyModel;
 IKEntity * guyEnt;
+SpatialGrid * grid;
+
+Eigen::Vector3f targetPoint;
 
 static void error_callback(int error, const char* description) {
    fputs(description, stderr);
@@ -137,7 +141,7 @@ GLFWwindow * windowSetup() {
 
    glEnable(GL_DEPTH_TEST);
    glDepthFunc(GL_LEQUAL);
-   glClearColor(0,0,0,1.0);
+   glClearColor(0,1,0,1);
 
    return window;
 }
@@ -183,12 +187,13 @@ void updateWorld(double timePassed) {
          goals[goalIndex](2) = goals[goalIndex](2) + timePassed * speed;
    }
 
-   // goals[goalIndex] = camera->position + 10 * camera->direction.normalized();
-
-   guyEnt->setLimbGoal(0, goals[0]);
-   guyEnt->setLimbGoal(1, goals[1]);
-
-   // guyEnt->position(1) += 0.02;
+   Eigen::Vector3f camGoal = camera->position + 10 * camera->direction.normalized();
+   Vertex * vert = grid->FindClosest(camGoal, 10);
+   if (vert)
+      guyEnt->setLimbGoal(0, vert->position);
+   vert = grid->FindClosest(camGoal + Eigen::Vector3f(0, -5, 0), 10);
+   if (vert)
+      guyEnt->setLimbGoal(1, vert->position);
 }
 
 int main(int argc, char ** argv) {
@@ -198,13 +203,25 @@ int main(int argc, char ** argv) {
    camera = new Camera(Eigen::Vector3f(0,0,10), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
    setupLights();
 
+   // Terrain Stuff
    TerrainGenerator * terrainGenerator = new TerrainGenerator();
    Model * terrainModel = terrainGenerator->generateRockFace();
    terrainModel->loadTexture("assets/textures/rock.png", true);
    terrainModel->loadNormalMap("assets/textures/rock_NORM.png", true);
    terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
-   staticEntities.push_back(new StaticEntity(Eigen::Vector3f(0, 0, -15), terrainModel));
+   staticEntities.push_back(new StaticEntity(Eigen::Vector3f(0, 0, 0), terrainModel));
 
+   grid = new SpatialGrid(1000, 20.0);
+   for (int i = 0; i < terrainModel->vertices.size(); i++)
+      grid->Add(& terrainModel->vertices[i]);
+
+   // Skybox
+   Model * skyModel = new Model();
+   skyModel->loadCIAB("assets/models/skybox.ciab");
+   skyModel->loadTexture("assets/textures/night.png", false);
+   staticEntities.push_back(new StaticEntity(Eigen::Vector3f(0,-250,0), Eigen::Quaternionf(1,0,0,0), Eigen::Vector3f(500,500,500), skyModel));
+
+   // Models and Entities
    Model * chebModel = new Model();
    chebModel->loadOBJ("assets/cheb/cheb2.obj");
    chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
@@ -281,6 +298,7 @@ int main(int argc, char ** argv) {
       }
 
       shader->renderPoint(camera, goals[goalIndex]);
+      shader->renderPoint(camera, targetPoint);
 
       glfwSwapBuffers(window);
       glfwPollEvents();

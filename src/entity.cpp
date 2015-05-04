@@ -24,6 +24,10 @@ Eigen::Matrix4f Entity::generateModelM() {
 // --------------------------------------------------------- //
 // ===================== Static Entity ===================== //
 // --------------------------------------------------------- //
+StaticEntity::StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
+: Entity(pos, rot, scl, model) {}
+StaticEntity::StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
+: Entity(pos, rot, model) {}
 StaticEntity::StaticEntity(Eigen::Vector3f pos, Model * model)
 : Entity(pos, model) {}
 StaticEntity::~StaticEntity() {}

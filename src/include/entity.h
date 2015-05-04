@@ -26,8 +26,8 @@ public:
 
 class StaticEntity : public Entity {
 public:
-   // AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
-   // AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
+   StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
    StaticEntity(Eigen::Vector3f pos, Model * model);
    ~StaticEntity();
 };

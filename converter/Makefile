@@ -19,7 +19,7 @@ LIBS=libassimp.3.1.1.dylib
 exe: $(EXE)
 
 run: $(EXE)
-	./$(EXE) -b ../modeling_files/exports/robot.dae ../assets/models/robot.ciab
+	./$(EXE) ../modeling_files/exports/skybox.dae ../assets/models/skybox.ciab
 
 clean:
 	rm -rf $(EXE)

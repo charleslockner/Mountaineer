@@ -26,7 +26,7 @@ Model * TerrainGenerator::generateRockFace() {
    for (int c = 0; c < width; c++) {
       for (int r = 0; r < height; r++) {
          Vertex v;
-         v.position = Eigen::Vector3f(c-width/2, r, randRange(-0.25, 0.25));
+         v.position = Eigen::Vector3f(c-width/2, r, -25 + randRange(-0.25, 0.25));
          v.uv = Eigen::Vector2f(c/10.0f, r/10.0f);
          model->vertices.push_back(v);
       }

@@ -1,37 +1,47 @@
 #include <Eigen/Dense>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
+#include <deque>
 
-typedef struct {
-   Eigen::Vector3f a;
-   Eigen::Vector3f b;
-   float c;
-   Eigen::Vector3f d;
-   char e;
-} St;
+void printDeque(std::deque<int>& d) {
+   printf("size = %d\n", d.size());
+   for (int i = 0; i < d.size(); i++)
+      printf("%d: %d\n", i, d[i]);
+}
 
 int main() {
-   St sts[3];
-   sts[0].a = Eigen::Vector3f(1,2,3);
-   sts[0].b = Eigen::Vector3f(3,4,5);
-   sts[0].c = 6;
-   sts[0].d = Eigen::Vector3f(7,8,9);
+   std::deque<int> d = std::deque<int>(10);
 
-   sts[1].a = Eigen::Vector3f(1,2,3);
-   sts[1].b = Eigen::Vector3f(3,4,5);
-   sts[1].c = 6;
-   sts[1].d = Eigen::Vector3f(7,8,9);
+   printf("rounding: %d\n", (int)(-1.5/2));
 
-   sts[2].a = Eigen::Vector3f(1,2,3);
-   sts[2].b = Eigen::Vector3f(3,4,5);
-   sts[2].c = 6;
-   sts[2].d = Eigen::Vector3f(7,8,9);
+   printDeque(d);
 
-   // char * p = (float *)(&sts);
-   // for (int i = 0; i < 3; i++) {
-   //    printf("%f %f %f\n", p[sizeof(St)*i], );
-   //    p++;
-   // }
+   d.push_back(1);
+   d.push_back(2);
+   d.push_back(3);
+   d.push_back(4);
+
+   printDeque(d);
+
+   d.pop_front();
+
+   printDeque(d);
+
+   d.push_front(11);
+   d.push_front(12);
+   d.push_front(13);
+
+   printDeque(d);
+
+   d.pop_front();
+
+   printDeque(d);
+
+   d[100] = 100;
+
+   printDeque(d);
+
 
    return 0;
 }
