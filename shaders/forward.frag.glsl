@@ -40,7 +40,7 @@ void main(void) {
 
       mat3 TBN = mat3(normalize(vWorldTangent), normalize(vWorldBitangent), normalize(vWorldNormal));
       normal = uHasNormalMap ? TBN * normalize(texture2D(uNormalMap, vUV).rgb * 2.0 - 1.0) : normalize(vWorldNormal);
-      shine = uHasSpecularMap ? texture2D(uSpecularMap, vUV).r * 255.0 + 1.0: 100.0;
+      shine = uHasSpecularMap ? texture2D(uSpecularMap, vUV).r * 255.0 + 1.0: 1.0;
 
       ambient = skinColor * 0.25;
       finalColor = vec3(0.0);

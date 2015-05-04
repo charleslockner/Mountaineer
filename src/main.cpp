@@ -31,7 +31,10 @@ bool keyToggles[512] = {false};
 
 Model * guyModel;
 IKEntity * guyEnt;
+StaticEntity * skyEnt;
 SpatialGrid * grid;
+EntityShader * entShader;
+TextureShader * texShader;
 
 Eigen::Vector3f targetPoint;
 
@@ -141,7 +144,7 @@ GLFWwindow * windowSetup() {
 
    glEnable(GL_DEPTH_TEST);
    glDepthFunc(GL_LEQUAL);
-   glClearColor(0,1,0,1);
+   glClearColor(0.2,0.2,0.2,1);
 
    return window;
 }
@@ -166,6 +169,8 @@ void updateCameraPosition(double timePassed) {
 }
 
 void updateWorld(double timePassed) {
+   skyEnt->position = camera->position + Eigen::Vector3f(0, -250, 0);
+
    double speed = 3.0f;
 
    if (keyToggles[GLFW_KEY_X]) {
@@ -196,12 +201,21 @@ void updateWorld(double timePassed) {
       guyEnt->setLimbGoal(1, vert->position);
 }
 
-int main(int argc, char ** argv) {
-   GLFWwindow * window = windowSetup();
-
-   EntityShader * shader = new ForwardShader();
+void initialize() {
+   entShader = new ForwardShader();
+   texShader = new TextureShader();
    camera = new Camera(Eigen::Vector3f(0,0,10), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
    setupLights();
+
+   // Skybox
+   Model * skyModel = new Model();
+   skyModel->loadCIAB("assets/models/skybox.ciab");
+   skyModel->loadTexture("assets/textures/night.png", false);
+   skyEnt = new StaticEntity(Eigen::Vector3f(0,-250,0),
+                             Eigen::Quaternionf(1,0,0,0),
+                             Eigen::Vector3f(500,500,500),
+                             skyModel);
+   staticEntities.push_back(skyEnt);
 
    // Terrain Stuff
    TerrainGenerator * terrainGenerator = new TerrainGenerator();
@@ -215,13 +229,7 @@ int main(int argc, char ** argv) {
    for (int i = 0; i < terrainModel->vertices.size(); i++)
       grid->Add(& terrainModel->vertices[i]);
 
-   // Skybox
-   Model * skyModel = new Model();
-   skyModel->loadCIAB("assets/models/skybox.ciab");
-   skyModel->loadTexture("assets/textures/night.png", false);
-   staticEntities.push_back(new StaticEntity(Eigen::Vector3f(0,-250,0), Eigen::Quaternionf(1,0,0,0), Eigen::Vector3f(500,500,500), skyModel));
-
-   // Models and Entities
+   // Animated Entities
    Model * chebModel = new Model();
    chebModel->loadOBJ("assets/cheb/cheb2.obj");
    chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
@@ -237,6 +245,7 @@ int main(int argc, char ** argv) {
    entities[1]->playAnimation(0);
    trexModel->bufferIndices();
 
+   // The main character
    guyModel = new Model();
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_tex.bmp", false);
@@ -266,7 +275,35 @@ int main(int argc, char ** argv) {
 
    entities.push_back(guyEnt);
    guyEnt->playAnimation(0);
+}
 
+void updateLoop(double deltaTime) {
+   updateCameraPosition(deltaTime);
+   updateWorld(deltaTime);
+
+   texShader->render(camera, & lightData, skyEnt);
+   entShader->render(camera, & lightData, staticEntities[1]);
+
+   for (int i = 0; i < entities.size(); i++)
+      entities[i]->update(deltaTime);
+   for (int i = 0; i < entities.size(); i++)
+      entShader->render(camera, & lightData, entities[i]);
+
+   if (keyToggles[GLFW_KEY_K]) {
+      entShader->renderVertices(camera, staticEntities[1]);
+      entShader->renderVertices(camera, entities[1]);
+      entShader->renderBones(camera, (BonifiedEntity *)(entities[1]));
+      entShader->renderBones(camera, guyEnt);
+   }
+
+   entShader->renderPoint(camera, goals[goalIndex]);
+   entShader->renderPoint(camera, targetPoint);
+}
+
+int main(int argc, char ** argv) {
+   GLFWwindow * window = windowSetup();
+
+   initialize(); // game code
 
    double timePassed = 0;
    unsigned int numFrames = 0;
@@ -279,26 +316,7 @@ int main(int argc, char ** argv) {
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      updateCameraPosition(deltaTime);
-      updateWorld(deltaTime);
-
-      for (int i = 0; i < staticEntities.size(); i++)
-         shader->render(camera, & lightData, staticEntities[i]);
-
-      for (int i = 0; i < entities.size(); i++)
-         entities[i]->update(deltaTime);
-      for (int i = 0; i < entities.size(); i++)
-         shader->render(camera, & lightData, entities[i]);
-
-      if (keyToggles[GLFW_KEY_K]) {
-         shader->renderVertices(camera, staticEntities[0]);
-         shader->renderVertices(camera, entities[1]);
-         shader->renderBones(camera, (BonifiedEntity *)(entities[1]));
-         shader->renderBones(camera, guyEnt);
-      }
-
-      shader->renderPoint(camera, goals[goalIndex]);
-      shader->renderPoint(camera, targetPoint);
+      updateLoop(deltaTime); // game code
 
       glfwSwapBuffers(window);
       glfwPollEvents();

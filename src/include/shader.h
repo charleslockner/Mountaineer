@@ -52,4 +52,16 @@ private:
    void fillHandleTable(HandleTable * table, unsigned int prog, bool animated);
 };
 
+class TextureShader: public EntityShader {
+public:
+   TextureShader();
+   ~TextureShader();
+   void render(Camera * camera, LightData * lightdata, Entity * entity);
+
+protected:
+   unsigned int h_uProjViewModelM, h_uTexture;
+   unsigned int h_aPosition, h_aUV;
+   unsigned int program;
+};
+
 #endif // __SHADER_H__
