@@ -8,10 +8,6 @@
 #include "safe_gl.h"
 #include "model.h"
 
-static void swapBytes(unsigned char * buf1, unsigned char * buf2, int numBytes) {
-
-}
-
 static unsigned int loadImage(const char * filename, bool repeat) {
    unsigned int id;
 

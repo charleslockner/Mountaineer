@@ -20,17 +20,6 @@ Model::Model() {
 }
 
 Model::~Model() {
-   // if (hasBoneTree)
-   //    for (int i = 0; i < boneCount; i++)
-   //       free(bones[i].childIndices);
-   // free(bones);
-
-   // for (int i = 0; i < animationCount; i++) {
-      // for (int j = 0; j < boneCount; j++)
-      //    free(animations[i].animBones[j].keys);
-      // free(animations[i].animBones);
-   // }
-   // free(animations);
 }
 
 void Model::CalculateNormals() {

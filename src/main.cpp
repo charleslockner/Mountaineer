@@ -36,7 +36,7 @@ SpatialGrid * grid;
 EntityShader * entShader;
 TextureShader * texShader;
 
-Eigen::Vector3f targetPoint;
+Eigen::Vector3f camGoal;
 
 static void error_callback(int error, const char* description) {
    fputs(description, stderr);
@@ -52,6 +52,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_E:
          case GLFW_KEY_T:
          case GLFW_KEY_L:
+         case GLFW_KEY_C:
          case GLFW_KEY_M:
             break;
          default:
@@ -82,6 +83,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) :
                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             break;
+         case GLFW_KEY_C:
+            keyToggles[key] = !keyToggles[key];
+            keyToggles[key] ?
+               glDisable(GL_CULL_FACE) :
+               glEnable(GL_CULL_FACE);
          default:
             keyToggles[key] = false;
             break;
@@ -142,9 +148,13 @@ GLFWwindow * windowSetup() {
    glfwSetCursorPosCallback(window, cursor_pos_callback);
    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+
    glEnable(GL_DEPTH_TEST);
    glDepthFunc(GL_LEQUAL);
    glClearColor(0.2,0.2,0.2,1);
+
+   glEnable(GL_CULL_FACE);
+   glCullFace(GL_BACK);
 
    return window;
 }
@@ -192,13 +202,24 @@ void updateWorld(double timePassed) {
          goals[goalIndex](2) = goals[goalIndex](2) + timePassed * speed;
    }
 
-   Eigen::Vector3f camGoal = camera->position + 10 * camera->direction.normalized();
-   Vertex * vert = grid->FindClosest(camGoal, 10);
+   camGoal = camera->position + 10 * camera->direction.normalized();
+   Vertex * vert;
+
+   vert = grid->FindClosest(camGoal + Eigen::Vector3f(-3, 3, 0), 10);
    if (vert)
       guyEnt->setLimbGoal(0, vert->position);
-   vert = grid->FindClosest(camGoal + Eigen::Vector3f(0, -5, 0), 10);
+
+   vert = grid->FindClosest(camGoal + Eigen::Vector3f( 3, 3, 0), 10);
    if (vert)
       guyEnt->setLimbGoal(1, vert->position);
+
+   vert = grid->FindClosest(camGoal + Eigen::Vector3f(-3,-3, 0), 10);
+   if (vert)
+      guyEnt->setLimbGoal(2, vert->position);
+
+   vert = grid->FindClosest(camGoal + Eigen::Vector3f( 3,-3, 0), 10);
+   if (vert)
+      guyEnt->setLimbGoal(3, vert->position);
 }
 
 void initialize() {
@@ -255,14 +276,6 @@ void initialize() {
 
    std::vector<int> boneIndices = std::vector<int>(0);
    boneIndices.push_back(0);
-   boneIndices.push_back(26);
-   boneIndices.push_back(27);
-   boneIndices.push_back(28);
-   boneIndices.push_back(29);
-   boneIndices.push_back(30);
-   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
-   boneIndices.clear();
-   boneIndices.push_back(0);
    boneIndices.push_back(1);
    boneIndices.push_back(2);
    boneIndices.push_back(3);
@@ -271,7 +284,38 @@ void initialize() {
    boneIndices.push_back(11);
    boneIndices.push_back(12);
    boneIndices.push_back(13);
-   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), GL_TRUE);
+   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   boneIndices.clear();
+
+   boneIndices.push_back(0);
+   boneIndices.push_back(1);
+   boneIndices.push_back(2);
+   boneIndices.push_back(3);
+   boneIndices.push_back(15);
+   boneIndices.push_back(16);
+   boneIndices.push_back(17);
+   boneIndices.push_back(18);
+   boneIndices.push_back(19);
+   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   boneIndices.clear();
+
+   boneIndices.push_back(0);
+   boneIndices.push_back(21);
+   boneIndices.push_back(22);
+   boneIndices.push_back(23);
+   boneIndices.push_back(24);
+   boneIndices.push_back(25);
+   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   boneIndices.clear();
+
+   boneIndices.push_back(0);
+   boneIndices.push_back(26);
+   boneIndices.push_back(27);
+   boneIndices.push_back(28);
+   boneIndices.push_back(29);
+   boneIndices.push_back(30);
+   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   boneIndices.clear();
 
    entities.push_back(guyEnt);
    guyEnt->playAnimation(0);
@@ -296,8 +340,7 @@ void updateLoop(double deltaTime) {
       entShader->renderBones(camera, guyEnt);
    }
 
-   entShader->renderPoint(camera, goals[goalIndex]);
-   entShader->renderPoint(camera, targetPoint);
+   entShader->renderPoint(camera, camGoal);
 }
 
 int main(int argc, char ** argv) {
