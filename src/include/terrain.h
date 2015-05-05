@@ -19,6 +19,7 @@ private:
    } Path;
 
    Model * model;
+   std::vector<Path> paths;
 };
 
 

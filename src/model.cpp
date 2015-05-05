@@ -15,6 +15,11 @@ Model::Model() {
    hasAnimations = false;
    isAnimated = false;
 
+   vertexCount = 0;
+   faceCount = 0;
+   boneCount = 0;
+   animationCount = 0;
+
    glGenBuffers(1, & vertexID);
    glGenBuffers(1, & indexID);
 }

@@ -2,6 +2,8 @@
 #include "terrain.h"
 #include "stdio.h"
 
+using namespace Eigen;
+
 TerrainGenerator::TerrainGenerator() {}
 TerrainGenerator::~TerrainGenerator() {}
 
@@ -13,75 +15,70 @@ static int rcToIndex(int width, int row, int col) {
    return width * row + col;
 }
 
-Model * TerrainGenerator::GenerateModel() {
-   model = new Model();
+// Returns the normalized cross product with the up vector (v x up)
+// Returns vec3(0,0,1) if v == up
+static Vector3f crossWithUp(Vector3f v) {
+   Vector3f r = v.cross(Vector3f(0,1,0));
+   return (r(0) || r(1) || r(2)) ? r.normalized() : Vector3f(0,0,1);
+}
 
+Model * TerrainGenerator::GenerateModel() {
+   // The general direction the mesh is heading towards
+   Vector3f ultimateDirection = Vector3f(1.0,1.0,0.15).normalized();
+
+   Vector3f bitangent = ultimateDirection;
+   Vector3f tangent = crossWithUp(bitangent);
+   Vector3f normal = tangent.cross(bitangent).normalized();
+
+   // Set up the beginning triangle
+   Vertex vTop;
+   vTop.normal = normal;
+   vTop.tangent = tangent;
+   vTop.bitangent = bitangent;
+   vTop.position = 0.5f * bitangent;
+   vTop.uv = Vector2f(0.5f, 1.0f);
+
+   Vertex vLeft;
+   vLeft.normal = normal;
+   vLeft.tangent = tangent;
+   vLeft.bitangent = bitangent;
+   vLeft.position = -0.5f * bitangent - 0.5f * tangent;
+   vLeft.uv = Vector2f(0.0f, 0.0f);
+
+   Vertex vRight;
+   vRight.normal = normal;
+   vRight.tangent = tangent;
+   vRight.bitangent = bitangent;
+   vRight.position = -0.5f * bitangent + 0.5f * tangent;
+   vRight.uv = Vector2f(1.0f, 0.0f);
+
+   Face face;
+   face.vertIndices[0] = 0;
+   face.vertIndices[1] = 1;
+   face.vertIndices[2] = 2;
+   face.normal = normal;
+
+   // Initialize the model
+   model = new Model();
    model->vertices = std::vector<Vertex>(0);
    model->faces = std::vector<Face>(0);
-
-   int width = 100;
-   int height = 100;
-
-   // Generate vertices
-   for (int c = 0; c < width; c++) {
-      for (int r = 0; r < height; r++) {
-         Vertex v;
-         v.position = Eigen::Vector3f(c-width/2, r, -25 + c-width/2 + randRange(-0.25, 0.25));
-         v.uv = Eigen::Vector2f(c/10.0f, r/10.0f);
-         model->vertices.push_back(v);
-      }
-   }
-
-   // Generate faces
-   for (int c = 0; c < (width-1); c++) {
-      for (int r = 0; r < (height-1); r++) {
-         int indexTL = rcToIndex(width, r, c);
-         int indexTR = rcToIndex(width, r, c+1);
-         int indexBL = rcToIndex(width, r+1, c);
-         int indexBR = rcToIndex(width, r+1, c+1);
-
-         Face face;
-         face.vertIndices[0] = indexBL;
-         face.vertIndices[1] = indexTR;
-         face.vertIndices[2] = indexTL;
-         model->faces.push_back(face);
-         face.vertIndices[0] = indexBL;
-         face.vertIndices[1] = indexBR;
-         face.vertIndices[2] = indexTR;
-         model->faces.push_back(face);
-      }
-   }
-
-   // Generate normals
-   model->CalculateNormals();
-
-   // Generate tangents and bitangents
-   for (int c = 0; c < width; c++) {
-      for (int r = 0; r < height; r++) {
-         Vertex * v = & model->vertices[rcToIndex(width, r, c)];
-
-         v->tangent = Eigen::Vector3f(0,0,0);
-         if (c > 0)
-            v->tangent += (v->position - model->vertices[rcToIndex(width, r, c-1)].position).normalized();
-         if (c < width-1)
-            v->tangent += (model->vertices[rcToIndex(width, r, c+1)].position - v->position).normalized();
-         v->tangent.normalize();
-
-         v->bitangent = (v->normal.cross(v->tangent)).normalized();
-      }
-   }
-
+   model->vertices.push_back(vTop);
+   model->vertices.push_back(vLeft);
+   model->vertices.push_back(vRight);
+   model->faces.push_back(face);
    model->hasNormals = true;
    model->hasTexCoords = true;
    model->hasTansAndBitans = true;
-
    model->vertexCount = model->vertices.size();
    model->faceCount = model->faces.size();
-   model->boneCount = 0;
-   model->animationCount = 0;
-
+   // Send the triangle data to the shader
    model->bufferVertices();
    model->bufferIndices();
+
+   // // Create the first 6 paths
+   // Path p;
+   // p.head = & model->vertices[0];
+   // p.tail =
 
    return model;
 }

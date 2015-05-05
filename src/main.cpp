@@ -145,43 +145,43 @@ static void updateWorld(double timePassed) {
 
    double speed = 3.0f;
 
-   if (keyToggles[GLFW_KEY_X]) {
-      if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goals[goalIndex](0) = goals[goalIndex](0) - timePassed * speed;
-      else
-         goals[goalIndex](0) = goals[goalIndex](0) + timePassed * speed;
-   }
-   if (keyToggles[GLFW_KEY_Y]) {
-      if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goals[goalIndex](1) = goals[goalIndex](1) - timePassed * speed;
-      else
-         goals[goalIndex](1) = goals[goalIndex](1) + timePassed * speed;
-   }
-   if (keyToggles[GLFW_KEY_Z]) {
-      if (keyToggles[GLFW_KEY_LEFT_CONTROL])
-         goals[goalIndex](2) = goals[goalIndex](2) - timePassed * speed;
-      else
-         goals[goalIndex](2) = goals[goalIndex](2) + timePassed * speed;
-   }
+   // if (keyToggles[GLFW_KEY_X]) {
+   //    if (keyToggles[GLFW_KEY_LEFT_CONTROL])
+   //       goals[goalIndex](0) = goals[goalIndex](0) - timePassed * speed;
+   //    else
+   //       goals[goalIndex](0) = goals[goalIndex](0) + timePassed * speed;
+   // }
+   // if (keyToggles[GLFW_KEY_Y]) {
+   //    if (keyToggles[GLFW_KEY_LEFT_CONTROL])
+   //       goals[goalIndex](1) = goals[goalIndex](1) - timePassed * speed;
+   //    else
+   //       goals[goalIndex](1) = goals[goalIndex](1) + timePassed * speed;
+   // }
+   // if (keyToggles[GLFW_KEY_Z]) {
+   //    if (keyToggles[GLFW_KEY_LEFT_CONTROL])
+   //       goals[goalIndex](2) = goals[goalIndex](2) - timePassed * speed;
+   //    else
+   //       goals[goalIndex](2) = goals[goalIndex](2) + timePassed * speed;
+   // }
 
    camGoal = camera->position + 10 * camera->direction.normalized();
    Vertex * vert;
 
-   vert = grid->FindClosest(camGoal + Eigen::Vector3f(-3, 3, 0), 10);
-   if (vert)
-      guyEnt->setLimbGoal(0, vert->position);
+   // vert = grid->FindClosest(camGoal + Eigen::Vector3f(-3, 3, 0), 10);
+   // if (vert)
+   //    guyEnt->setLimbGoal(0, vert->position);
 
-   vert = grid->FindClosest(camGoal + Eigen::Vector3f( 3, 3, 0), 10);
-   if (vert)
-      guyEnt->setLimbGoal(1, vert->position);
+   // vert = grid->FindClosest(camGoal + Eigen::Vector3f( 3, 3, 0), 10);
+   // if (vert)
+   //    guyEnt->setLimbGoal(1, vert->position);
 
-   vert = grid->FindClosest(camGoal + Eigen::Vector3f(-3,-3, 0), 10);
-   if (vert)
-      guyEnt->setLimbGoal(2, vert->position);
+   // vert = grid->FindClosest(camGoal + Eigen::Vector3f(-3,-3, 0), 10);
+   // if (vert)
+   //    guyEnt->setLimbGoal(2, vert->position);
 
-   vert = grid->FindClosest(camGoal + Eigen::Vector3f( 3,-3, 0), 10);
-   if (vert)
-      guyEnt->setLimbGoal(3, vert->position);
+   // vert = grid->FindClosest(camGoal + Eigen::Vector3f( 3,-3, 0), 10);
+   // if (vert)
+   //    guyEnt->setLimbGoal(3, vert->position);
 }
 
 static void initialize() {
@@ -233,7 +233,7 @@ static void initialize() {
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_tex.bmp", false);
    guyModel->loadConstraints("assets/models/guy.cns");
-   guyEnt = new IKEntity(Eigen::Vector3f(0, 0, 0), guyModel);
+   guyEnt = new IKEntity(Eigen::Vector3f(0, 0, 25), guyModel);
    trexModel->bufferIndices();
 
    // Set up limbs
@@ -281,6 +281,11 @@ static void initialize() {
    boneIndices.clear();
 
    entities.push_back(guyEnt);
+
+   guyEnt->setLimbGoal(0, guyEnt->position);
+   guyEnt->setLimbGoal(1, guyEnt->position);
+   guyEnt->setLimbGoal(2, guyEnt->position);
+   guyEnt->setLimbGoal(3, guyEnt->position);
 }
 
 static void updateLoop(double deltaTime) {
