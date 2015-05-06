@@ -7,7 +7,6 @@
 #include "model.h"
 #include "entity.h"
 #include "terrain.h"
-#include "grid.h"
 
 #include <vector>
 
@@ -32,7 +31,6 @@ bool keyToggles[512] = {false};
 Model * guyModel;
 IKEntity * guyEnt;
 StaticEntity * skyEnt;
-SpatialGrid * grid;
 EntityShader * entShader;
 TextureShader * texShader;
 TerrainGenerator * terrainGenerator;
@@ -207,10 +205,6 @@ static void initialize() {
    terrainModel->loadNormalMap("assets/textures/rock_NORM.png", true);
    terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
    staticEntities.push_back(new StaticEntity(Eigen::Vector3f(0, 0, 0), terrainModel));
-
-   grid = new SpatialGrid(1000, 20.0);
-   for (int i = 0; i < terrainModel->vertices.size(); i++)
-      grid->Add(& terrainModel->vertices[i]);
 
    // Animated Entities
    Model * chebModel = new Model();

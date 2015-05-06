@@ -103,14 +103,18 @@ void SpatialGrid::Add(Vertex * vert) {
    cells[xIndex][yIndex][zIndex].Add(vert);
 }
 
-Vertex * SpatialGrid::FindClosest(Eigen::Vector3f target, float maxDist) {
+VertDist SpatialGrid::FindClosest(Eigen::Vector3f target, float maxDist) {
    Eigen::Vector3i indexV = FindIndicesFromPoint(target);
    Eigen::Vector3i worldIndexV = GetVirtualIndexFromReal(indexV);
    Cell * cell = GetCellAt(indexV);
-   if (!cell)
-      return NULL;
 
-   VertDist shortestVertDist = cell->FindClosest(target, maxDist);
+   VertDist shortestVertDist
+   shortestVertDist.vert = NULL;
+
+   if (!cell)
+      return shortestVertDist;
+
+   shortestVertDist = cell->FindClosest(target, maxDist);
 
    // If there is a vertex within the same cell as the target
    if (shortestVertDist.vert) {
@@ -207,10 +211,10 @@ Vertex * SpatialGrid::FindClosest(Eigen::Vector3f target, float maxDist) {
       }
 
       // Return the closest vertex
-      return shortestVertDist.vert;
+      return shortestVertDist;
    }
    else {
-      return NULL; // Figure this out later
+      return shortestVertDist; // Figure this out later
    }
 }
 

@@ -8,7 +8,11 @@ TerrainGenerator::TerrainGenerator() {}
 TerrainGenerator::~TerrainGenerator() {}
 
 static double randRange(float low, float high) {
-    return (high - low) * rand() / (float)RAND_MAX - low;
+   return (high - low) * rand() / (float)RAND_MAX + low;
+}
+
+static Vector3f randVec3(float low, float high) {
+   return Vector3f(randRange(low, high), randRange(low, high), randRange(low, high));
 }
 
 static int rcToIndex(int width, int row, int col) {
@@ -33,7 +37,8 @@ static int pntrToNdx(std::vector<T>& cont, T * elem) {
 
 Model * TerrainGenerator::GenerateModel() {
    edgeLength = 1;
-   float halfLength = edgeLength / 2.0f;
+
+   grid = new SpatialGrid(1000, 2 * edgeLength);
 
    // The general direction the mesh is heading towards
    Vector3f ultimateDirection = Vector3f(0.25,1.0,-0.25).normalized();
@@ -41,8 +46,9 @@ Model * TerrainGenerator::GenerateModel() {
    Vector3f bitangent = ultimateDirection;
    Vector3f tangent = crossWithUp(bitangent);
    Vector3f normal = tangent.cross(bitangent).normalized();
+   float halfLength = edgeLength / 2.0f;
 
-   // Set up the beginning triangle
+   // Set up the beginning vertices
    Vertex vTop;
    vTop.normal = normal;
    vTop.tangent = tangent;
@@ -76,9 +82,15 @@ Model * TerrainGenerator::GenerateModel() {
    model->vertices.reserve(1000000);
    model->faces = std::vector<Face>(0);
    model->faces.reserve(1000000);
+
+   // Add the 3 vertices to the model list and the grid
    model->vertices.push_back(vTop);
+   grid->Add(& model->vertices.back());
    model->vertices.push_back(vLeft);
+   grid->Add(& model->vertices.back());
    model->vertices.push_back(vRight);
+   grid->Add(& model->vertices.back());
+
    model->faces.push_back(face);
    model->hasNormals = true;
    model->hasTexCoords = true;
@@ -142,124 +154,48 @@ void TerrainGenerator::BuildStep() {
    // Extend each path to build the vertices
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
-      Vector3f heading = (p->headV->position - p->tailV->position).normalized();
+      Vector3f randDir = (randRange(-0.2, 0.2) * p->headV->normal);
+      Vector3f heading = edgeLength * (p->headV->position + randDir - p->tailV->position).normalized();
 
       // Add vertex created from extending the path
       Vertex v;
-      v.position = p->headV->position + edgeLength * heading;
+      v.position = p->headV->position + heading;
       v.tangent = p->headV->tangent;
       v.bitangent = p->headV->bitangent;
       v.normal = p->headV->normal;
       Matrix3f iTBN = Mmath::InverseTBN(v.tangent, v.bitangent, v.normal);
       v.uv = p->headV->uv + (iTBN * heading).head<2>();
+
+      // Instead of adding vertices here, put in a new list and add them after merging paths
       model->vertices.push_back(v);
+      grid->Add(& model->vertices.back());
 
       // Update the path head and tail vertices
       p->tailV = p->headV;
       p->headV = & model->vertices.back();
    }
 
-   // Go through each path to create new paths and faces
+   // numPaths = paths.size();
+
+   // // Merge paths that are too near each other
+   // for (int i = 0; i < numPaths; i++) {
+
+   // }
+
+   numPaths = paths.size();
+
+   // Go through each path to create new faces
    for (int i = 0; i < numPaths; i++) {
-      Path * selfPath = paths[i];
-      Path * rightPath = selfPath->rightP;
+      Path * selfP = paths[i];
+      Path * rightP = selfP->rightP;
 
-      // If the paths have the same tail
-      if (selfPath->tailV == rightPath->tailV) {
-         // Create the emerging face
-         Face f;
-         f.vertIndices[0] = pntrToNdx(model->vertices, selfPath->headV);
-         f.vertIndices[1] = pntrToNdx(model->vertices, selfPath->tailV);
-         f.vertIndices[2] = pntrToNdx(model->vertices, rightPath->headV);
-         model->faces.push_back(f);
-
-      } else { // If the paths have different tails
-         Vector3f selfHeadPos = selfPath->headV->position;
-         Vector3f rightHeadPos = rightPath->headV->position;
-
-         // If the distance between the two heads is ok
-         if ((selfHeadPos - rightHeadPos).squaredNorm() < square(1.5 * edgeLength)) {
-            Vector3f selfTailPos = selfPath->tailV->position;
-            Vector3f rightTailPos = rightPath->tailV->position;
-            Face f;
-
-            // Create 2 faces to fill the space
-            if ((rightHeadPos - selfTailPos).squaredNorm() < (selfHeadPos - rightTailPos).squaredNorm()) {
-               f.vertIndices[0] = pntrToNdx(model->vertices, selfPath->headV);
-               f.vertIndices[1] = pntrToNdx(model->vertices, selfPath->tailV);
-               f.vertIndices[2] = pntrToNdx(model->vertices, rightPath->headV);
-               model->faces.push_back(f);
-
-               f.vertIndices[0] = pntrToNdx(model->vertices, rightPath->headV);
-               f.vertIndices[1] = pntrToNdx(model->vertices, selfPath->tailV);
-               f.vertIndices[2] = pntrToNdx(model->vertices, rightPath->tailV);
-               model->faces.push_back(f);
-            } else {
-               f.vertIndices[0] = pntrToNdx(model->vertices, selfPath->headV);
-               f.vertIndices[1] = pntrToNdx(model->vertices, selfPath->tailV);
-               f.vertIndices[2] = pntrToNdx(model->vertices, rightPath->tailV);
-               model->faces.push_back(f);
-
-               f.vertIndices[0] = pntrToNdx(model->vertices, rightPath->headV);
-               f.vertIndices[1] = pntrToNdx(model->vertices, selfPath->headV);
-               f.vertIndices[2] = pntrToNdx(model->vertices, rightPath->tailV);
-               model->faces.push_back(f);
-            }
-
-         } else { // If the distance between the two heads is too big
-            // Add a vertex between them
-            Vertex v;
-            v.position = 0.5f * (selfHeadPos + rightHeadPos);
-            v.tangent = selfPath->tailV->tangent;
-            v.bitangent = selfPath->tailV->bitangent;
-            v.normal = selfPath->tailV->normal;
-            Matrix3f iTBN = Mmath::InverseTBN(v.tangent, v.bitangent, v.normal);
-            v.uv = selfPath->tailV->uv + (iTBN * (v.position - selfPath->tailV->position)).head<2>();
-
-            model->vertices.push_back(v);
-            Vertex * midV = & model->vertices.back();
-
-            // Create 2 new paths who's head is the new vertex
-            Path * midRightPath = new Path();
-            Path * midSelfPath = new Path();
-
-            midRightPath->headV = midV;
-            midRightPath->tailV = selfPath->tailV;
-            midRightPath->leftP = midSelfPath;
-            midRightPath->rightP = rightPath;
-
-            midSelfPath->headV = midV;
-            midSelfPath->tailV = rightPath->tailV;
-            midSelfPath->leftP = selfPath;
-            midSelfPath->rightP = midRightPath;
-
-            paths.push_back(midRightPath);
-            paths.push_back(midSelfPath);
-
-            // Update the paths to the left and right of the created ones
-            selfPath->rightP = midSelfPath;
-            rightPath->leftP = midRightPath;
-
-            // Create the emerging triangle faces
-            Face f;
-            f.vertIndices[0] = pntrToNdx(model->vertices, selfPath->headV);
-            f.vertIndices[1] = pntrToNdx(model->vertices, selfPath->tailV);
-            f.vertIndices[2] = pntrToNdx(model->vertices, midV);
-            model->faces.push_back(f);
-
-            f.vertIndices[0] = pntrToNdx(model->vertices, midV);
-            f.vertIndices[1] = pntrToNdx(model->vertices, rightPath->tailV);
-            f.vertIndices[2] = pntrToNdx(model->vertices, rightPath->headV);
-            model->faces.push_back(f);
-
-            f.vertIndices[0] = pntrToNdx(model->vertices, midV);
-            f.vertIndices[1] = pntrToNdx(model->vertices, selfPath->tailV);
-            f.vertIndices[2] = pntrToNdx(model->vertices, rightPath->tailV);
-            model->faces.push_back(f);
-         }
-      }
+      if (selfP->tailV == rightP->tailV)
+         HandleSameTail(selfP, rightP);
+      else
+         HandleDiffTail(selfP, rightP);
    }
 
+   model->CalculateNormals();
    model->vertexCount = model->vertices.size();
    model->faceCount = model->faces.size();
    model->bufferVertices();
@@ -269,7 +205,107 @@ void TerrainGenerator::BuildStep() {
    printf("Step [%d]: paths %d, verts %d faces %d\n", stepCnt, paths.size(), model->vertices.size(), model->faces.size());
 }
 
+void TerrainGenerator::HandleSameTail(Path * leftP, Path * rightP) {
+   // Create the emerging face
+   Face f;
+   f.vertIndices[0] = pntrToNdx(model->vertices, leftP->headV);
+   f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
+   f.vertIndices[2] = pntrToNdx(model->vertices, rightP->headV);
+   model->faces.push_back(f);
+}
 
+void TerrainGenerator::HandleDiffTail(Path * leftP, Path * rightP) {
+   float headDistSq = (leftP->headV->position - rightP->headV->position).squaredNorm();
+   float maxEdgeLen = square(1.5 * edgeLength);
 
+   if (headDistSq < maxEdgeLen)
+      HandleOKHeadDist(leftP, rightP);
+   else
+      HandleBigHeadDist(leftP, rightP);
+}
 
+void TerrainGenerator::HandleOKHeadDist(Path * leftP, Path * rightP) {
+   float bltrDistSq = (rightP->headV->position - leftP->tailV->position).squaredNorm();
+   float brtlDistSq = (leftP->headV->position - rightP->tailV->position).squaredNorm();
+   Face f;
 
+   // Create 2 faces to fill the space
+   if (bltrDistSq < brtlDistSq) {
+      f.vertIndices[0] = pntrToNdx(model->vertices, leftP->headV);
+      f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
+      f.vertIndices[2] = pntrToNdx(model->vertices, rightP->headV);
+      model->faces.push_back(f);
+
+      f.vertIndices[0] = pntrToNdx(model->vertices, rightP->headV);
+      f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
+      f.vertIndices[2] = pntrToNdx(model->vertices, rightP->tailV);
+      model->faces.push_back(f);
+   } else {
+      f.vertIndices[0] = pntrToNdx(model->vertices, leftP->headV);
+      f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
+      f.vertIndices[2] = pntrToNdx(model->vertices, rightP->tailV);
+      model->faces.push_back(f);
+
+      f.vertIndices[0] = pntrToNdx(model->vertices, rightP->headV);
+      f.vertIndices[1] = pntrToNdx(model->vertices, leftP->headV);
+      f.vertIndices[2] = pntrToNdx(model->vertices, rightP->tailV);
+      model->faces.push_back(f);
+   }
+}
+
+void TerrainGenerator::HandleBigHeadDist(Path * leftP, Path * rightP) {
+   // Add a vertex between them
+   Vertex v;
+   v.position = 0.5f * (leftP->headV->position + rightP->headV->position);
+   v.tangent = leftP->tailV->tangent;
+   v.bitangent = leftP->tailV->bitangent;
+   v.normal = leftP->tailV->normal;
+   Matrix3f iTBN = Mmath::InverseTBN(v.tangent, v.bitangent, v.normal);
+   v.uv = leftP->tailV->uv + (iTBN * (v.position - leftP->tailV->position)).head<2>();
+   model->vertices.push_back(v);
+   grid->Add(& model->vertices.back());
+
+   Vertex * midV = & model->vertices.back();
+
+   // Create 2 new paths who's head is the new vertex
+   Path * midRightP = new Path();
+   Path * midLeftP = new Path();
+
+   midRightP->headV = midV;
+   midRightP->tailV = leftP->tailV;
+   midRightP->leftP = midLeftP;
+   midRightP->rightP = rightP;
+
+   midLeftP->headV = midV;
+   midLeftP->tailV = rightP->tailV;
+   midLeftP->leftP = leftP;
+   midLeftP->rightP = midRightP;
+
+   paths.push_back(midRightP);
+   paths.push_back(midLeftP);
+
+   // Update the paths to the left and right of the created ones
+   leftP->rightP = midLeftP;
+   rightP->leftP = midRightP;
+
+   // Create the emerging triangle faces
+   Face f;
+   f.vertIndices[0] = pntrToNdx(model->vertices, leftP->headV);
+   f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
+   f.vertIndices[2] = pntrToNdx(model->vertices, midV);
+   model->faces.push_back(f);
+
+   f.vertIndices[0] = pntrToNdx(model->vertices, midV);
+   f.vertIndices[1] = pntrToNdx(model->vertices, rightP->tailV);
+   f.vertIndices[2] = pntrToNdx(model->vertices, rightP->headV);
+   model->faces.push_back(f);
+
+   f.vertIndices[0] = pntrToNdx(model->vertices, midV);
+   f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
+   f.vertIndices[2] = pntrToNdx(model->vertices, rightP->tailV);
+   model->faces.push_back(f);
+}
+
+VertDist FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist) {
+   grid->FindClosestVertex(targetPnt, maxDist);
+}

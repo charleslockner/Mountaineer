@@ -39,7 +39,7 @@ public:
    uint ySize();
    uint zSize();
    void Add(Vertex * pnt);
-   Vertex * FindClosest(Eigen::Vector3f target, float maxDist);
+   VertDist FindClosest(Eigen::Vector3f target, float maxDist);
 
 private:
    uint maxAcross;

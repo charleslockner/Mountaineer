@@ -3,6 +3,7 @@
 
 #include "model.h"
 #include "matrix_math.h"
+#include "grid.h"
 
 class TerrainGenerator {
 public:
@@ -11,6 +12,7 @@ public:
 
    Model * GenerateModel();
    void BuildStep();
+   VertDist FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist);
 
 private:
    typedef struct Path {
@@ -19,9 +21,17 @@ private:
    } Path;
 
    Model * model;
+   SpatialGrid * grid;
+
    std::vector<Path *> paths;
    int stepCnt;
    float edgeLength;
+
+
+   void HandleSameTail(Path * leftP, Path * rightP);
+   void HandleDiffTail(Path * leftP, Path * rightP);
+   void HandleOKHeadDist(Path * leftP, Path * rightP);
+   void HandleBigHeadDist(Path * leftP, Path * rightP);
 };
 
 

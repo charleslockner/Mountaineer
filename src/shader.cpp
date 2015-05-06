@@ -41,34 +41,34 @@ void EntityShader::renderVertices(Camera * camera, Entity * entity) {
    for (int i = 0; i < model->vertices.size(); i++)
       renderPoint(camera, model->vertices[i].position);
 
-   // glBegin(GL_LINES);
-   // for (int i = 0; i < model->vertices.size(); i++) {
-   //    // printf("i = %d\n", i); // seg fault at 0 at line 47
-   //    // draw normal
-   //    glColor3f(1,0,0);
-   //    Eigen::Vector3f p = model->vertices[i].position;
-   //    glVertex3fv(p.data());
-   //    Eigen::Vector3f normal = model->vertices[i].normal;
-   //    p += normal * 0.1f;
-   //    glVertex3fv(p.data());
+   glBegin(GL_LINES);
+   for (int i = 0; i < model->vertices.size(); i++) {
+      // printf("i = %d\n", i); // seg fault at 0 at line 47
+      // draw normal
+      glColor3f(1,0,0);
+      Eigen::Vector3f p = model->vertices[i].position;
+      glVertex3fv(p.data());
+      Eigen::Vector3f normal = model->vertices[i].normal;
+      p += normal * 0.1f;
+      glVertex3fv(p.data());
 
-   //    // draw tangent
-   //    glColor3f(0,1,0);
-   //    p = model->vertices[i].position;
-   //    glVertex3fv(p.data());
-   //    Eigen::Vector3f tangent = model->vertices[i].tangent;
-   //    p += tangent * 0.1f;
-   //    glVertex3fv(p.data());
+      // draw tangent
+      glColor3f(0,1,0);
+      p = model->vertices[i].position;
+      glVertex3fv(p.data());
+      Eigen::Vector3f tangent = model->vertices[i].tangent;
+      p += tangent * 0.1f;
+      glVertex3fv(p.data());
 
-   //    // draw bitangent
-   //    glColor3f(0,0,1);
-   //    p = model->vertices[i].position;
-   //    glVertex3fv(p.data());
-   //    Eigen::Vector3f bitangent = model->vertices[i].bitangent;
-   //    p += bitangent * 0.1f;
-   //    glVertex3fv(p.data());
-   // }
-   // glEnd();
+      // draw bitangent
+      glColor3f(0,0,1);
+      p = model->vertices[i].position;
+      glVertex3fv(p.data());
+      Eigen::Vector3f bitangent = model->vertices[i].bitangent;
+      p += bitangent * 0.1f;
+      glVertex3fv(p.data());
+   }
+   glEnd();
 }
 
 void EntityShader::renderBones(Camera * camera, BonifiedEntity * entity) {
