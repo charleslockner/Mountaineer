@@ -13,13 +13,15 @@ public:
    void BuildStep();
 
 private:
-   typedef struct {
-      Vertex *head, *tail, *left, *right;
-      Eigen::Vector3f direction;
+   typedef struct Path {
+      Vertex *headV, *tailV;
+      Path *leftP, *rightP;
    } Path;
 
    Model * model;
-   std::vector<Path> paths;
+   std::vector<Path *> paths;
+   int stepCnt;
+   float edgeLength;
 };
 
 

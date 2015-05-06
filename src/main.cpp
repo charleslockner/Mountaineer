@@ -302,12 +302,12 @@ static void updateLoop(double deltaTime) {
 
    if (keyToggles[GLFW_KEY_K]) {
       entShader->renderVertices(camera, staticEntities[1]);
-      entShader->renderVertices(camera, entities[1]);
+      // entShader->renderVertices(camera, entities[1]);
       entShader->renderBones(camera, (BonifiedEntity *)(entities[1]));
       entShader->renderBones(camera, guyEnt);
    }
 
-   entShader->renderPoint(camera, camGoal);
+   // entShader->renderPoint(camera, camGoal);
 }
 
 int main(int argc, char ** argv) {

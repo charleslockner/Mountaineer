@@ -107,6 +107,19 @@ namespace Mmath {
 
       return Result;
    }
+
+   template <typename T>
+   Eigen::Matrix<T,3,3> InverseTBN(
+      const Eigen::Matrix<T,3,1> tangent,
+      const Eigen::Matrix<T,3,1> bitangent,
+      const Eigen::Matrix<T,3,1> normal
+   ) {
+      Eigen::Matrix<T,3,3> iTBN;
+      iTBN.block(0,0,1,3) = tangent.transpose();
+      iTBN.block(1,0,1,3) = bitangent.transpose();
+      iTBN.block(2,0,1,3) = normal.transpose();
+      return iTBN;
+   }
 }
 
 #endif // __MATRIX_MATH_H__
