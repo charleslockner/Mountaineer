@@ -1,25 +1,26 @@
 
 #include "shader.h"
 
-void EntityShader::sendVertexAttribArray(unsigned int handle, unsigned int id,
-                                                  int size, unsigned int offset) {
+void EntityShader::sendVertexAttribArray(unsigned int handle, unsigned int vbo, int size) {
    glEnableVertexAttribArray(handle);
-   glBindBuffer(GL_ARRAY_BUFFER, id);
-   glVertexAttribPointer(handle, size, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offset);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glVertexAttribPointer(handle, size, GL_FLOAT, GL_FALSE, 0, 0);
 }
 
 void EntityShader::sendLargeVertexAttribArray(unsigned int handle0, unsigned int handle1,
                                               unsigned int handle2, unsigned int handle3,
-                                              unsigned int id, unsigned int offset) {
+                                              unsigned int vbo) {
+   unsigned stride = MAX_INFLUENCES * sizeof(float);
+
    glEnableVertexAttribArray(handle0);
    glEnableVertexAttribArray(handle1);
    glEnableVertexAttribArray(handle2);
    glEnableVertexAttribArray(handle3);
-   glBindBuffer(GL_ARRAY_BUFFER, id);
-   glVertexAttribPointer(handle0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offset+0*sizeof(float)));
-   glVertexAttribPointer(handle1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offset+4*sizeof(float)));
-   glVertexAttribPointer(handle2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offset+8*sizeof(float)));
-   glVertexAttribPointer(handle3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offset+12*sizeof(float)));
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glVertexAttribPointer(handle0, 4, GL_FLOAT, GL_FALSE, stride, (const void *)( 0*sizeof(float)));
+   glVertexAttribPointer(handle1, 4, GL_FLOAT, GL_FALSE, stride, (const void *)( 4*sizeof(float)));
+   glVertexAttribPointer(handle2, 4, GL_FLOAT, GL_FALSE, stride, (const void *)( 8*sizeof(float)));
+   glVertexAttribPointer(handle3, 4, GL_FLOAT, GL_FALSE, stride, (const void *)(12*sizeof(float)));
 }
 
 void EntityShader::sendTexture(unsigned int handle, unsigned int id, GLenum unit) {
@@ -39,32 +40,32 @@ void EntityShader::renderVertices(Camera * camera, Entity * entity) {
    glLoadMatrixf(MV.data());
 
    for (int i = 0; i < model->vertices.size(); i++)
-      renderPoint(camera, model->vertices[i].position);
+      renderPoint(camera, model->vertices[i]->position);
 
    glBegin(GL_LINES);
    for (int i = 0; i < model->vertices.size(); i++) {
       // printf("i = %d\n", i); // seg fault at 0 at line 47
       // draw normal
       glColor3f(1,0,0);
-      Eigen::Vector3f p = model->vertices[i].position;
+      Eigen::Vector3f p = model->vertices[i]->position;
       glVertex3fv(p.data());
-      Eigen::Vector3f normal = model->vertices[i].normal;
+      Eigen::Vector3f normal = model->vertices[i]->normal;
       p += normal * 0.1f;
       glVertex3fv(p.data());
 
       // draw tangent
       glColor3f(0,1,0);
-      p = model->vertices[i].position;
+      p = model->vertices[i]->position;
       glVertex3fv(p.data());
-      Eigen::Vector3f tangent = model->vertices[i].tangent;
+      Eigen::Vector3f tangent = model->vertices[i]->tangent;
       p += tangent * 0.1f;
       glVertex3fv(p.data());
 
       // draw bitangent
       glColor3f(0,0,1);
-      p = model->vertices[i].position;
+      p = model->vertices[i]->position;
       glVertex3fv(p.data());
-      Eigen::Vector3f bitangent = model->vertices[i].bitangent;
+      Eigen::Vector3f bitangent = model->vertices[i]->bitangent;
       p += bitangent * 0.1f;
       glVertex3fv(p.data());
    }

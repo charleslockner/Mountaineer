@@ -49,49 +49,50 @@ Model * TerrainGenerator::GenerateModel() {
    float halfLength = edgeLength / 2.0f;
 
    // Set up the beginning vertices
-   Vertex vTop;
-   vTop.normal = normal;
-   vTop.tangent = tangent;
-   vTop.bitangent = bitangent;
-   vTop.position = halfLength * bitangent;
-   vTop.uv = Vector2f(0.5f, 1.0f);
+   Vertex * vTop = new Vertex();
+   vTop->index = 0;
+   vTop->normal = normal;
+   vTop->tangent = tangent;
+   vTop->bitangent = bitangent;
+   vTop->position = halfLength * bitangent;
+   vTop->uv = Vector2f(0.5f, 1.0f);
 
-   Vertex vLeft;
-   vLeft.normal = normal;
-   vLeft.tangent = tangent;
-   vLeft.bitangent = bitangent;
-   vLeft.position = -halfLength * bitangent - halfLength * tangent;
-   vLeft.uv = Vector2f(0.0f, 0.0f);
+   Vertex * vLeft = new Vertex();
+   vTop->index = 1;
+   vLeft->normal = normal;
+   vLeft->tangent = tangent;
+   vLeft->bitangent = bitangent;
+   vLeft->position = -halfLength * bitangent - halfLength * tangent;
+   vLeft->uv = Vector2f(0.0f, 0.0f);
 
-   Vertex vRight;
-   vRight.normal = normal;
-   vRight.tangent = tangent;
-   vRight.bitangent = bitangent;
-   vRight.position = -halfLength * bitangent + halfLength * tangent;
-   vRight.uv = Vector2f(1.0f, 0.0f);
+   Vertex * vRight = new Vertex();
+   vTop->index = 2;
+   vRight->normal = normal;
+   vRight->tangent = tangent;
+   vRight->bitangent = bitangent;
+   vRight->position = -halfLength * bitangent + halfLength * tangent;
+   vRight->uv = Vector2f(1.0f, 0.0f);
 
-   Face face;
-   face.vertIndices[0] = 0;
-   face.vertIndices[1] = 1;
-   face.vertIndices[2] = 2;
-   face.normal = normal;
+   Face * face = new Face();;
+   face->vertices[0] = vTop;
+   face->vertices[1] = vLeft;
+   face->vertices[2] = vRight;
+   face->normal = normal;
 
    // Initialize the model
    model = new Model();
-   model->vertices = std::vector<Vertex>(0);
-   model->vertices.reserve(1000000);
-   model->faces = std::vector<Face>(0);
-   model->faces.reserve(1000000);
+   model->vertices = std::vector<Vertex *>(0);
+   model->faces = std::vector<Face *>(0);
 
    // Add the 3 vertices to the model list and the grid
    model->vertices.push_back(vTop);
-   grid->Add(& model->vertices.back());
    model->vertices.push_back(vLeft);
-   grid->Add(& model->vertices.back());
    model->vertices.push_back(vRight);
-   grid->Add(& model->vertices.back());
-
    model->faces.push_back(face);
+   grid->Add(vTop);
+   grid->Add(vLeft);
+   grid->Add(vRight);
+
    model->hasNormals = true;
    model->hasTexCoords = true;
    model->hasTansAndBitans = true;
@@ -106,28 +107,28 @@ Model * TerrainGenerator::GenerateModel() {
    Path * p;
 
    p = new Path();
-   p->headV = & model->vertices[0];
-   p->tailV = & model->vertices[1];
+   p->headV = model->vertices[0];
+   p->tailV = model->vertices[1];
    paths.push_back(p);
    p = new Path();
-   p->headV = & model->vertices[0];
-   p->tailV = & model->vertices[2];
+   p->headV = model->vertices[0];
+   p->tailV = model->vertices[2];
    paths.push_back(p);
    p = new Path();
-   p->headV = & model->vertices[1];
-   p->tailV = & model->vertices[2];
+   p->headV = model->vertices[1];
+   p->tailV = model->vertices[2];
    paths.push_back(p);
    p = new Path();
-   p->headV = & model->vertices[1];
-   p->tailV = & model->vertices[0];
+   p->headV = model->vertices[1];
+   p->tailV = model->vertices[0];
    paths.push_back(p);
    p = new Path();
-   p->headV = & model->vertices[2];
-   p->tailV = & model->vertices[0];
+   p->headV = model->vertices[2];
+   p->tailV = model->vertices[0];
    paths.push_back(p);
    p = new Path();
-   p->headV = & model->vertices[2];
-   p->tailV = & model->vertices[1];
+   p->headV = model->vertices[2];
+   p->tailV = model->vertices[1];
    paths.push_back(p);
 
    paths[0]->leftP = paths[1];
@@ -158,21 +159,23 @@ void TerrainGenerator::BuildStep() {
       Vector3f heading = edgeLength * (p->headV->position + randDir - p->tailV->position).normalized();
 
       // Add vertex created from extending the path
-      Vertex v;
-      v.position = p->headV->position + heading;
-      v.tangent = p->headV->tangent;
-      v.bitangent = p->headV->bitangent;
-      v.normal = p->headV->normal;
-      Matrix3f iTBN = Mmath::InverseTBN(v.tangent, v.bitangent, v.normal);
-      v.uv = p->headV->uv + (iTBN * heading).head<2>();
+      Vertex * v = new Vertex();
+      v->index = model->vertices.size();
+      v->position = p->headV->position + heading;
+      v->tangent = p->headV->tangent;
+      v->bitangent = p->headV->bitangent;
+      v->normal = p->headV->normal;
+
+      Matrix3f iTBN = Mmath::InverseTBN(v->tangent, v->bitangent, v->normal);
+      v->uv = p->headV->uv + (iTBN * heading).head<2>();
 
       // Instead of adding vertices here, put in a new list and add them after merging paths
       model->vertices.push_back(v);
-      grid->Add(& model->vertices.back());
+      grid->Add(v);
 
       // Update the path head and tail vertices
       p->tailV = p->headV;
-      p->headV = & model->vertices.back();
+      p->headV = v;
    }
 
    // numPaths = paths.size();
@@ -207,10 +210,10 @@ void TerrainGenerator::BuildStep() {
 
 void TerrainGenerator::HandleSameTail(Path * leftP, Path * rightP) {
    // Create the emerging face
-   Face f;
-   f.vertIndices[0] = pntrToNdx(model->vertices, leftP->headV);
-   f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
-   f.vertIndices[2] = pntrToNdx(model->vertices, rightP->headV);
+   Face * f = new Face();
+   f->vertices[0] = leftP->headV;
+   f->vertices[1] = leftP->tailV;
+   f->vertices[2] = rightP->headV;
    model->faces.push_back(f);
 }
 
@@ -227,45 +230,50 @@ void TerrainGenerator::HandleDiffTail(Path * leftP, Path * rightP) {
 void TerrainGenerator::HandleOKHeadDist(Path * leftP, Path * rightP) {
    float bltrDistSq = (rightP->headV->position - leftP->tailV->position).squaredNorm();
    float brtlDistSq = (leftP->headV->position - rightP->tailV->position).squaredNorm();
-   Face f;
+   Face * f;
 
    // Create 2 faces to fill the space
    if (bltrDistSq < brtlDistSq) {
-      f.vertIndices[0] = pntrToNdx(model->vertices, leftP->headV);
-      f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
-      f.vertIndices[2] = pntrToNdx(model->vertices, rightP->headV);
+      f = new Face();
+      f->vertices[0] = leftP->headV;
+      f->vertices[1] = leftP->tailV;
+      f->vertices[2] = rightP->headV;
       model->faces.push_back(f);
 
-      f.vertIndices[0] = pntrToNdx(model->vertices, rightP->headV);
-      f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
-      f.vertIndices[2] = pntrToNdx(model->vertices, rightP->tailV);
+      f = new Face();
+      f->vertices[0] = rightP->headV;
+      f->vertices[1] = leftP->tailV;
+      f->vertices[2] = rightP->tailV;
       model->faces.push_back(f);
    } else {
-      f.vertIndices[0] = pntrToNdx(model->vertices, leftP->headV);
-      f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
-      f.vertIndices[2] = pntrToNdx(model->vertices, rightP->tailV);
+      f = new Face();
+      f->vertices[0] = leftP->headV;
+      f->vertices[1] = leftP->tailV;
+      f->vertices[2] = rightP->tailV;
       model->faces.push_back(f);
 
-      f.vertIndices[0] = pntrToNdx(model->vertices, rightP->headV);
-      f.vertIndices[1] = pntrToNdx(model->vertices, leftP->headV);
-      f.vertIndices[2] = pntrToNdx(model->vertices, rightP->tailV);
+      f = new Face();
+      f->vertices[0] = rightP->headV;
+      f->vertices[1] = leftP->headV;
+      f->vertices[2] = rightP->tailV;
       model->faces.push_back(f);
    }
 }
 
 void TerrainGenerator::HandleBigHeadDist(Path * leftP, Path * rightP) {
    // Add a vertex between them
-   Vertex v;
-   v.position = 0.5f * (leftP->headV->position + rightP->headV->position);
-   v.tangent = leftP->tailV->tangent;
-   v.bitangent = leftP->tailV->bitangent;
-   v.normal = leftP->tailV->normal;
-   Matrix3f iTBN = Mmath::InverseTBN(v.tangent, v.bitangent, v.normal);
-   v.uv = leftP->tailV->uv + (iTBN * (v.position - leftP->tailV->position)).head<2>();
-   model->vertices.push_back(v);
-   grid->Add(& model->vertices.back());
+   Vertex * midV = new Vertex();
+   midV->index = model->vertices.size();
+   midV->position = 0.5f * (leftP->headV->position + rightP->headV->position);
+   midV->tangent = leftP->tailV->tangent;
+   midV->bitangent = leftP->tailV->bitangent;
+   midV->normal = leftP->tailV->normal;
 
-   Vertex * midV = & model->vertices.back();
+   Matrix3f iTBN = Mmath::InverseTBN(midV->tangent, midV->bitangent, midV->normal);
+   midV->uv = leftP->tailV->uv + (iTBN * (midV->position - leftP->tailV->position)).head<2>();
+
+   model->vertices.push_back(midV);
+   grid->Add(midV);
 
    // Create 2 new paths who's head is the new vertex
    Path * midRightP = new Path();
@@ -289,23 +297,25 @@ void TerrainGenerator::HandleBigHeadDist(Path * leftP, Path * rightP) {
    rightP->leftP = midRightP;
 
    // Create the emerging triangle faces
-   Face f;
-   f.vertIndices[0] = pntrToNdx(model->vertices, leftP->headV);
-   f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
-   f.vertIndices[2] = pntrToNdx(model->vertices, midV);
+   Face * f = new Face();
+   f->vertices[0] = leftP->headV;
+   f->vertices[1] = leftP->tailV;
+   f->vertices[2] = midV;
    model->faces.push_back(f);
 
-   f.vertIndices[0] = pntrToNdx(model->vertices, midV);
-   f.vertIndices[1] = pntrToNdx(model->vertices, rightP->tailV);
-   f.vertIndices[2] = pntrToNdx(model->vertices, rightP->headV);
+   f = new Face();
+   f->vertices[0] = midV;
+   f->vertices[1] = rightP->tailV;
+   f->vertices[2] = rightP->headV;
    model->faces.push_back(f);
 
-   f.vertIndices[0] = pntrToNdx(model->vertices, midV);
-   f.vertIndices[1] = pntrToNdx(model->vertices, leftP->tailV);
-   f.vertIndices[2] = pntrToNdx(model->vertices, rightP->tailV);
+   f = new Face();
+   f->vertices[0] = midV;
+   f->vertices[1] = leftP->tailV;
+   f->vertices[2] = rightP->tailV;
    model->faces.push_back(f);
 }
 
-VertDist FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist) {
-   grid->FindClosestVertex(targetPnt, maxDist);
+VertDist TerrainGenerator::FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist) {
+   return grid->FindClosest(targetPnt, maxDist);
 }

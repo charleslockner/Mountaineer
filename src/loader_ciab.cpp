@@ -34,8 +34,15 @@ static void readHeader(FILE *fp, Model * model) {
       exit(1);
    }
 
-   model->vertices = std::vector<Vertex>(model->vertexCount);
-   model->faces = std::vector<Face>(model->faceCount);
+   model->vertices = std::vector<Vertex *>(model->vertexCount);
+   for (int i = 0; i < model->vertices.size(); i++) {
+      model->vertices[i] = new Vertex();
+      model->vertices[i]->index = i;
+   }
+
+   model->faces = std::vector<Face *>(model->faceCount);
+   for (int i = 0; i < model->faces.size(); i++)
+      model->faces[i] = new Face();
 }
 
 static void readPositions(FILE *fp, Model * model) {
@@ -46,7 +53,7 @@ static void readPositions(FILE *fp, Model * model) {
    fread(data, size, count, fp);
 
    for (int i = 0; i < model->vertexCount; i++)
-      model->vertices[i].position = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+      model->vertices[i]->position = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
    free(data);
 }
@@ -59,7 +66,7 @@ static void readNormals(FILE *fp, Model * model) {
    fread(data, size, count, fp);
 
    for (int i = 0; i < model->vertexCount; i++)
-      model->vertices[i].normal = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+      model->vertices[i]->normal = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
    free(data);
 }
@@ -72,7 +79,7 @@ static void readColors(FILE *fp, Model * model) {
    fread(data, size, count, fp);
 
    for (int i = 0; i < model->vertexCount; i++)
-      model->vertices[i].color = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+      model->vertices[i]->color = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
    free(data);
 }
@@ -85,7 +92,7 @@ static void readTexCoords(FILE *fp, Model * model) {
    fread(data, size, count, fp);
 
    for (int i = 0; i < model->vertexCount; i++)
-      model->vertices[i].uv = Eigen::Vector2f(data[2*i], data[2*i+1]);
+      model->vertices[i]->uv = Eigen::Vector2f(data[2*i], data[2*i+1]);
 
    free(data);
 }
@@ -98,7 +105,7 @@ static void readTangents(FILE *fp, Model * model) {
    fread(data, size, count, fp);
 
    for (int i = 0; i < model->vertexCount; i++)
-      model->vertices[i].tangent = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+      model->vertices[i]->tangent = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
    free(data);
 }
@@ -111,13 +118,13 @@ static void readBitangents(FILE *fp, Model * model) {
    fread(data, size, count, fp);
 
    for (int i = 0; i < model->vertexCount; i++)
-      model->vertices[i].bitangent = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
+      model->vertices[i]->bitangent = Eigen::Vector3f(data[3*i], data[3*i+1], data[3*i+2]);
 
    free(data);
 }
 
 static void readIndices(FILE *fp, Model * model) {
-   int count = 3 * model->faceCount;
+   int count = NUM_FACE_EDGES * model->faceCount;
    int size = sizeof(unsigned int);
 
    unsigned int * data = (unsigned int *)malloc(count * size);
@@ -125,7 +132,7 @@ static void readIndices(FILE *fp, Model * model) {
 
    for (int i = 0; i < model->faceCount; i++)
       for (int j = 0; j < NUM_FACE_EDGES; j++)
-         model->faces[i].vertIndices[j] = data[3*i+j];
+         model->faces[i]->vertices[j] = model->vertices[data[NUM_FACE_EDGES*i+j]];
 
    free(data);
 }
@@ -143,7 +150,7 @@ static void readBoneIndices(FILE *fp, Model * model) {
 
    for (int i = 0; i < model->vertexCount; i++)
       for (int j = 0; j < MAX_INFLUENCES; j++)
-         model->vertices[i].boneIndices[j] = floatData[MAX_INFLUENCES * i + j];
+         model->vertices[i]->boneIndices[j] = floatData[MAX_INFLUENCES * i + j];
 
    // free the data blocks
    free(ushortData);
@@ -159,7 +166,7 @@ static void readBoneWeights(FILE *fp, Model * model) {
 
    for (int i = 0; i < model->vertexCount; i++)
       for (int j = 0; j < MAX_INFLUENCES; j++)
-         model->vertices[i].boneWeights[j] = data[MAX_INFLUENCES * i + j];
+         model->vertices[i]->boneWeights[j] = data[MAX_INFLUENCES * i + j];
 
    free(data);
 }
@@ -176,7 +183,7 @@ static void readBoneInfluences(FILE *fp, Model * model) {
       floatData[i] = ushortData[i];
 
    for (int i = 0; i < model->vertexCount; i++)
-      model->vertices[i].boneInfluencesCount = floatData[i];
+      model->vertices[i]->boneInfCount = floatData[i];
 
    // free the data blocks
    free(ushortData);

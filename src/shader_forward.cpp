@@ -76,19 +76,19 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
    glUniform1i(table->uHasNormalMap, model->hasTexCoords && model->hasNormalMap);
    glUniform1i(table->uHasSpecularMap, model->hasTexCoords && model->hasSpecularMap);
 
-   // Send vertex attributes
-   sendVertexAttribArray(table->aPosition, model->vertexID, 3, offsetof(Vertex, position));
+   // Send model attributes
+   sendVertexAttribArray(table->aPosition, model->posID, 3);
 
    if (model->hasNormals)
-      sendVertexAttribArray(table->aNormal, model->vertexID, 3, offsetof(Vertex, normal));
+      sendVertexAttribArray(table->aNormal, model->normID, 3);
    if (model->hasColors)
-      sendVertexAttribArray(table->aColor, model->vertexID, 3, offsetof(Vertex, color));
+      sendVertexAttribArray(table->aColor, model->colorID, 3);
    if (model->hasTexCoords) {
-      sendVertexAttribArray(table->aUV, model->vertexID, 2, offsetof(Vertex, uv));
+      sendVertexAttribArray(table->aUV, model->uvID, 2);
 
       if (model->hasTansAndBitans) {
-         sendVertexAttribArray(table->aTangent, model->vertexID, 3, offsetof(Vertex, tangent));
-         sendVertexAttribArray(table->aBitangent, model->vertexID, 3, offsetof(Vertex, bitangent));
+         sendVertexAttribArray(table->aTangent, model->tanID, 3);
+         sendVertexAttribArray(table->aBitangent, model->bitanID, 3);
       }
 
       if (model->hasTexture)
@@ -101,13 +101,13 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
 
    // Send animation data
    if (model->isAnimated) {
-      sendVertexAttribArray(table->aNumInfluences, model->vertexID, 1, offsetof(Vertex, boneInfluencesCount));
+      sendVertexAttribArray(table->aNumInfluences, model->bNumInfID, 1);
       sendLargeVertexAttribArray(table->aBoneIndices0, table->aBoneIndices1,
                                  table->aBoneIndices2, table->aBoneIndices3,
-                                 model->vertexID, offsetof(Vertex, boneIndices));
+                                 model->bIndexID);
       sendLargeVertexAttribArray(table->aBoneWeights0, table->aBoneWeights1,
                                  table->aBoneWeights2, table->aBoneWeights3,
-                                 model->vertexID, offsetof(Vertex, boneWeights));
+                                 model->bWeightID);
       AnimatedEntity * entityAnim = dynamic_cast<AnimatedEntity *>(entityBase);
       glUniformMatrix4fv(table->uAnimMs, MAX_BONES, GL_FALSE, (GLfloat *)(entityAnim->animMs));
    }

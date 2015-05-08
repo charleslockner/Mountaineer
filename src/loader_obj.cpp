@@ -29,23 +29,30 @@ void Model::loadOBJ(const char * path)
    this->boneCount = 0;
    this->animationCount = 0;
 
-   this->vertices = std::vector<Vertex>(this->vertexCount);
-   this->faces = std::vector<Face>(this->faceCount);
+   this->vertices = std::vector<Vertex *>(this->vertexCount);
+   for (int i = 0; i < this->vertices.size(); i++) {
+      this->vertices[i] = new Vertex();
+      this->vertices[i]->index = i;
+   }
+
+   this->faces = std::vector<Face *>(this->faceCount);
+   for (int i = 0; i < this->faces.size(); i++)
+      this->faces[i] = new Face();
 
    for (int i = 0; i < this->vertexCount; i++)
-      this->vertices[i].position = Eigen::Vector3f(posBuf[3*i], posBuf[3*i+1], posBuf[3*i+2]);
+      this->vertices[i]->position = Eigen::Vector3f(posBuf[3*i], posBuf[3*i+1], posBuf[3*i+2]);
 
    if (!norBuf.empty())
       for (int i = 0; i < this->vertexCount; i++)
-         this->vertices[i].normal = Eigen::Vector3f(norBuf[3*i], norBuf[3*i+1], norBuf[3*i+2]);
+         this->vertices[i]->normal = Eigen::Vector3f(norBuf[3*i], norBuf[3*i+1], norBuf[3*i+2]);
 
    if (!texBuf.empty())
       for (int i = 0; i < this->vertexCount; i++)
-         this->vertices[i].uv = Eigen::Vector2f(texBuf[2*i], texBuf[2*i+1]);
+         this->vertices[i]->uv = Eigen::Vector2f(texBuf[2*i], texBuf[2*i+1]);
 
    for (int i = 0; i < this->faceCount; i++)
       for (int j = 0; j < NUM_FACE_EDGES; j++)
-         this->faces[i].vertIndices[j] = indBuf[3*i+j];
+         this->faces[i]->vertices[j] = this->vertices[indBuf[NUM_FACE_EDGES*i+j]];
 
    // Send vertex and face data to the GPU
    bufferVertices();

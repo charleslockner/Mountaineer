@@ -80,15 +80,15 @@ static void bindBoneWeights(Model * model, std::vector<float> & inWeights, int n
    parseVertexWeights(verts, bIndices, bWeights, bNumInfluences);
 
    for (int i = 0; i < numVertices; i++)
-      model->vertices[i].boneInfluencesCount = bNumInfluences[i];
+      model->vertices[i]->boneInfCount = bNumInfluences[i];
 
    for (int i = 0; i < numVertices; i++)
       for (int j = 0; j < MAX_INFLUENCES; j++)
-         model->vertices[i].boneIndices[j] = bIndices[MAX_INFLUENCES*i+j];
+         model->vertices[i]->boneIndices[j] = bIndices[MAX_INFLUENCES*i+j];
 
    for (int i = 0; i < numVertices; i++)
       for (int j = 0; j < MAX_INFLUENCES; j++)
-         model->vertices[i].boneWeights[j] = bWeights[MAX_INFLUENCES*i+j];
+         model->vertices[i]->boneWeights[j] = bWeights[MAX_INFLUENCES*i+j];
 
    model->boneCount = numBones;
    model->hasBoneWeights = true;

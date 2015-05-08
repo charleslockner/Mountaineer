@@ -23,8 +23,8 @@ void TextureShader::render(Camera * camera, LightData * lightdata, Entity * enti
    glUniformMatrix4fv(h_uProjViewModelM, 1, GL_FALSE, projViewModelM.data());
 
    // Send vertex attributes
-   sendVertexAttribArray(h_aPosition, model->vertexID, 3, offsetof(Vertex, position));
-   sendVertexAttribArray(h_aUV, model->vertexID, 2, offsetof(Vertex, uv));
+   sendVertexAttribArray(h_aPosition, model->posID, 3);
+   sendVertexAttribArray(h_aUV, model->uvID, 2);
 
    // Send textures
    sendTexture(h_uTexture, model->texID, GL_TEXTURE0);

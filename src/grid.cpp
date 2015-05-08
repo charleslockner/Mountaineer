@@ -108,7 +108,7 @@ VertDist SpatialGrid::FindClosest(Eigen::Vector3f target, float maxDist) {
    Eigen::Vector3i worldIndexV = GetVirtualIndexFromReal(indexV);
    Cell * cell = GetCellAt(indexV);
 
-   VertDist shortestVertDist
+   VertDist shortestVertDist;
    shortestVertDist.vert = NULL;
 
    if (!cell)

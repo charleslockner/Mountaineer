@@ -9,31 +9,31 @@
 #define MAX_BONES 100
 #define MAX_BONE_JOINTS 3
 
-typedef struct {
+typedef struct Key {
    float time;
    Eigen::Vector3f position;
    Eigen::Quaternionf rotation;
    Eigen::Vector3f scale;
 } Key;
 
-typedef struct {
+typedef struct AnimBone {
    std::vector<Key> keys;
 } AnimBone;
 
-typedef struct {
+typedef struct Animation {
    unsigned int fps;
    unsigned int keyCount;
    float duration;
    std::vector<AnimBone> animBones;
 } Animation;
 
-typedef struct {
+typedef struct IKJoint {
    Eigen::Vector3f axis;
    float minAngle;
    float maxAngle;
 } IKJoint;
 
-typedef struct {
+typedef struct Bone {
    short parentIndex;
    short childCount;
    std::vector<short> childIndices;
@@ -42,25 +42,26 @@ typedef struct {
    std::vector<IKJoint> joints;
 } Bone;
 
-typedef struct {
+typedef struct BoneWeight {
    unsigned int index;
    float weight;
 } BoneWeight;
 
-typedef struct {
+typedef struct Vertex {
+   unsigned int index;
    Eigen::Vector3f position;
    Eigen::Vector3f normal;
    Eigen::Vector3f tangent;
    Eigen::Vector3f bitangent;
    Eigen::Vector3f color;
    Eigen::Vector2f uv;
-   float boneInfluencesCount;
+   float boneInfCount;
    float boneIndices[MAX_INFLUENCES];
    float boneWeights[MAX_INFLUENCES];
 } Vertex;
 
-typedef struct {
-   unsigned int vertIndices[NUM_FACE_EDGES];
+typedef struct Face {
+   Vertex * vertices[NUM_FACE_EDGES];
    Eigen::Vector3f normal;
 } Face;
 
@@ -103,14 +104,15 @@ public:
 
    unsigned int vertexCount, faceCount, boneCount, animationCount;
 
-   unsigned int vertexID, indexID, texID, nmapID, smapID;
+   unsigned int posID, normID, colorID, uvID, tanID, bitanID,
+                indexID, texID, nmapID, smapID, bNumInfID, bIndexID, bWeightID;
 
    bool hasNormals, hasColors, hasTexCoords, hasTexture, hasNormalMap, hasSpecularMap,
         hasTansAndBitans, hasBoneWeights, hasBoneTree, hasAnimations, isAnimated;
 
-   short boneRoot;
-   std::vector<Vertex> vertices;
-   std::vector<Face> faces;
+   int boneRoot;
+   std::vector<Vertex *> vertices;
+   std::vector<Face *> faces;
    std::vector<Bone> bones;
    std::vector<Animation> animations;
 };

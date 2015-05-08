@@ -1,9 +1,13 @@
 #ifndef __TERRAIN_H__
 #define __TERRAIN_H__
 
-#include "model.h"
 #include "matrix_math.h"
 #include "grid.h"
+
+#include <vector>
+
+class Model;
+struct Vertex;
 
 class TerrainGenerator {
 public:

@@ -2,6 +2,8 @@
 #include "stdio.h"
 #include "safe_gl.h"
 
+#include <cstring>
+
 Model::Model() {
    hasNormals = false;
    hasColors = false;
@@ -20,7 +22,15 @@ Model::Model() {
    boneCount = 0;
    animationCount = 0;
 
-   glGenBuffers(1, & vertexID);
+   glGenBuffers(1, & posID);
+   glGenBuffers(1, & normID);
+   glGenBuffers(1, & colorID);
+   glGenBuffers(1, & uvID);
+   glGenBuffers(1, & tanID);
+   glGenBuffers(1, & bitanID);
+   glGenBuffers(1, & bNumInfID);
+   glGenBuffers(1, & bIndexID);
+   glGenBuffers(1, & bWeightID);
    glGenBuffers(1, & indexID);
 }
 
@@ -30,14 +40,14 @@ Model::~Model() {
 void Model::CalculateNormals() {
    // Zero out vertex normals so we can sum from face normals starting at 0
    for (int i = 0; i < vertices.size(); i++)
-      vertices[i].normal = Eigen::Vector3f(0,0,0);
+      vertices[i]->normal = Eigen::Vector3f(0,0,0);
 
    // Calculated face normals and add these to neighboring vertex normals
    for (int i = 0; i < faces.size(); i++) {
-      Face * face = & faces[i];
-      Vertex * v1 = & vertices[face->vertIndices[0]];
-      Vertex * v2 = & vertices[face->vertIndices[1]];
-      Vertex * v3 = & vertices[face->vertIndices[2]];
+      Face * face = faces[i];
+      Vertex * v1 = face->vertices[0];
+      Vertex * v2 = face->vertices[1];
+      Vertex * v3 = face->vertices[2];
 
       // Fill in face normals
       face->normal = ((v3->position - v2->position).cross(v1->position - v2->position)).normalized();
@@ -49,12 +59,32 @@ void Model::CalculateNormals() {
 
    // Normalize the new vertex normals
    for (int i = 0; i < vertices.size(); i++)
-      vertices[i].normal.normalize();
+      vertices[i]->normal.normalize();
+}
+
+static void bufferVertexField(char ** ptrData, size_t offset, unsigned int vbo, int size, int count) {
+   int numBytes = size * count;
+   char * toGPU = (char *)malloc(numBytes);
+
+   for (int i = 0; i < count; i++)
+      std::memcpy(& toGPU[size*i], & (ptrData[i][offset]), size);
+
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   glBufferData(GL_ARRAY_BUFFER, numBytes, toGPU, GL_STATIC_DRAW);
+   free(toGPU);
 }
 
 void Model::bufferVertices() {
-   glBindBuffer(GL_ARRAY_BUFFER, vertexID);
-   glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+   char ** vertPtr = (char **)(vertices.data());
+   bufferVertexField(vertPtr, offsetof(Vertex, position),     posID,     3*sizeof(float), vertices.size());
+   bufferVertexField(vertPtr, offsetof(Vertex, normal),       normID,    3*sizeof(float), vertices.size());
+   bufferVertexField(vertPtr, offsetof(Vertex, color),        colorID,   3*sizeof(float), vertices.size());
+   bufferVertexField(vertPtr, offsetof(Vertex, uv),           uvID,      2*sizeof(float), vertices.size());
+   bufferVertexField(vertPtr, offsetof(Vertex, tangent),      tanID,     3*sizeof(float), vertices.size());
+   bufferVertexField(vertPtr, offsetof(Vertex, bitangent),    bitanID,   3*sizeof(float), vertices.size());
+   bufferVertexField(vertPtr, offsetof(Vertex, boneInfCount), bNumInfID, 1*sizeof(float), vertices.size());
+   bufferVertexField(vertPtr, offsetof(Vertex, boneIndices),  bIndexID,  4*sizeof(float), vertices.size());
+   bufferVertexField(vertPtr, offsetof(Vertex, boneWeights),  bWeightID, 4*sizeof(float), vertices.size());
 }
 
 void Model::bufferIndices() {
@@ -62,17 +92,16 @@ void Model::bufferIndices() {
    unsigned int * indices = (unsigned int *)malloc(numBytes);
    for (int i = 0; i < faces.size(); i++)
       for (int j = 0; j < NUM_FACE_EDGES; j++)
-         indices[NUM_FACE_EDGES*i+j] = faces[i].vertIndices[j];
+         indices[NUM_FACE_EDGES*i+j] = faces[i]->vertices[j]->index;
 
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexID);
    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numBytes, indices, GL_STATIC_DRAW);
-
    free(indices);
 }
 
 void Model::printVertices() {
    for (int i = 0; i < vertexCount; i++) {
-      Vertex * v = & vertices[i];
+      Vertex * v = vertices[i];
       printf("Vertex %d:\n", i);
       printf("  position = %f %f %f\n", v->position(0), v->position(1), v->position(2));
       printf("  normal = %f %f %f\n", v->normal(0), v->normal(1), v->normal(2));
@@ -82,7 +111,7 @@ void Model::printVertices() {
 void Model::printFaces() {
    for (int i = 0; i < faceCount; i++) {
       printf("Face %d:\n", i);
-      printf("  vertIndices: %d %d %d\n", faces[i].vertIndices[0], faces[i].vertIndices[1], faces[i].vertIndices[2]);
+      printf("  vertIndices: %d %d %d\n", faces[i]->vertices[0]->index, faces[i]->vertices[1]->index, faces[i]->vertices[2]->index);
    }
 }
 
