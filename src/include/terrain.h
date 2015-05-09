@@ -31,7 +31,14 @@ private:
    int stepCnt;
    float edgeLength;
 
+   void ExtendPaths();
+   void MergePathHeads();
+   void AddVertices();
+   void CreateFaces();
+   void RemoveInterPaths();
 
+
+   void HandleSameHead(Path * leftP, Path * rightP);
    void HandleSameTail(Path * leftP, Path * rightP);
    void HandleDiffTail(Path * leftP, Path * rightP);
    void HandleOKHeadDist(Path * leftP, Path * rightP);
