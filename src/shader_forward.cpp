@@ -55,8 +55,8 @@ void ForwardShader::render(Camera * camera, LightData * lightData, Entity * enti
 
    Model * model = entityBase->model;
 
-   unsigned int program = model->isAnimated && model->hasBoneTree && model->hasAnimations ? animProg : statProg;
-   HandleTable * table = model->isAnimated && model->hasBoneTree && model->hasAnimations ? & animTable : & statTable;
+   unsigned int program = model->isAnimated && model->hasAnimations ? animProg : statProg;
+   HandleTable * table = model->isAnimated && model->hasAnimations ? & animTable : & statTable;
 
    glUseProgram(program);
 

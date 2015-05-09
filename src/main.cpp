@@ -206,21 +206,21 @@ static void initialize() {
    terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
    terrainEnt = new StaticEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
 
-   // // Animated Entities
-   // Model * chebModel = new Model();
-   // chebModel->loadOBJ("assets/cheb/cheb2.obj");
-   // chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   // chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
-   // entities.push_back(new MocapEntity(Eigen::Vector3f(-10, 0, 0), chebModel));
-   // entities[0]->playAnimation(0);
+   // Animated Entities
+   Model * chebModel = new Model();
+   chebModel->loadOBJ("assets/cheb/cheb2.obj");
+   chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
+   entities.push_back(new MocapEntity(Eigen::Vector3f(-10, 0, 0), chebModel));
+   entities[0]->playAnimation(0);
 
-   // Model * trexModel = new Model();
-   // trexModel->loadCIAB("assets/models/trex.ciab");
-   // trexModel->loadTexture("assets/textures/masonry.png", false);
-   // trexModel->loadNormalMap("assets/textures/masonry_NORM.png", false);
-   // entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
-   // entities[1]->playAnimation(0);
-   // trexModel->bufferIndices();
+   Model * trexModel = new Model();
+   trexModel->loadCIAB("assets/models/trex.ciab");
+   trexModel->loadTexture("assets/textures/masonry.png", false);
+   trexModel->loadNormalMap("assets/textures/masonry_NORM.png", false);
+   entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
+   entities[1]->playAnimation(0);
+   trexModel->bufferIndices();
 
    // The main character
    guyModel = new Model();

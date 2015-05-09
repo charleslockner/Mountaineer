@@ -210,8 +210,6 @@ void IKEntity::setLimbGoal(int limbIndex, Eigen::Vector3f goal) {
 }
 
 void IKEntity::update(float tickDelta) {
-   // printf("Goal 0 = %f %f %f\n", ikLimbs[0]->goal(0), ikLimbs[0]->goal(1), ikLimbs[0]->goal(2));
-   // printf("Goal 1 = %f %f %f\n", ikLimbs[1]->goal(0), ikLimbs[1]->goal(1), ikLimbs[1]->goal(2));
    if (model->hasBoneTree && model->hasAnimations) {
       BonifiedEntity::replayIfNeeded(tickDelta);
       computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());

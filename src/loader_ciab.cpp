@@ -311,8 +311,6 @@ static void loadMeshData(FILE *fp, Model * model) {
             exit(1);
             break;
       }
-
-      printf("Loading field %d\n", fieldType);
    }
 
    model->bufferVertices();
