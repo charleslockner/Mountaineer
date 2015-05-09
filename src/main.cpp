@@ -29,8 +29,9 @@ bool playing = false;
 bool keyToggles[512] = {false};
 
 Model * guyModel;
-IKEntity * guyEnt;
-StaticEntity * skyEnt;
+AnimatedEntity * chebEnt;
+IKEntity * guyEnt, * trexEnt;
+StaticEntity * skyEnt, * terrainEnt;
 EntityShader * entShader;
 TextureShader * texShader;
 TerrainGenerator * terrainGenerator;
@@ -196,7 +197,6 @@ static void initialize() {
                              Eigen::Quaternionf(1,0,0,0),
                              Eigen::Vector3f(500,500,500),
                              skyModel);
-   staticEntities.push_back(skyEnt);
 
    // Terrain Stuff
    terrainGenerator = new TerrainGenerator();
@@ -204,7 +204,7 @@ static void initialize() {
    terrainModel->loadTexture("assets/textures/rock.png", true);
    terrainModel->loadNormalMap("assets/textures/rock_NORM.png", true);
    terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
-   staticEntities.push_back(new StaticEntity(Eigen::Vector3f(0, 0, 0), terrainModel));
+   terrainEnt = new StaticEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
 
    // // Animated Entities
    // Model * chebModel = new Model();
@@ -287,7 +287,7 @@ static void updateLoop(double deltaTime) {
    updateWorld(deltaTime);
 
    texShader->render(camera, & lightData, skyEnt);
-   entShader->render(camera, & lightData, staticEntities[1]);
+   entShader->render(camera, & lightData, terrainEnt);
 
    for (int i = 0; i < entities.size(); i++)
       entities[i]->update(deltaTime);
@@ -295,9 +295,8 @@ static void updateLoop(double deltaTime) {
       entShader->render(camera, & lightData, entities[i]);
 
    if (keyToggles[GLFW_KEY_K]) {
-      entShader->renderVertices(camera, staticEntities[1]);
-      // entShader->renderVertices(camera, entities[1]);
-      entShader->renderBones(camera, (BonifiedEntity *)(entities[1]));
+      entShader->renderVertices(camera, terrainEnt);
+      entShader->renderBones(camera, guyEnt);
       entShader->renderBones(camera, guyEnt);
    }
 

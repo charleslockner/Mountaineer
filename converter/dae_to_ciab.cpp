@@ -153,12 +153,8 @@ void writeUInt(FILE * fp, unsigned int i) {
    fwrite(& i, sizeof(unsigned int), 1, fp);
 }
 
-void writeShort(FILE * fp, short i) {
-   fwrite(& i, sizeof(short), 1, fp);
-}
-
-void writeUShort(FILE * fp, unsigned short i) {
-   fwrite(& i, sizeof(unsigned short), 1, fp);
+void writeInt(FILE * fp, int i) {
+   fwrite(& i, sizeof(int), 1, fp);
 }
 
 void writeVector3D(FILE * fp, aiVector3D v) {
@@ -312,15 +308,9 @@ void normalizeBoneWeights(Vertex * verts, int numVerts) {
       float preSum = 0;
       for (int j = 0; j < MAX_INFLUENCES; j++)
          preSum += verts[i].boneWeights[j].weight;
-      // printf("preSum = %f\n", preSum);
 
       for (int j = 0; j < MAX_INFLUENCES; j++)
          verts[i].boneWeights[j].weight = verts[i].boneWeights[j].weight / preSum;
-
-      // float postSum = 0;
-      // for (int j = 0; j < MAX_INFLUENCES; j++)
-      //    postSum += verts[i].boneWeights[j].weight;
-      // printf("postSum = %f\n", postSum);
    }
 }
 
@@ -334,7 +324,7 @@ void writeBoneWeights(FILE * fp, aiMesh& mesh) {
 
    for (uint i = 0; i < mesh.mNumVertices; i++)
       for (uint j = 0; j < MAX_INFLUENCES; j++)
-         writeUShort(fp, j < verts[i].boneWeights.size() ? verts[i].boneWeights[j].index : 0);
+         writeUInt(fp, j < verts[i].boneWeights.size() ? verts[i].boneWeights[j].index : 0);
 
    std::cerr << "Writing bone weights...\n";
    writeTypeField(fp, BONE_WEIGHTS);
@@ -351,13 +341,13 @@ void writeBoneWeights(FILE * fp, aiMesh& mesh) {
 
       for (int j = 0; j < MAX_INFLUENCES; j++)
          if (verts[i].boneWeights[j].weight <= 0.0f) {
-            writeUShort(fp, j);
+            writeUInt(fp, j);
             foundNum = true;
             break;
          }
 
       if (!foundNum)
-         writeUShort(fp, MAX_INFLUENCES);
+         writeUInt(fp, MAX_INFLUENCES);
    }
 }
 
@@ -368,7 +358,7 @@ void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
    BoneMap nameToIndexMap = createBoneName2IndexMap(mesh);
 
    // write the bone root index
-   writeShort(fp, findRootBoneIndex(mesh, & nameToIndexMap, root));
+   writeUInt(fp, findRootBoneIndex(mesh, & nameToIndexMap, root));
 
    // Write each bone to file
    for (uint i = 0; i < mesh.mNumBones; i++) {
@@ -376,17 +366,17 @@ void writeBoneTree(FILE * fp, aiMesh& mesh, aiNode * root) {
 
       // Write the parent index
       BoneIterator it = nameToIndexMap.find(node->mParent->mName.C_Str());
-      short parentIndex = -1;
+      int parentIndex = -1;
       if (it != nameToIndexMap.end())
          parentIndex = it->second;
-      writeShort(fp, parentIndex);
+      writeInt(fp, parentIndex);
 
       // Write the children
-      writeShort(fp, node->mNumChildren);
+      writeUInt(fp, node->mNumChildren);
       for (int j = 0; j < node->mNumChildren; j++) {
          BoneIterator it = nameToIndexMap.find(node->mChildren[j]->mName.C_Str());
          assert (it != nameToIndexMap.end());
-         writeShort(fp, it->second);
+         writeInt(fp, it->second);
       }
 
       // Write the inverse bindPose and parentBone transform matrices

@@ -43,6 +43,8 @@ static void readHeader(FILE *fp, Model * model) {
    model->faces = std::vector<Face *>(model->faceCount);
    for (int i = 0; i < model->faces.size(); i++)
       model->faces[i] = new Face();
+
+   printf("verts: %d, faces: %d, bones: %d, anims: %d\n", model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
 }
 
 static void readPositions(FILE *fp, Model * model) {
@@ -140,20 +142,20 @@ static void readIndices(FILE *fp, Model * model) {
 static void readBoneIndices(FILE *fp, Model * model) {
    int count = MAX_INFLUENCES * model->vertexCount;
 
-   unsigned short * ushortData = (unsigned short *)malloc(count * sizeof(unsigned short));
-   fread(ushortData, sizeof(unsigned short), count, fp);
+   unsigned int * uintData = (unsigned int *)malloc(count * sizeof(unsigned int));
+   fread(uintData, sizeof(unsigned int), count, fp);
 
-   // convert the data from unsigned shorts to floats
+   // convert the data from unsigned ints to floats
    float * floatData = (float *)malloc(count * sizeof(float));
    for (int i = 0; i < count; i++)
-      floatData[i] = ushortData[i];
+      floatData[i] = uintData[i];
 
    for (int i = 0; i < model->vertexCount; i++)
       for (int j = 0; j < MAX_INFLUENCES; j++)
          model->vertices[i]->boneIndices[j] = floatData[MAX_INFLUENCES * i + j];
 
    // free the data blocks
-   free(ushortData);
+   free(uintData);
    free(floatData);
 }
 
@@ -174,35 +176,36 @@ static void readBoneWeights(FILE *fp, Model * model) {
 static void readBoneInfluences(FILE *fp, Model * model) {
    int count = model->vertexCount;
 
-   unsigned short * ushortData = (unsigned short *)malloc(count * sizeof(unsigned short));
-   fread(ushortData, sizeof(unsigned short), count, fp);
+   unsigned int * uintData = (unsigned int *)malloc(count * sizeof(unsigned int));
+   fread(uintData, sizeof(unsigned int), count, fp);
 
-   // convert the data from unsigned shorts to floats
+   // convert the data from unsigned ints to floats
    float * floatData = (float *)malloc(count * sizeof(float));
    for (int i = 0; i < count; i++)
-      floatData[i] = ushortData[i];
+      floatData[i] = uintData[i];
 
    for (int i = 0; i < model->vertexCount; i++)
       model->vertices[i]->boneInfCount = floatData[i];
 
    // free the data blocks
-   free(ushortData);
+   free(uintData);
    free(floatData);
 }
 
 static void readBoneTree(FILE *fp, Model * model) {
-   fread(& model->boneRoot, sizeof(short), 1, fp);
+   fread(& model->boneRoot, sizeof(int), 1, fp);
+   printf("bone root after read %d\n", model->boneRoot);
 
    model->bones = std::vector<Bone>(model->boneCount);
 
    for (int i = 0; i < model->boneCount; i++) {
       Bone * bone = & model->bones[i];
-      fread(& bone->parentIndex, sizeof(short), 1, fp);
-      fread(& bone->childCount, sizeof(short), 1, fp);
+      fread(& bone->parentIndex, sizeof(int), 1, fp);
+      fread(& bone->childCount, sizeof(unsigned int), 1, fp);
 
-      bone->childIndices = std::vector<short>(bone->childCount);
+      bone->childIndices = std::vector<int>(bone->childCount);
       for (int j = 0; j < bone->childCount; j++)
-         fread(& bone->childIndices[j], sizeof(short), 1, fp);
+         fread(& bone->childIndices[j], sizeof(int), 1, fp);
 
       fread(& bone->invBonePose, sizeof(Eigen::Matrix4f), 1, fp);
       fread(& bone->parentOffset, sizeof(Eigen::Matrix4f), 1, fp);
@@ -309,7 +312,7 @@ static void loadMeshData(FILE *fp, Model * model) {
             break;
       }
 
-      // printf("Loading field %d\n", fieldType);
+      printf("Loading field %d\n", fieldType);
    }
 
    model->bufferVertices();

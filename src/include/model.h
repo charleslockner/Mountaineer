@@ -34,9 +34,9 @@ typedef struct IKJoint {
 } IKJoint;
 
 typedef struct Bone {
-   short parentIndex;
-   short childCount;
-   std::vector<short> childIndices;
+   int parentIndex;
+   unsigned int childCount;
+   std::vector<int> childIndices;
    Eigen::Matrix4f invBonePose;
    Eigen::Matrix4f parentOffset;
    std::vector<IKJoint> joints;
@@ -110,7 +110,7 @@ public:
    bool hasNormals, hasColors, hasTexCoords, hasTexture, hasNormalMap, hasSpecularMap,
         hasTansAndBitans, hasBoneWeights, hasBoneTree, hasAnimations, isAnimated;
 
-   int boneRoot;
+   unsigned int boneRoot;
    std::vector<Vertex *> vertices;
    std::vector<Face *> faces;
    std::vector<Bone> bones;

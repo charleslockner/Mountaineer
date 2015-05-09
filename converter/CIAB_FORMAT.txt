@@ -30,14 +30,14 @@ animation_field ---> 12
 [ vert_tang_field ]<uint8>   (vert_count){[tanX]    [tanY]    [tanZ]}<float32>
 [ vert_bitan_field ]<uint8>  (vert_count){[bitanX]  [bitanY]  [bitanZ]}<float32>
 [ vert_index_field ]<uint8>  (index_count)[index]<uint32>
-[ bone_index_field ]<uint8>  (vert_count){[index1]  [index2]  [index3]  [index4]}<uint16>
+[ bone_index_field ]<uint8>  (vert_count){[index1]  [index2]  [index3]  [index4]}<uint32>
 [ bone_weight_field ]<uint8> (vert_count){[weight1] [weight2] [weight3] [weight4]}<float32>
-[ bone_numInf_field ]<uint8> (vert_count)[numInf]<uint16>
+[ bone_numInf_field ]<uint8> (vert_count)[numInf]<uint32>
 
-[ bone_tree_field ]<uint8> [bone_root_index]<int16> (bone_count){
-   [parent]<int16>
-   [num_children]<int16>
-   (num_children)[child_index]<int16>
+[ bone_tree_field ]<uint8> [bone_root_index]<uint32> (bone_count){
+   [parent]<int32>
+   [num_children]<uint32>
+   (num_children)[child_index]<int32>
    (16)[mat_inv_bone_pose]<float32>]
    (16)[mat_parent_transform]<float32>
 }

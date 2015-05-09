@@ -169,7 +169,7 @@ void TerrainGenerator::ExtendPaths() {
    int numPaths = paths.size();
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
-      Vector3f randDir = (randRange(-0.2, 0.2) * p->headV->normal);
+      Vector3f randDir = (randRange(-0.1, 0.1) * p->headV->normal);
       Vector3f heading = edgeLength * (p->headV->position + randDir - p->tailV->position).normalized();
 
       // Add vertex created from extending the path
@@ -244,14 +244,13 @@ void TerrainGenerator::RemoveInterPaths() {
       Path * leftP = midP->leftP;
       Path * rightP = midP->rightP;
 
-      if (midP->headV == leftP->headV) {
-         printf("Removing path %d\n", i);
+      if (midP->headV == rightP->headV) {
          // Fix the left/right paths of the neighbors and the modified path
          leftP->rightP = rightP;
          rightP->leftP = leftP;
 
          // Remove the mid path
-         // delete(paths[i]);
+         delete(paths[i]);
          paths.erase(paths.begin() + i);
          i--;
       }
