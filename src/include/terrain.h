@@ -19,10 +19,14 @@ public:
    VertDist FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist);
 
 private:
-   typedef struct Path {
+   class Path {
+   public:
       Vertex *headV, *tailV;
       Path *leftP, *rightP;
-   } Path;
+      Eigen::Vector3f heading;
+
+      void CalculateHeading();
+   };
 
    Model * model;
    SpatialGrid * grid;
@@ -33,16 +37,14 @@ private:
 
    void ExtendPaths();
    void MergePathHeads();
+   void AddNeededPaths();
    void AddVertices();
    void CreateFaces();
-   void RemoveInterPaths();
-
+   void RemoveCrossPaths();
 
    void HandleSameHead(Path * leftP, Path * rightP);
    void HandleSameTail(Path * leftP, Path * rightP);
-   void HandleDiffTail(Path * leftP, Path * rightP);
-   void HandleOKHeadDist(Path * leftP, Path * rightP);
-   void HandleBigHeadDist(Path * leftP, Path * rightP);
+   void HandleBothDiff(Path * leftP, Path * rightP);
 };
 
 

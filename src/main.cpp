@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "safe_gl.h"
 #include "shader.h"
@@ -304,6 +305,8 @@ static void updateLoop(double deltaTime) {
 }
 
 int main(int argc, char ** argv) {
+   srand(time(NULL));
+
    GLFWwindow * window;
    glfwSetErrorCallback(error_callback);
 
