@@ -119,7 +119,7 @@ Model * TerrainGenerator::GenerateModel() {
 void TerrainGenerator::BuildStep() {
 
    ExtendPaths();
-   // SmoothPathPositions();
+   SmoothPathPositions();
    MergePathHeads();
    AddNeededPaths();
    AddVerticesAndFaces();
@@ -167,11 +167,13 @@ void TerrainGenerator::SmoothPathPositions() {
 
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
-      Vector3f midTail = 0.5f * (p->leftP->tailV->position + p->rightP->tailV->position);
-      Vector3f midHead = midTail + edgeLength * Mmath::SlerpVec3(p->leftP->heading, p->rightP->heading, 0.5f);
-      Vector3f midDir = directionFromPoints(midHead, midTail);
 
-      updatedPositions[i] = p->headV->position;
+      Vector3f midTail = 0.5f * (p->leftP->tailV->position + p->rightP->tailV->position);
+      Vector3f midHead = 0.5f * (p->leftP->headV->position + p->rightP->headV->position);
+      Vector3f midDir = directionFromPoints(midHead, midTail);
+      Vector3f properPos = midTail + edgeLength * midDir;
+
+      updatedPositions[i] = 0.25f * p->headV->position + 0.75f * properPos;
    }
 
    for (int i = 0; i < numPaths; i++)
@@ -183,7 +185,6 @@ void TerrainGenerator::MergePathHeads() {
    for (int i = 0; i < numPaths; i++) {
       Path * midP = paths[i];
       Path * rightP = midP->rightP;
-
       Vertex * keepV = midP->headV;
       Vertex * removeV = rightP->headV;
 
@@ -231,14 +232,13 @@ void TerrainGenerator::AddNeededPaths() {
          float distSqL = (midV->position - outLeftP->tailV->position).squaredNorm();
          float distSqR = (midV->position - outRightP->tailV->position).squaredNorm();
 
-         // Create 2 new paths who's head is the new vertex
+         // Create a new path
          Path * midP = new Path();
          midP->headV = midV;
          midP->tailV = distSqL < distSqR ? outLeftP->tailV : outRightP->tailV;
          midP->leftP = outLeftP;
          midP->rightP = outRightP;
-         // printf("midLeftP head = %f %f %f\n", midLeftP->headV->position(0), midLeftP->headV->position(1), midLeftP->headV->position(2));
-         // printf("midLeftP tail = %f %f %f\n", midLeftP->tailV->position(0), midLeftP->tailV->position(1), midLeftP->tailV->position(2));
+
          Vector3f midTailPos = 0.5f * (outLeftP->tailV->position + outRightP->tailV->position);
          midP->heading = directionFromPoints(midP->headV->position, midTailPos);
          paths.push_back(midP);
