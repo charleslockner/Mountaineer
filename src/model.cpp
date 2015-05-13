@@ -51,6 +51,7 @@ void Model::CalculateNormals() {
 
       // Fill in face normals
       face->normal = ((v3->position - v2->position).cross(v1->position - v2->position)).normalized();
+
       // Add face normal to neighboring vertex normals
       v1->normal += face->normal;
       v2->normal += face->normal;

@@ -2,6 +2,7 @@
 #define __TERRAIN_H__
 
 #include "matrix_math.h"
+#include "geometry.h"
 #include "grid.h"
 
 #include <vector>
@@ -16,16 +17,17 @@ public:
 
    Model * GenerateModel();
    void BuildStep();
-   VertDist FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist);
+   PointDist FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist);
 
 private:
-   class Path {
+   class Path: public GPoint {
    public:
       Vertex *headV, *tailV;
       Path *leftP, *rightP;
       Eigen::Vector3f heading;
 
       void CalculateHeading();
+      Eigen::Vector3f getPosition();
    };
 
    Model * model;
@@ -36,10 +38,10 @@ private:
    float edgeLength;
 
    void ExtendPaths();
+   void SmoothPathPositions();
    void MergePathHeads();
    void AddNeededPaths();
-   void AddVertices();
-   void CreateFaces();
+   void AddVerticesAndFaces();
    void RemoveCrossPaths();
 
    void HandleSameHead(Path * leftP, Path * rightP);

@@ -1,6 +1,7 @@
 
 #include "terrain.h"
 #include "stdio.h"
+#include "assert.h"
 
 #include <algorithm>
 
@@ -32,14 +33,36 @@ static float square(float f) {
    return f * f;
 }
 
+static Vector3f directionFromPoints(Vector3f head, Vector3f tail) {
+   Vector3f diff = head - tail;
+   if ((!diff(0) && !diff(1) && !diff(2)) || diff(0) > 10000 || diff(0) < -10000 || diff(1) > 10000 || diff(1) < -10000 || diff(2) > 10000 || diff(2) < -10000)
+      printf("diff = %f %f %f\n", diff(0), diff(1), diff(2));
+   return diff.normalized();
+}
+
 void TerrainGenerator::Path::CalculateHeading() {
+   if (headV->position(0) - tailV->position(0) == 0 && headV->position(1) - tailV->position(1) == 0 && headV->position(2) - tailV->position(2) == 0)
+      printf("headV == tailV\n");
    heading = (headV->position - tailV->position).normalized();
+   if (!heading(0) && !heading(1) && !heading(2)) {
+      printf("heading is bad:\n");
+      printf("head = %f %f %f\n", headV->position(0), headV->position(1), headV->position(2));
+      printf("tail = %f %f %f\n", tailV->position(0), tailV->position(1), tailV->position(2));
+      printf("heading = %f %f %f\n", heading(0), heading(1), heading(2));
+   }
+
+   if (heading(0) > 10000 || heading(0) < -10000 || heading(1) > 10000 || heading(1) < -10000 || heading(2) > 10000 || heading(2) < -10000)
+      printf("Big heading = %f %f %f\n", heading(0), heading(1), heading(2));
+}
+
+Vector3f TerrainGenerator::Path::getPosition() {
+   return headV->getPosition();
 }
 
 Model * TerrainGenerator::GenerateModel() {
    edgeLength = 1;
 
-   grid = new SpatialGrid(1000, 2 * edgeLength);
+   // grid = new SpatialGrid(1000, 2 * edgeLength);
 
    // The general direction the mesh is heading towards
    Vector3f ultimateDirection = Vector3f(0.25,1.0,-0.25).normalized();
@@ -47,52 +70,24 @@ Model * TerrainGenerator::GenerateModel() {
    Vector3f bitangent = ultimateDirection;
    Vector3f tangent = crossWithUp(bitangent);
    Vector3f normal = tangent.cross(bitangent).normalized();
-   float halfLength = edgeLength / 2.0f;
 
-   // Set up the beginning vertices
-   Vertex * vTop = new Vertex();
-   vTop->index = 0;
-   vTop->normal = normal;
-   vTop->tangent = tangent;
-   vTop->bitangent = bitangent;
-   vTop->position = halfLength * bitangent;
-   vTop->uv = Vector2f(0.5f, 1.0f);
-
-   Vertex * vLeft = new Vertex();
-   vLeft->index = 1;
-   vLeft->normal = normal;
-   vLeft->tangent = tangent;
-   vLeft->bitangent = bitangent;
-   vLeft->position = -halfLength * bitangent - halfLength * tangent;
-   vLeft->uv = Vector2f(0.0f, 0.0f);
-
-   Vertex * vRight = new Vertex();
-   vRight->index = 2;
-   vRight->normal = normal;
-   vRight->tangent = tangent;
-   vRight->bitangent = bitangent;
-   vRight->position = -halfLength * bitangent + halfLength * tangent;
-   vRight->uv = Vector2f(1.0f, 0.0f);
-
-   Face * face = new Face();;
-   face->vertices[0] = vTop;
-   face->vertices[1] = vLeft;
-   face->vertices[2] = vRight;
-   face->normal = normal;
+   // Set up the first vertex
+   Vertex * vStart = new Vertex();
+   vStart->index = 0;
+   vStart->normal = normal;
+   vStart->tangent = tangent;
+   vStart->bitangent = bitangent;
+   vStart->position = Vector3f(0,0,0);
+   vStart->uv = Vector2f(0.5f, 0.5f);
 
    // Initialize the model
    model = new Model();
    model->vertices = std::vector<Vertex *>(0);
    model->faces = std::vector<Face *>(0);
 
-   // Add the 3 vertices to the model list and the grid
-   model->vertices.push_back(vTop);
-   model->vertices.push_back(vLeft);
-   model->vertices.push_back(vRight);
-   model->faces.push_back(face);
-   grid->Add(vTop);
-   grid->Add(vLeft);
-   grid->Add(vRight);
+   // Add the vertex to the model and grid
+   model->vertices.push_back(vStart);
+   // grid->Add(vStart);
 
    model->hasNormals = true;
    model->hasTexCoords = true;
@@ -103,53 +98,18 @@ Model * TerrainGenerator::GenerateModel() {
    model->bufferVertices();
    model->bufferIndices();
 
-   // Create the first 6 paths
+   // Initialize the first paths
+   int numInitPaths = 5;
    paths = std::vector<Path *>(0);
-   Path * p;
 
-   p = new Path();
-   p->headV = model->vertices[0];
-   p->tailV = model->vertices[1];
-   p->heading = (p->headV->position - p->tailV->position).normalized();
-   paths.push_back(p);
-   p = new Path();
-   p->headV = model->vertices[0];
-   p->tailV = model->vertices[2];
-   p->heading = (p->headV->position - p->tailV->position).normalized();
-   paths.push_back(p);
-   p = new Path();
-   p->headV = model->vertices[1];
-   p->tailV = model->vertices[2];
-   p->heading = (p->headV->position - p->tailV->position).normalized();
-   paths.push_back(p);
-   p = new Path();
-   p->headV = model->vertices[1];
-   p->tailV = model->vertices[0];
-   p->heading = (p->headV->position - p->tailV->position).normalized();
-   paths.push_back(p);
-   p = new Path();
-   p->headV = model->vertices[2];
-   p->tailV = model->vertices[0];
-   p->heading = (p->headV->position - p->tailV->position).normalized();
-   paths.push_back(p);
-   p = new Path();
-   p->headV = model->vertices[2];
-   p->tailV = model->vertices[1];
-   p->heading = (p->headV->position - p->tailV->position).normalized();
-   paths.push_back(p);
-
-   paths[0]->leftP = paths[1];
-   paths[0]->rightP = paths[5];
-   paths[1]->leftP = paths[2];
-   paths[1]->rightP = paths[0];
-   paths[2]->leftP = paths[3];
-   paths[2]->rightP = paths[1];
-   paths[3]->leftP = paths[4];
-   paths[3]->rightP = paths[2];
-   paths[4]->leftP = paths[5];
-   paths[4]->rightP = paths[3];
-   paths[5]->leftP = paths[0];
-   paths[5]->rightP = paths[4];
+   for (int i = 0; i < numInitPaths; i++)
+      paths.push_back(new Path());
+   for (int i = 0; i < numInitPaths; i++) {
+      paths[i]->headV = vStart;
+      paths[i]->leftP = paths[(i+1) % numInitPaths];
+      paths[i]->rightP = paths[(i-1 + numInitPaths) % numInitPaths];
+      paths[i]->heading = (cos(2*M_PI*i/numInitPaths) * bitangent - sin(2*M_PI*i/numInitPaths) * tangent).normalized();
+   }
 
    stepCnt = 0;
 
@@ -159,10 +119,10 @@ Model * TerrainGenerator::GenerateModel() {
 void TerrainGenerator::BuildStep() {
 
    ExtendPaths();
+   // SmoothPathPositions();
    MergePathHeads();
    AddNeededPaths();
-   AddVertices();
-   CreateFaces();
+   AddVerticesAndFaces();
    RemoveCrossPaths();
 
    model->vertexCount = model->vertices.size();
@@ -180,11 +140,8 @@ void TerrainGenerator::ExtendPaths() {
    int numPaths = paths.size();
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
-      Vector3f randDir = (randRange(-0.1, 0.1) * p->headV->normal);
-      Vector3f leftPos = p->leftP->headV->position + edgeLength * p->leftP->heading;
-      Vector3f rightPos = p->rightP->headV->position + edgeLength * p->rightP->heading;
-      Vector3f midPnt = 0.5f * (leftPos + rightPos);
-      Vector3f newPos = 0.5f * (midPnt + (p->headV->position + edgeLength * (p->heading + randDir)));
+      Vector3f randY = randRange(-0.1, 0.1) * p->headV->normal;
+      Vector3f newPos = p->headV->position + edgeLength * (p->heading + randY).normalized();
 
       // Add vertex created from extending the path
       Vertex * v = new Vertex();
@@ -199,8 +156,26 @@ void TerrainGenerator::ExtendPaths() {
       // Update the path
       p->tailV = p->headV;
       p->headV = v;
+
       p->CalculateHeading();
    }
+}
+
+void TerrainGenerator::SmoothPathPositions() {
+   int numPaths = paths.size();
+   std::vector<Vector3f> updatedPositions = std::vector<Vector3f>(numPaths);
+
+   for (int i = 0; i < numPaths; i++) {
+      Path * p = paths[i];
+      Vector3f midTail = 0.5f * (p->leftP->tailV->position + p->rightP->tailV->position);
+      Vector3f midHead = midTail + edgeLength * Mmath::SlerpVec3(p->leftP->heading, p->rightP->heading, 0.5f);
+      Vector3f midDir = directionFromPoints(midHead, midTail);
+
+      updatedPositions[i] = p->headV->position;
+   }
+
+   for (int i = 0; i < numPaths; i++)
+      paths[i]->headV->position = updatedPositions[i];
 }
 
 void TerrainGenerator::MergePathHeads() {
@@ -209,15 +184,26 @@ void TerrainGenerator::MergePathHeads() {
       Path * midP = paths[i];
       Path * rightP = midP->rightP;
 
-      float headDistSq = (midP->headV->position - rightP->headV->position).squaredNorm();
+      Vertex * keepV = midP->headV;
+      Vertex * removeV = rightP->headV;
+
+      float headDistSq = (keepV->position - removeV->position).squaredNorm();
       float minDistSq = square(0.6f * edgeLength);
 
       // If distance between the heads is too small
       if (midP->tailV != rightP->tailV && headDistSq < minDistSq) {
-         // merge the right path head with the middle
-         midP->headV->position = 0.5f * (midP->headV->position + rightP->headV->position);
-         rightP->headV = midP->headV;
-         delete(rightP->headV);
+         // Delete the right vertex and set all paths that had this vertex to the mid vertex
+         Path * curP = rightP;
+         int numConverging = 1;
+         while (curP->headV == removeV) {
+            keepV->position += curP->headV->position;
+            curP->headV = keepV;
+            numConverging++;
+            curP = curP->rightP;
+         }
+
+         keepV->position = (1.0f/numConverging) * keepV->position;
+         delete(removeV);
       }
    }
 }
@@ -242,58 +228,51 @@ void TerrainGenerator::AddNeededPaths() {
          Matrix3f iTBN = Mmath::InverseTBN(midV->tangent, midV->bitangent, midV->normal);
          midV->uv = outLeftP->tailV->uv + (iTBN * (midV->position - outLeftP->tailV->position)).head<2>();
 
+         float distSqL = (midV->position - outLeftP->tailV->position).squaredNorm();
+         float distSqR = (midV->position - outRightP->tailV->position).squaredNorm();
+
          // Create 2 new paths who's head is the new vertex
-         Path * midLeftP = new Path();
-         Path * midRightP = new Path();
-
-         midLeftP->headV = midV;
-         midLeftP->tailV = outLeftP->tailV;
-         midLeftP->leftP = outLeftP;
-         midLeftP->rightP = midRightP;
-         midLeftP->CalculateHeading();
-
-         midRightP->headV = midV;
-         midRightP->tailV = outRightP->tailV;
-         midRightP->leftP = midLeftP;
-         midRightP->rightP = outRightP;
-         midRightP->CalculateHeading();
-
-         paths.push_back(midLeftP);
-         paths.push_back(midRightP);
+         Path * midP = new Path();
+         midP->headV = midV;
+         midP->tailV = distSqL < distSqR ? outLeftP->tailV : outRightP->tailV;
+         midP->leftP = outLeftP;
+         midP->rightP = outRightP;
+         // printf("midLeftP head = %f %f %f\n", midLeftP->headV->position(0), midLeftP->headV->position(1), midLeftP->headV->position(2));
+         // printf("midLeftP tail = %f %f %f\n", midLeftP->tailV->position(0), midLeftP->tailV->position(1), midLeftP->tailV->position(2));
+         Vector3f midTailPos = 0.5f * (outLeftP->tailV->position + outRightP->tailV->position);
+         midP->heading = directionFromPoints(midP->headV->position, midTailPos);
+         paths.push_back(midP);
 
          // Update outer path references
-         outLeftP->rightP = midLeftP;
-         outRightP->leftP = midRightP;
+         outLeftP->rightP = midP;
+         outRightP->leftP = midP;
       }
    }
 }
 
-void TerrainGenerator::AddVertices() {
-   int numPaths = paths.size();
-   for (int i = 0; i < numPaths; i++) {
-      if (paths[i]->headV != paths[i]->rightP->headV) {
-         Vertex * v = paths[i]->headV;
-         v->index = model->vertices.size();
-         model->vertices.push_back(v);
-         grid->Add(v);
-      }
-   }
-}
-
-void TerrainGenerator::CreateFaces() {
+void TerrainGenerator::AddVerticesAndFaces() {
    int numPaths = paths.size();
    for (int i = 0; i < numPaths; i++) {
       Path * selfP = paths[i];
       Path * rightP = selfP->rightP;
 
-      if (selfP->headV == rightP->headV && selfP->tailV == rightP->tailV)
-         printf("Overlapping path at %d. woops...\n", i);
-      else if (selfP->headV == rightP->headV)
+      // Add the vertex
+      if (selfP->headV != rightP->headV) {
+         Vertex * v = selfP->headV;
+         v->index = model->vertices.size();
+         model->vertices.push_back(v);
+         // grid->Add(v);
+      }
+
+      // Add 1 or 2 faces depending
+      if (selfP->headV == rightP->headV)
          HandleSameHead(selfP, rightP);
       else if (selfP->tailV == rightP->tailV)
          HandleSameTail(selfP, rightP);
-      else
+      else if (selfP->headV != rightP->headV && selfP->tailV != rightP->tailV)
          HandleBothDiff(selfP, rightP);
+      else
+         printf("Overlapping path at %d. woops...\n", i);
    }
 }
 
@@ -368,6 +347,6 @@ void TerrainGenerator::RemoveCrossPaths() {
    }
 }
 
-VertDist TerrainGenerator::FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist) {
+PointDist TerrainGenerator::FindClosestVertex(Eigen::Vector3f targetPnt, float maxDist) {
    return grid->FindClosest(targetPnt, maxDist);
 }

@@ -1,26 +1,26 @@
 #include "grid.h"
 
 // --------------------- Cell Stuff --------------------- //
-Cell::Cell() {
-   vertices = std::vector<Vertex *>(0);
+SpatialGrid::Cell::Cell() {
+   points = std::vector<GPoint *>(0);
 }
-Cell::~Cell() {}
+SpatialGrid::Cell::~Cell() {}
 
-void Cell::Add(Vertex * vert) {
-   vertices.push_back(vert);
+void SpatialGrid::Cell::Add(GPoint * pnt) {
+   points.push_back(pnt);
 }
 
-VertDist Cell::FindClosest(Eigen::Vector3f targetPnt, float maxDist) {
-   VertDist shortest;
-   shortest.vert = NULL;
+PointDist SpatialGrid::Cell::FindClosest(Eigen::Vector3f targetPnt, float maxDist) {
+   PointDist shortest;
+   shortest.pnt = NULL;
 
-   if (vertices.size() == 0)
+   if (points.size() == 0)
       return shortest;
 
-   float shortestDistSq = (targetPnt - vertices[0]->position).squaredNorm();
+   float shortestDistSq = (targetPnt - points[0]->getPosition()).squaredNorm();
    int shortestIndex = 0;
-   for (int i = 1; i < vertices.size(); i++) {
-      float distSq = (targetPnt - vertices[i]->position).squaredNorm();
+   for (int i = 1; i < points.size(); i++) {
+      float distSq = (targetPnt - points[i]->getPosition()).squaredNorm();
       if (distSq < shortestDistSq) {
          shortestDistSq = distSq;
          shortestIndex = i;
@@ -28,17 +28,13 @@ VertDist Cell::FindClosest(Eigen::Vector3f targetPnt, float maxDist) {
    }
 
    if (shortestDistSq < maxDist * maxDist)
-      shortest.vert = vertices[shortestIndex];
+      shortest.pnt = points[shortestIndex];
    shortest.distSq = shortestDistSq;
 
    return shortest;
 }
 
-std::vector<Vertex *> Cell::GetPoints() {
-   return vertices;
-}
-
-// -------------------- Spatial Grid -------------------- //
+// ----------------- Spatial Grid Stuff ----------------- //
 SpatialGrid::SpatialGrid(int maxAcross, float cellWidth)
 : maxAcross(maxAcross), cellWidth(cellWidth) {
 
@@ -67,14 +63,15 @@ uint SpatialGrid::zSize() {
    return cells[0][0].size();
 }
 
-void SpatialGrid::Add(Vertex * vert) {
-   Eigen::Vector3i indexV = FindIndicesFromPoint(vert->position);
+void SpatialGrid::Add(GPoint * pnt) {
+   Eigen::Vector3i indexV = FindIndicesFromPoint(pnt->getPosition());
    int xIndex = indexV(0);
    int yIndex = indexV(1);
    int zIndex = indexV(2);
 
    if (xIndex < 0) {
       uint addSpace = -xIndex + ADD_RESIZE_SPACE;
+      printf("add space = %d\n", addSpace);
       AddSpaceNegX(addSpace);
       xIndexOffset += addSpace;
       xIndex += addSpace;
@@ -100,25 +97,25 @@ void SpatialGrid::Add(Vertex * vert) {
    else if (zIndex >= zSize())
       AddSpacePosZ(zIndex - zSize() + ADD_RESIZE_SPACE);
 
-   cells[xIndex][yIndex][zIndex].Add(vert);
+   cells[xIndex][yIndex][zIndex].Add(pnt);
 }
 
-VertDist SpatialGrid::FindClosest(Eigen::Vector3f target, float maxDist) {
+PointDist SpatialGrid::FindClosest(Eigen::Vector3f target, float maxDist) {
    Eigen::Vector3i indexV = FindIndicesFromPoint(target);
    Eigen::Vector3i worldIndexV = GetVirtualIndexFromReal(indexV);
    Cell * cell = GetCellAt(indexV);
 
-   VertDist shortestVertDist;
-   shortestVertDist.vert = NULL;
+   PointDist shortestPointDist;
+   shortestPointDist.pnt = NULL;
 
    if (!cell)
-      return shortestVertDist;
+      return shortestPointDist;
 
-   shortestVertDist = cell->FindClosest(target, maxDist);
+   shortestPointDist = cell->FindClosest(target, maxDist);
 
    // If there is a vertex within the same cell as the target
-   if (shortestVertDist.vert) {
-      float foundDistSq = shortestVertDist.distSq;
+   if (shortestPointDist.pnt) {
+      float foundDistSq = shortestPointDist.distSq;
 
       // Calculate the grid boundaries
       Eigen::Vector3f gridPositionNegV = cellWidth * worldIndexV.cast<float>();
@@ -204,17 +201,17 @@ VertDist SpatialGrid::FindClosest(Eigen::Vector3f target, float maxDist) {
       for (int i = 0; i < gridIndices.size(); i++) {
          Cell * iCell = GetCellAt(gridIndices[i]);
          if (iCell) {
-            VertDist iVertDist = iCell->FindClosest(target, maxDist);
-            if (iVertDist.vert && iVertDist.distSq < shortestVertDist.distSq)
-               shortestVertDist = iVertDist;
+            PointDist iPointDist = iCell->FindClosest(target, maxDist);
+            if (iPointDist.pnt && iPointDist.distSq < shortestPointDist.distSq)
+               shortestPointDist = iPointDist;
          }
       }
 
       // Return the closest vertex
-      return shortestVertDist;
+      return shortestPointDist;
    }
    else {
-      return shortestVertDist; // Figure this out later
+      return shortestPointDist; // Figure this out later
    }
 }
 
@@ -229,7 +226,7 @@ Eigen::Vector3i SpatialGrid::FindIndicesFromPoint(Eigen::Vector3f pnt) {
    return Eigen::Vector3i(xIndex, yIndex, zIndex);
 }
 
-Cell * SpatialGrid::GetCellAt(Eigen::Vector3i indexV) {
+SpatialGrid::Cell * SpatialGrid::GetCellAt(Eigen::Vector3i indexV) {
    if ( indexV(0) < 0 || indexV(0) >= xSize() ||
         indexV(1) < 0 || indexV(1) >= ySize() ||
         indexV(2) < 0 || indexV(2) >= zSize() )

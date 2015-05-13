@@ -7,6 +7,19 @@
 
 namespace Mmath {
    template <typename T>
+   T clamp(
+      const T low,
+      const T high,
+      T val
+   ) {
+      if (val < low)
+         val = low;
+      else if (val > high)
+         val = high;
+      return val;
+   }
+
+   template <typename T>
    Eigen::Matrix<T,4,4> TranslationMatrix(
       const Eigen::Matrix<T,3,1> tns
    ) {
@@ -59,6 +72,16 @@ namespace Mmath {
       Eigen::Matrix<T,3,3> rotM;
       rotM = Eigen::AngleAxis<T>(angle, axis);
       return rotM * subject;
+   }
+
+   template <typename T>
+   Eigen::Matrix<T,3,1> SlerpVec3(
+      const Eigen::Matrix<T,3,1> a,
+      const Eigen::Matrix<T,3,1> b,
+      T ratio
+   ) {
+      ratio = clamp(T(0),T(1),ratio);
+      return ((T(1) - ratio) * a + ratio * b).normalized();
    }
 
    template <typename T>

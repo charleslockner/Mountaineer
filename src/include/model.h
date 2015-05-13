@@ -2,6 +2,7 @@
 #define __MODEL_H__
 
 #include "matrix_math.h"
+#include "geometry.h"
 #include <vector>
 
 #define NUM_FACE_EDGES 3
@@ -47,7 +48,8 @@ typedef struct BoneWeight {
    float weight;
 } BoneWeight;
 
-typedef struct Vertex {
+class Vertex: public GPoint {
+public:
    unsigned int index;
    Eigen::Vector3f position;
    Eigen::Vector3f normal;
@@ -58,7 +60,11 @@ typedef struct Vertex {
    float boneInfCount;
    float boneIndices[MAX_INFLUENCES];
    float boneWeights[MAX_INFLUENCES];
-} Vertex;
+
+   Eigen::Vector3f getPosition() {
+      return position;
+   }
+};
 
 typedef struct Face {
    Vertex * vertices[NUM_FACE_EDGES];

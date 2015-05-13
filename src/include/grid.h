@@ -6,6 +6,7 @@
 
 #include "model.h"
 #include "matrix_math.h"
+#include "geometry.h"
 
 #define MIN_ACROSS 1
 #define ADD_RESIZE_SPACE 10
@@ -13,22 +14,9 @@
 typedef unsigned int uint;
 
 typedef struct {
-   Vertex * vert;
+   GPoint * pnt;
    float distSq;
-} VertDist;
-
-class Cell {
-public:
-   Cell();
-   ~Cell();
-
-   void Add(Vertex * pnt);
-   VertDist FindClosest(Eigen::Vector3f target, float maxDist);
-   std::vector<Vertex *> GetPoints();
-
-private:
-   std::vector<Vertex *> vertices;
-};
+} PointDist;
 
 class SpatialGrid {
 public:
@@ -38,10 +26,22 @@ public:
    uint xSize();
    uint ySize();
    uint zSize();
-   void Add(Vertex * pnt);
-   VertDist FindClosest(Eigen::Vector3f target, float maxDist);
+   void Add(GPoint * pnt);
+   PointDist FindClosest(Eigen::Vector3f target, float maxDist);
 
 private:
+   class Cell {
+   public:
+      Cell();
+      ~Cell();
+
+      void Add(GPoint * pnt);
+      PointDist FindClosest(Eigen::Vector3f target, float maxDist);
+
+   private:
+      std::vector<GPoint *> points;
+   };
+
    uint maxAcross;
    float cellWidth;
    int xIndexOffset, yIndexOffset, zIndexOffset;
