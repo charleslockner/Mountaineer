@@ -19,6 +19,8 @@ varying vec2 vUV;
 void main(void) {
    vWorldPosition = vec3(uModelM * vec4(aPosition, 1.0));
    vWorldTangent = vec3(uModelM * vec4(aTangent, 0.0));
+   // vec3(inverse(transpose(uModelM)) * vec4(aTangent, 0.0));
+
    vWorldBitangent = vec3(uModelM * vec4(aBitangent, 0.0));
    vWorldNormal = vec3(uModelM * vec4(aNormal, 0.0));
    vColor = aColor;

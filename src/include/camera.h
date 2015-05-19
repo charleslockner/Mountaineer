@@ -1,36 +1,33 @@
 #ifndef __CAMERA_H__
 #define __CAMERA_H__
 
-#include "matrix_math.h"
+#include "entity.h"
 
-class Camera {
+class Camera : public Entity {
 public:
-   Eigen::Vector3f position;
-   Eigen::Vector3f direction;
-   Eigen::Vector3f up;
+   Camera(Eigen::Vector3f pos, Eigen::Quaternionf rot);
+   Camera(Eigen::Vector3f pos);
 
-   float sensitivity;
+   void aim(double deltaYaw, double deltaPitch, double deltaRoll);
+   void rigidFollow(Eigen::Vector3f pos, Eigen::Quaternionf rot);
+   void smoothFollow(Eigen::Vector3f pos, Eigen::Quaternionf rot);
 
-   Camera(Eigen::Vector3f pos, Eigen::Vector3f dir, Eigen::Vector3f up);
-   ~Camera();
+   void setAspectRatio(float ar);
+   void setHFOV(float hfov);
+   void setNearDistance(float near);
+   void setFarDistance(float far);
 
-   void moveTo(Eigen::Vector3f pos);
-   void moveAlong(Eigen::Vector3f dir, float dist);
-   void moveRight(float dist);
-   void moveLeft(float dist);
-   void moveForward(float dist);
-   void moveBackward(float dist);
-   void moveUp(float dist);
-   void moveDown(float dist);
-   void lookAt(Eigen::Vector3f pnt);
-   void aim(double deltaX, double deltaY);
    Eigen::Matrix4f getViewM();
    Eigen::Matrix4f getProjectionM();
 
 private:
-   void boundPitch();
+   float             _hfov;
+   float             _aspect;
+   float             _near;
+   float             _far;
 
-   Eigen::Matrix4f projectionM;
+   Eigen::Matrix4f   _viewM;
+   Eigen::Matrix4f   _projectionM;
 };
 
 #endif // __CAMERA__

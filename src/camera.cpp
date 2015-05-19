@@ -4,95 +4,61 @@
 #include <stdio.h>
 #include <iostream>
 
-#define BASE_SENSITIVITY 0.005
-#define PITCH_LIMIT 1.484 // 85 degrees
-
-#define PI 3.1415927f
-
-#define HFOV   1.0f //PI/4.0f
-#define ASPECT 4.0f / 3.0f
+#define HFOV   1.0f
+#define ASPECT (4.0f/3.0f)
 #define NEAR   0.1f
-#define FAR    1000.0f
+#define FAR    1500.0f
 
-Camera::Camera(Eigen::Vector3f pos, Eigen::Vector3f dir, Eigen::Vector3f upVec) {
-   position = pos;
-   direction = dir.normalized();
-   up = upVec.normalized();
-
-   boundPitch();
-
-   sensitivity = 0.5;
-
-   projectionM = Mmath::PerspectiveMatrix(HFOV, ASPECT, NEAR, FAR);
+Camera::Camera(Eigen::Vector3f pos, Eigen::Quaternionf rot) :
+   Entity(pos, rot), _hfov(HFOV), _aspect(ASPECT), _near(NEAR), _far(FAR) {
+}
+Camera::Camera(Eigen::Vector3f pos) :
+   Entity(pos), _hfov(HFOV), _aspect(ASPECT), _near(NEAR), _far(FAR) {
 }
 
-Camera::~Camera() {}
-
-void Camera::moveTo(Eigen::Vector3f pos) {
-   position = pos;
+void Camera::aim(double deltaYaw, double deltaPitch, double deltaRoll) {
+   rotateAlong(deltaYaw, UP_BASE);
+   rotateAlong(deltaPitch, LEFT_BASE);
+   rotateAlong(deltaRoll, FORWARD_BASE);
 }
 
-void Camera::moveAlong(Eigen::Vector3f dir, float dist) {
-   position = position + dist * dir.normalized();
-}
+void Camera::rigidFollow(Eigen::Vector3f pos, Eigen::Quaternionf rot) {
+   if (pos(0) != position(0) || pos(1) != position(1) || pos(2) != position(2)) {
+      Eigen::Vector3f dirToPos = (pos - position).normalized();
+      float           distTo = (pos - position).norm();
 
-void Camera::moveLeft(float dist) {
-   moveAlong(up.cross(direction).normalized(), dist);
-}
-
-void Camera::moveRight(float dist) {
-   moveAlong(- up.cross(direction).normalized(), dist);
-}
-
-void Camera::moveForward(float dist) {
-   moveAlong(direction, dist);
-}
-
-void Camera::moveBackward(float dist) {
-   moveAlong(-direction, dist);
-}
-
-void Camera::moveUp(float dist) {
-   moveAlong(up, dist);
-}
-
-void Camera::moveDown(float dist) {
-   moveAlong(-up, dist);
-}
-
-void Camera::lookAt(Eigen::Vector3f pnt) {
-   Eigen::Vector3f dir = pnt - position;
-   direction = dir.normalized();
-}
-
-void Camera::boundPitch() {
-   float pitch = M_PI/2 - acos(up.dot(direction));
-
-   if (pitch > PITCH_LIMIT)
-      pitch = PITCH_LIMIT;
-   if (pitch < -PITCH_LIMIT)
-      pitch = -PITCH_LIMIT;
-
-   direction.y() = sin(pitch);
-}
-
-void Camera::aim(double deltaX, double deltaY) {
-   if (deltaX || deltaY) {
-      float pitchDelta = BASE_SENSITIVITY * sensitivity * deltaY;
-      float yawDelta = BASE_SENSITIVITY * sensitivity * deltaX;
-
-      Eigen::Vector3f yawApplied = Mmath::RotateVec3(direction, -yawDelta, up);
-      Eigen::Vector3f leftVector = up.cross(direction).normalized();
-
-      direction = Mmath::RotateVec3(yawApplied, pitchDelta, leftVector);
-      boundPitch();
+      moveAlong(dirToPos, (distTo < 1 ? 0.05 * distTo : 0.05));
+      rotation = rotation.slerp(0.01, rot);
    }
 }
 
+void Camera::smoothFollow(Eigen::Vector3f pos, Eigen::Quaternionf rot) {
+   if (pos(0) != position(0) || pos(1) != position(1) || pos(2) != position(2)) {
+      Eigen::Vector3f dirToPos = (pos - position).normalized();
+      float           distance = (pos - position).norm();
+
+      moveAlong(dirToPos, 0.05 * distance);
+      rotation = rotation.slerp(0.1, rot);
+   }
+}
+
+void Camera::setAspectRatio(float ar) {
+   _aspect = ar;
+}
+void Camera::setHFOV(float hfov) {
+   _hfov = hfov;
+}
+void Camera::setNearDistance(float near) {
+   _near = near;
+}
+void Camera::setFarDistance(float far) {
+   _far = far;
+}
+
 Eigen::Matrix4f Camera::getViewM() {
-   return Mmath::LookAtMatrix(position, direction, up);
+   return Mmath::ViewMatrix(position, getForward(), getUp());
 }
 
 Eigen::Matrix4f Camera::getProjectionM() {
-   return projectionM;
+   return Mmath::PerspectiveMatrix(_hfov, _aspect, _near, _far);
 }

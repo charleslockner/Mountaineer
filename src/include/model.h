@@ -48,7 +48,7 @@ typedef struct BoneWeight {
    float weight;
 } BoneWeight;
 
-class Vertex: public GPoint {
+class Vertex: public Geom::Positionalf {
 public:
    unsigned int index;
    Eigen::Vector3f position;
@@ -61,8 +61,11 @@ public:
    float boneIndices[MAX_INFLUENCES];
    float boneWeights[MAX_INFLUENCES];
 
-   Eigen::Vector3f getPosition() {
+   inline Eigen::Vector3f getPosition() {
       return position;
+   }
+   inline void setPosition(Eigen::Vector3f pos) {
+      position = pos;
    }
 };
 

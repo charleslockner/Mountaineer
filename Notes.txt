@@ -4,3 +4,7 @@ http://kinesiology.calpoly.edu/content/faculty/profiles/bob_dark
 http://kinesiology.calpoly.edu/content/faculty/index
 
 Skybox from http://css.gamebanana.com/textures/1776
+
+Marc Zych
+
+// vec3(inverse(transpose(uModelM)) * vec4(aTangent, 0.0));

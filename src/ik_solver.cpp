@@ -92,7 +92,7 @@ class BaseLimbCostFunctor {
 private:
    Model * model;
    std::vector<int> boneIndices;
-   Matrix4f rotScaleParentM;
+   Matrix4f scaleParentM;
    Eigen::Vector3f goal;
    int numAngles;
 
@@ -100,13 +100,13 @@ public:
    BaseLimbCostFunctor(
       Model * model,
       std::vector<int>& boneIndices,
-      Matrix4f rotScaleParentM,
+      Matrix4f scaleParentM,
       Vector3f goal,
       int numAngles
    ) {
       this->model = model;
       this->boneIndices = boneIndices;
-      this->rotScaleParentM = rotScaleParentM;
+      this->scaleParentM = scaleParentM;
       this->goal = goal;
       this->numAngles = numAngles;
    }
@@ -115,7 +115,10 @@ public:
    bool operator()(T const* const* params, T* residuals) const {
       T const* angles = params[0];
       Matrix<T,3,1> worldPos = Map<const Matrix<T,3,1> >(params[1], 3, 1);
-      Matrix<T,4,4> baseM = Mmath::TranslationMatrix(worldPos) * rotScaleParentM.cast<T>();
+      Quaternion<T> worldRot = Map<const Quaternion<T> >(params[2]);
+      Matrix<T,4,4> baseM = Mmath::TranslationMatrix(worldPos) *
+                            Mmath::RotationMatrix(worldRot) *
+                            scaleParentM.cast<T>();
       Matrix<T,3,1> goalT = goal.cast<T>();
       Matrix<T,3,1> offset = Matrix<T,3,1>(T(0), T(0), T(0));
       Matrix<T,3,1> endPoint = solveEndEffector(model, angles, numAngles, boneIndices, baseM, offset);
@@ -134,7 +137,9 @@ void IKEntity::solveLimbs(Eigen::Matrix4f parentM, std::vector<IKLimb *> limbs) 
 
    // Setup the position as a double vec3
    Vector3d positionD = position.cast<double>();
+   Quaterniond rotationD = rotation.cast<double>();
    double * posData = positionD.data();
+   double * rotData = (double *)(& rotationD);
 
    std::vector<std::vector<double> > angleValuesByLimb = std::vector<std::vector<double> >(limbs.size());
 
@@ -155,20 +160,20 @@ void IKEntity::solveLimbs(Eigen::Matrix4f parentM, std::vector<IKLimb *> limbs) 
       // Create the cost functor and problem
       if (limb->isBase) {
          // Create the rotScaleParent part of the base matrix
-         Matrix4f rotM = Mmath::RotationMatrix(rotation);
          Matrix4f sclM = Mmath::ScaleMatrix(scale);
-         Matrix4f rotScaleParentM = rotM * sclM * parentM;
+         Matrix4f scaleParentM = sclM * parentM;
 
          // Create the Cost function
          ceres::DynamicAutoDiffCostFunction<BaseLimbCostFunctor, 4> * costFunction =
             new ceres::DynamicAutoDiffCostFunction<BaseLimbCostFunctor, 4>(
-               new BaseLimbCostFunctor(this->model, limb->boneIndices, rotScaleParentM, limb->goal, angleCount));
+               new BaseLimbCostFunctor(this->model, limb->boneIndices, scaleParentM, limb->goal, angleCount));
 
          // Set up the cost function parameter and residual blocks
          costFunction->AddParameterBlock(angleCount); // angles
          costFunction->AddParameterBlock(3);          // position
+         costFunction->AddParameterBlock(4);          // rotation
          costFunction->SetNumResiduals(3);            // residuals
-         problem.AddResidualBlock(costFunction, NULL, angleData, posData);
+         problem.AddResidualBlock(costFunction, NULL, angleData, posData, rotData);
 
       } else {
          // Set up the base matrix
@@ -215,4 +220,5 @@ void IKEntity::solveLimbs(Eigen::Matrix4f parentM, std::vector<IKLimb *> limbs) 
 
    // Update the entity's position in case a base limb was used
    position = positionD.cast<float>();
+   rotation = rotationD.cast<float>();
 }

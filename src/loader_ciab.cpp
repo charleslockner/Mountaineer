@@ -44,7 +44,7 @@ static void readHeader(FILE *fp, Model * model) {
    for (int i = 0; i < model->faces.size(); i++)
       model->faces[i] = new Face();
 
-   printf("verts: %d, faces: %d, bones: %d, anims: %d\n", model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
+   // printf("verts: %d, faces: %d, bones: %d, anims: %d\n", model->vertexCount, model->faceCount, model->boneCount, model->animationCount);
 }
 
 static void readPositions(FILE *fp, Model * model) {
@@ -194,7 +194,6 @@ static void readBoneInfluences(FILE *fp, Model * model) {
 
 static void readBoneTree(FILE *fp, Model * model) {
    fread(& model->boneRoot, sizeof(int), 1, fp);
-   printf("bone root after read %d\n", model->boneRoot);
 
    model->bones = std::vector<Bone>(model->boneCount);
 

@@ -7,6 +7,7 @@
 #include "light.h"
 #include "model.h"
 #include "entity.h"
+#include "climber.h"
 #include "terrain.h"
 
 #include <vector>
@@ -14,25 +15,24 @@
 #define WIN_HEIGHT 600
 #define WIN_WIDTH  1000
 
-#define CAMERA_SPEED 5.0
-
 LightData lightData;
 Camera * camera;
-std::vector<StaticEntity *> staticEntities;
+std::vector<ModelEntity *> staticEntities;
 std::vector<AnimatedEntity *> entities;
 
 double lastScreenX;
 double lastScreenY;
 int goalIndex = 0;
-Eigen::Vector3f goals[2];
-bool playing = false;
+int numGoals = 4;
+Eigen::Vector3f goals[4];
 
 bool keyToggles[512] = {false};
 
 Model * guyModel;
 AnimatedEntity * chebEnt;
-IKEntity * guyEnt, * trexEnt;
-StaticEntity * skyEnt, * terrainEnt;
+Climber * climberEnt;
+IKEntity * trexEnt;
+ModelEntity * skyEnt, * terrainEnt;
 EntityShader * entShader;
 TextureShader * texShader;
 TerrainGenerator * terrainGenerator;
@@ -49,11 +49,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_ESCAPE:
             glfwSetWindowShouldClose(window, GL_TRUE);
             break;
-         case GLFW_KEY_Q:
-         case GLFW_KEY_E:
+         case GLFW_KEY_ENTER:
          case GLFW_KEY_T:
          case GLFW_KEY_L:
          case GLFW_KEY_C:
+         case GLFW_KEY_I:
          case GLFW_KEY_M:
          case GLFW_KEY_G:
             break;
@@ -63,21 +63,20 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       }
    } else if (action == GLFW_RELEASE) {
       switch (key) {
-         case GLFW_KEY_Q:
-            playing = !playing;
-            if (playing)
-               guyEnt->playAnimation(0, 0, true);
-            else
-               guyEnt->stopAnimation(0, true);
-            break;
-         case GLFW_KEY_E:
-            goalIndex = goalIndex == 0 ? 1 : 0;
-            break;
-         case GLFW_KEY_T:
-            keyToggles[key] = !keyToggles[key];
+         case GLFW_KEY_ENTER:
+            goalIndex = (goalIndex + 1) % numGoals;
             break;
          case GLFW_KEY_M:
             guyModel->loadConstraints("assets/models/guy.cns");
+            break;
+         case GLFW_KEY_I:
+            keyToggles[key] = !keyToggles[key];
+            keyToggles[key] ?
+               climberEnt->animateWithIK() :
+               climberEnt->animateWithKeyframes();
+            break;
+         case GLFW_KEY_T:
+            keyToggles[key] = !keyToggles[key];
             break;
          case GLFW_KEY_L:
             keyToggles[key] = !keyToggles[key];
@@ -92,7 +91,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
                glEnable(GL_CULL_FACE);
             break;
          case GLFW_KEY_G:
-            terrainGenerator->BuildStep(camGoal, 10);
+            terrainGenerator->UpdateMesh(camGoal, 10);
          default:
             keyToggles[key] = false;
             break;
@@ -106,7 +105,7 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
       lastScreenY = y;
    }
 
-   camera->aim(x - lastScreenX, y - lastScreenY);
+   camera->aim(0.001 * (lastScreenX - x), 0.001 * (y - lastScreenY), 0);
    lastScreenX = x;
    lastScreenY = y;
 }
@@ -121,64 +120,21 @@ static void setupLights() {
    lightData.numLights = 2;
 }
 
-static void updateCameraPosition(double timePassed) {
-   float distTraveled = CAMERA_SPEED * timePassed;
-
-   if (keyToggles[GLFW_KEY_W])
-      camera->moveForward(distTraveled);
-   if (keyToggles[GLFW_KEY_S])
-      camera->moveBackward(distTraveled);
-   if (keyToggles[GLFW_KEY_A])
-      camera->moveLeft(distTraveled);
-   if (keyToggles[GLFW_KEY_D])
-      camera->moveRight(distTraveled);
-   if (keyToggles[GLFW_KEY_SPACE])
-      camera->moveUp(distTraveled);
-   if (keyToggles[GLFW_KEY_LEFT_SHIFT])
-      camera->moveDown(distTraveled);
-   if (keyToggles[GLFW_KEY_T])
-      camera->lookAt(entities[0]->position);
-}
-
-static void updateWorld(double timePassed) {
-   // skyEnt->position = camera->position + Eigen::Vector3f(0, -250, 0);
-
-   double speed = 3.0f;
-
-   camGoal = camera->position + 10 * camera->direction.normalized();
-   Vertex * vert;
-
-   // vert = grid->FindClosest(camGoal + Eigen::Vector3f(-3, 3, 0), 10);
-   // if (vert)
-   //    guyEnt->setLimbGoal(0, vert->position);
-
-   // vert = grid->FindClosest(camGoal + Eigen::Vector3f( 3, 3, 0), 10);
-   // if (vert)
-   //    guyEnt->setLimbGoal(1, vert->position);
-
-   // vert = grid->FindClosest(camGoal + Eigen::Vector3f(-3,-3, 0), 10);
-   // if (vert)
-   //    guyEnt->setLimbGoal(2, vert->position);
-
-   // vert = grid->FindClosest(camGoal + Eigen::Vector3f( 3,-3, 0), 10);
-   // if (vert)
-   //    guyEnt->setLimbGoal(3, vert->position);
-}
-
 static void initialize() {
    entShader = new ForwardShader();
    texShader = new TextureShader();
-   camera = new Camera(Eigen::Vector3f(0,0,10), Eigen::Vector3f(0,0,-1), Eigen::Vector3f(0,1,0));
+   camera = new Camera(Eigen::Vector3f(0,0,10));
+   camera->setHFOV(2);
    setupLights();
 
    // Skybox
    Model * skyModel = new Model();
    skyModel->loadCIAB("assets/models/skybox.ciab");
    skyModel->loadTexture("assets/textures/night.png", false);
-   skyEnt = new StaticEntity(Eigen::Vector3f(0,-250,0),
-                             Eigen::Quaternionf(1,0,0,0),
-                             Eigen::Vector3f(500,500,500),
-                             skyModel);
+   skyEnt = new ModelEntity(Eigen::Vector3f(0,-250,0),
+                            Eigen::Quaternionf(1,0,0,0),
+                            Eigen::Vector3f(500,500,500),
+                            skyModel);
 
    // Terrain Stuff
    terrainGenerator = new TerrainGenerator();
@@ -186,31 +142,30 @@ static void initialize() {
    terrainModel->loadTexture("assets/textures/rock.png", true);
    terrainModel->loadNormalMap("assets/textures/rock_NORM.png", true);
    terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
-   terrainEnt = new StaticEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
+   terrainEnt = new ModelEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
 
-   // Animated Entities
-   Model * chebModel = new Model();
-   chebModel->loadOBJ("assets/cheb/cheb2.obj");
-   chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
-   entities.push_back(new MocapEntity(Eigen::Vector3f(-10, 0, 0), chebModel));
-   entities[0]->playAnimation(0);
+   // // Animated Entities
+   // Model * chebModel = new Model();
+   // chebModel->loadOBJ("assets/cheb/cheb2.obj");
+   // chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   // chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
+   // entities.push_back(new MocapEntity(Eigen::Vector3f(-10, 0, 0), chebModel));
+   // entities[0]->playAnimation(0);
 
-   Model * trexModel = new Model();
-   trexModel->loadCIAB("assets/models/trex.ciab");
-   trexModel->loadTexture("assets/textures/masonry.png", false);
-   trexModel->loadNormalMap("assets/textures/masonry_NORM.png", false);
-   entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
-   entities[1]->playAnimation(0);
-   trexModel->bufferIndices();
+   // Model * trexModel = new Model();
+   // trexModel->loadCIAB("assets/models/trex.ciab");
+   // trexModel->loadTexture("assets/textures/masonry.png", false);
+   // trexModel->loadNormalMap("assets/textures/masonry_NORM.png", false);
+   // entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
+   // entities[1]->playAnimation(0);
 
    // The main character
    guyModel = new Model();
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_tex.bmp", false);
    guyModel->loadConstraints("assets/models/guy.cns");
-   guyEnt = new IKEntity(Eigen::Vector3f(0, 0, 25), guyModel);
-   guyModel->bufferIndices();
+   climberEnt = new Climber(Eigen::Vector3f(0, 0, 25), guyModel);
+   climberEnt->playAnimation(0);
 
    // Set up limbs
    std::vector<int> boneIndices = std::vector<int>(0);
@@ -223,7 +178,7 @@ static void initialize() {
    boneIndices.push_back(11);
    boneIndices.push_back(12);
    boneIndices.push_back(13);
-   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
    boneIndices.clear();
 
    boneIndices.push_back(0);
@@ -235,7 +190,7 @@ static void initialize() {
    boneIndices.push_back(17);
    boneIndices.push_back(18);
    boneIndices.push_back(19);
-   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
    boneIndices.clear();
 
    boneIndices.push_back(0);
@@ -244,7 +199,7 @@ static void initialize() {
    boneIndices.push_back(23);
    boneIndices.push_back(24);
    boneIndices.push_back(25);
-   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
    boneIndices.clear();
 
    boneIndices.push_back(0);
@@ -253,21 +208,91 @@ static void initialize() {
    boneIndices.push_back(28);
    boneIndices.push_back(29);
    boneIndices.push_back(30);
-   guyEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
    boneIndices.clear();
 
-   entities.push_back(guyEnt);
-
-   guyEnt->setLimbGoal(0, guyEnt->position);
-   guyEnt->setLimbGoal(1, guyEnt->position);
-   guyEnt->setLimbGoal(2, guyEnt->position);
-   guyEnt->setLimbGoal(3, guyEnt->position);
+   entities.push_back(climberEnt);
 }
 
-static void updateLoop(double deltaTime) {
-   updateCameraPosition(deltaTime);
-   updateWorld(deltaTime);
+static void updateCamera(double timePassed) {
 
+   if (keyToggles[GLFW_KEY_T]) {
+      camera->smoothFollow(climberEnt->position - 20 * climberEnt->getForward() + 15 * climberEnt->getUp(), climberEnt->rotation);
+   } else {
+      float distTraveled = 20 * timePassed;
+
+      if (keyToggles[GLFW_KEY_W])
+         camera->moveForward(distTraveled);
+      if (keyToggles[GLFW_KEY_S])
+         camera->moveBackward(distTraveled);
+      if (keyToggles[GLFW_KEY_A])
+         camera->moveLeft(distTraveled);
+      if (keyToggles[GLFW_KEY_D])
+         camera->moveRight(distTraveled);
+      if (keyToggles[GLFW_KEY_SPACE])
+         camera->moveUp(distTraveled);
+      if (keyToggles[GLFW_KEY_LEFT_SHIFT])
+         camera->moveDown(distTraveled);
+   }
+
+   if (keyToggles[GLFW_KEY_Q])
+      camera->aim(0,0, -0.05);
+   if (keyToggles[GLFW_KEY_E])
+      camera->aim(0,0, 0.05);
+
+   camGoal = camera->position + 10 * camera->getForward();
+}
+
+double timeCount = 0;
+
+static void updateEntities(double timePassed) {
+   skyEnt->position = camera->position + Eigen::Vector3f(0, -250, 0);
+
+   timeCount += timePassed;
+   if (timeCount > 0) {
+      terrainGenerator->UpdateMesh(climberEnt->position, 100);
+      timeCount -= 0.05;
+   }
+
+   if (keyToggles[GLFW_KEY_T]) {
+      float distTraveled = 20 * timePassed;
+      float radiansTraveled = 5 * timePassed;
+
+      if (keyToggles[GLFW_KEY_W])
+         climberEnt->moveForward(distTraveled);
+      if (keyToggles[GLFW_KEY_S])
+         climberEnt->moveBackward(distTraveled);
+      if (keyToggles[GLFW_KEY_A])
+         climberEnt->rotateAlong(radiansTraveled, UP_BASE);
+      if (keyToggles[GLFW_KEY_D])
+         climberEnt->rotateAlong(-radiansTraveled, UP_BASE);
+      if (keyToggles[GLFW_KEY_SPACE])
+         climberEnt->moveUp(distTraveled);
+      if (keyToggles[GLFW_KEY_LEFT_SHIFT])
+         climberEnt->moveDown(distTraveled);
+   }
+
+   if (keyToggles[GLFW_KEY_I]) {
+      PointDist pd;
+      pd = terrainGenerator->FindClosestToPoint(climberEnt->position + Eigen::Vector3f(-3, 3, 0));
+      if (pd.pnt)
+         climberEnt->setLimbGoal(0, pd.pnt->getPosition());
+
+      pd = terrainGenerator->FindClosestToPoint(climberEnt->position + Eigen::Vector3f( 3, 3, 0));
+      if (pd.pnt)
+         climberEnt->setLimbGoal(1, pd.pnt->getPosition());
+
+      pd = terrainGenerator->FindClosestToPoint(climberEnt->position + Eigen::Vector3f(-3,-3, 0));
+      if (pd.pnt)
+         climberEnt->setLimbGoal(2, pd.pnt->getPosition());
+
+      pd = terrainGenerator->FindClosestToPoint(climberEnt->position + Eigen::Vector3f( 3,-3, 0));
+      if (pd.pnt)
+         climberEnt->setLimbGoal(3, pd.pnt->getPosition());
+   }
+}
+
+static void draw(double deltaTime) {
    texShader->render(camera, & lightData, skyEnt);
    entShader->render(camera, & lightData, terrainEnt);
 
@@ -278,11 +303,17 @@ static void updateLoop(double deltaTime) {
 
    if (keyToggles[GLFW_KEY_K]) {
       entShader->renderVertices(camera, terrainEnt);
-      entShader->renderBones(camera, guyEnt);
-      entShader->renderBones(camera, guyEnt);
+      entShader->renderBones(camera, climberEnt);
+      entShader->renderBones(camera, climberEnt);
    }
 
-   entShader->renderPoint(camera, camGoal);
+   // entShader->renderPoint(camera, camGoal);
+}
+
+static void updateLoop(double deltaTime) {
+   updateCamera(deltaTime);
+   updateEntities(deltaTime);
+   draw(deltaTime);
 }
 
 int main(int argc, char ** argv) {
@@ -308,7 +339,7 @@ int main(int argc, char ** argv) {
 
    glfwSetKeyCallback(window, key_callback);
    glfwSetCursorPosCallback(window, cursor_pos_callback);
-   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+   // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
    glEnable(GL_DEPTH_TEST);
    glDepthFunc(GL_LEQUAL);

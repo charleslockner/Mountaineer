@@ -1,43 +1,58 @@
 #ifndef __ENTITY_H__
 #define __ENTITY_H__
 
+#include "matrix_math.h"
 #include "model.h"
-#include "shader.h"
-
 #include <vector>
 
-// Forward declare this shiz
-class EntityShader;
+#define LEFT_BASE    Eigen::Vector3f(1,0,0)
+#define UP_BASE      Eigen::Vector3f(0,1,0)
+#define FORWARD_BASE Eigen::Vector3f(0,0,1)
+
 struct Model;
 
 class Entity {
 public:
-   Eigen::Vector3f position;
+   Eigen::Vector3f    position;
    Eigen::Quaternionf rotation;
+
+   Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot);
+   Entity(Eigen::Vector3f pos);
+   virtual ~Entity();
+
+   void moveAlong(Eigen::Vector3f dir, float dist);
+   void moveLeft(float dist);
+   void moveRight(float dist);
+   void moveForward(float dist);
+   void moveBackward(float dist);
+   void moveUp(float dist);
+   void moveDown(float dist);
+   void rotateAlong(float angle, Eigen::Vector3f axis);
+   void lookAt(Eigen::Vector3f target);
+
+   Eigen::Vector3f getLeft();
+   Eigen::Vector3f getUp();
+   Eigen::Vector3f getForward();
+};
+
+class ModelEntity : public Entity {
+public:
    Eigen::Vector3f scale;
    Model * model;
 
-   Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
-   Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
-   Entity(Eigen::Vector3f pos, Model * model);
-   virtual ~Entity();
+   ModelEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   ModelEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
+   ModelEntity(Eigen::Vector3f pos, Model * model);
+
    Eigen::Matrix4f generateModelM();
 };
 
-class StaticEntity : public Entity {
-public:
-   StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
-   StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
-   StaticEntity(Eigen::Vector3f pos, Model * model);
-   ~StaticEntity();
-};
-
-class AnimatedEntity : public Entity {
+class AnimatedEntity : public ModelEntity {
 public:
    Eigen::Matrix4f animMs[MAX_BONES];   // invBindPose included
 
-   // AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
-   // AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
+   AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
    AnimatedEntity(Eigen::Vector3f pos, Model * model);
    ~AnimatedEntity();
    virtual void update(float timeDelta)=0;
@@ -47,8 +62,8 @@ public:
 
 class MocapEntity : public AnimatedEntity {
 public:
-   // MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
-   // MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
+   MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
+   MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
    MocapEntity(Eigen::Vector3f pos, Model * model);
 
    void playAnimation(int animNum);
@@ -86,9 +101,10 @@ class IKLimb {
 public:
    std::vector<int> boneIndices;
    Eigen::Vector3f offset;
+   bool isBase;
+
    Eigen::Vector3f goal;
    std::vector<double *> jointAngles;
-   bool isBase;
 
    IKLimb();
    ~IKLimb();
@@ -105,10 +121,13 @@ public:
    void addLimb(std::vector<int> boneIndices, Eigen::Vector3f offset, bool isBase);
    void setLimbGoal(int limbIndex, Eigen::Vector3f goal);
    void update(float timeDelta);
+   void animateWithIK();
+   void animateWithKeyframes();
 
 protected:
    std::vector<IKLimb *> ikLimbs;
    std::vector<IKBone> ikBones;
+   bool usingIK;
 
    std::vector<double *> constructJointAnglePtrs(std::vector<int>& boneIndices);
    Eigen::Matrix4f constructJointMatrix(int boneIndex);

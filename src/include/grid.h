@@ -14,7 +14,7 @@
 typedef unsigned int uint;
 
 typedef struct {
-   GPoint * pnt;
+   Geom::Positionalf * pnt;
    float distSq;
 } PointDist;
 
@@ -26,8 +26,10 @@ public:
    uint xSize();
    uint ySize();
    uint zSize();
-   void Add(GPoint * pnt);
-   PointDist FindClosest(Eigen::Vector3f target, float maxDist);
+
+   void Add(Geom::Positionalf * pnt);
+   PointDist FindClosestToPoint(Eigen::Vector3f target);
+   PointDist FindClosestToLine(Geom::Linef line);
 
 private:
    class Cell {
@@ -35,17 +37,26 @@ private:
       Cell();
       ~Cell();
 
-      void Add(GPoint * pnt);
-      PointDist FindClosest(Eigen::Vector3f target, float maxDist);
+      void Add(Geom::Positionalf * pnt);
+      PointDist FindClosest(Eigen::Vector3f target);
 
    private:
-      std::vector<GPoint *> points;
+      std::vector<Geom::Positionalf *> _points;
    };
 
-   uint maxAcross;
-   float cellWidth;
-   int xIndexOffset, yIndexOffset, zIndexOffset;
-   std::deque<std::deque<std::deque<Cell> > > cells;
+   uint _pointCount;
+   uint _maxAcross;
+   float _cellWidth;
+   int _xIndexOffset, _yIndexOffset, _zIndexOffset;
+   std::deque<std::deque<std::deque<Cell> > > _cells;
+
+
+   // Find all neighboring cells that need to be checked against the found point
+   std::vector<Cell *> findCheckCells(Eigen::Vector3f target, float foundDistSq);
+   // Recursively searches surrounding cells for the closest point
+   PointDist FindClosestToPointFromNeighbors(Eigen::Vector3f target, int cellsOut);
+   // Returns a list of all the cells that are "cellsOut" away from the index
+   std::vector<SpatialGrid::Cell *> findNeighborCells(Eigen::Vector3i centerIndexV, int cellsOut);
 
    // Get the index as seen in the world, using the xyz offset indices
    Eigen::Vector3i GetVirtualIndexFromReal(Eigen::Vector3i indexV);
@@ -54,6 +65,7 @@ private:
    // Returns NULL, if pnt is not within any existing cell
    Cell * GetCellAt(Eigen::Vector3i indexV);
 
+   Eigen::Vector3i expandIfNeeded(Eigen::Vector3i indexV);
    void AddSpaceNegX(uint numSlots);
    void AddSpacePosX(uint numSlots);
    void AddSpaceNegY(uint numSlots);

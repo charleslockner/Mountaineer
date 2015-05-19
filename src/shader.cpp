@@ -30,7 +30,7 @@ void EntityShader::sendTexture(unsigned int handle, unsigned int id, GLenum unit
 }
 
 // debug tangents/bitangents
-void EntityShader::renderVertices(Camera * camera, Entity * entity) {
+void EntityShader::renderVertices(Camera * camera, ModelEntity * entity) {
    Model * model = entity->model;
 
    glMatrixMode(GL_PROJECTION);

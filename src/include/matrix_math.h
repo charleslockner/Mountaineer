@@ -105,7 +105,7 @@ namespace Mmath {
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> LookAtMatrix(
+   Eigen::Matrix<T,4,4> ViewMatrix(
       const Eigen::Matrix<T,3,1> eye,
       const Eigen::Matrix<T,3,1> direction,
       const Eigen::Matrix<T,3,1> up
@@ -129,6 +129,19 @@ namespace Mmath {
       Result(2,3) = f.dot(eye);
 
       return Result;
+   }
+
+   template <typename T>
+   Eigen::Matrix<T,3,3> TBN(
+      const Eigen::Matrix<T,3,1> tangent,
+      const Eigen::Matrix<T,3,1> bitangent,
+      const Eigen::Matrix<T,3,1> normal
+   ) {
+      Eigen::Matrix<T,3,3> tbn;
+      tbn.block(0,0,3,1) = tangent;
+      tbn.block(0,1,3,1) = bitangent;
+      tbn.block(0,2,3,1) = normal;
+      return tbn;
    }
 
    template <typename T>

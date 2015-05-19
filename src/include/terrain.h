@@ -13,25 +13,39 @@ struct Vertex;
 class TerrainGenerator {
 public:
    TerrainGenerator();
-   ~TerrainGenerator();
-
+   // Creates and returns the initial model
    Model * GenerateModel();
-
-   // Extends the paths that are within the radius centered at center
-   void BuildStep(Eigen::Vector3f center, float radius);
-   // Returns the closest point on the mesh to target
-   PointDist FindClosestVertex(Eigen::Vector3f target, float maxDist);
+   // Extends the paths that are within the sphere,
+   // Removes the paths that are outside of it
+   void UpdateMesh(Eigen::Vector3f center, float radius);
+   // Returns the closest point on the mesh to target point
+   PointDist FindClosestToPoint(Eigen::Vector3f target);
+   // Returns the closest point on the mesh to the line
+   PointDist FindClosestToLine(Geom::Linef line);
 
 private:
-   class Path: public GPoint {
+   class Path: public Geom::Positionalf {
    public:
+      enum BuildAction {
+         ADVANCE, // path is about to create some geometry
+         RETREAT, // path is about to remove some geometry
+         STATION  // path is neither creating nor removing geometry
+      };
+
       Vertex *headV, *tailV;
       Path *leftP, *rightP;
       Eigen::Vector3f heading;
-      bool extending;
+      BuildAction buildAction;
 
-      void CalculateHeading();
-      Eigen::Vector3f getPosition();
+      inline void calculateHeading() {
+         heading = (headV->position - tailV->position).normalized();
+      }
+      inline Eigen::Vector3f getPosition() {
+         return headV->getPosition();
+      }
+      inline void setPosition(Eigen::Vector3f pos) {
+         headV->setPosition(pos);
+      }
    };
 
    Model * model;
@@ -40,6 +54,7 @@ private:
    std::vector<Path *> paths;
    float edgeLength;
 
+   void BuildStep();
    void PickPathsToExtend(Eigen::Vector3f center, float radius);
    void ExtendPaths();
    void SmoothPathPositions();

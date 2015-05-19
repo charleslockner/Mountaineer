@@ -13,7 +13,7 @@ TextureShader::TextureShader() {
 
 TextureShader::~TextureShader() {}
 
-void TextureShader::render(Camera * camera, LightData * lightdata, Entity * entity) {
+void TextureShader::render(Camera * camera, LightData * lightdata, ModelEntity * entity) {
    Model * model = entity->model;
 
    glUseProgram(program);

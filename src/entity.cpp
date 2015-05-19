@@ -9,57 +9,106 @@
 // -------------------------------------------------------- //
 // ========================= Entity ======================= //
 // -------------------------------------------------------- //
-Entity::Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
-: position(pos), rotation(rot), scale(scl), model(model) {}
-Entity::Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-: position(pos), rotation(rot), scale(Eigen::Vector3f(1,1,1)), model(model) {}
-Entity::Entity(Eigen::Vector3f pos, Model * model)
-: position(pos), rotation(Eigen::Quaternionf(1,0,0,0)), scale(Eigen::Vector3f(1,1,1)), model(model) {}
+Entity::Entity(Eigen::Vector3f pos, Eigen::Quaternionf rot)
+: position(pos), rotation(rot) {}
+Entity::Entity(Eigen::Vector3f pos)
+: position(pos), rotation(Eigen::Quaternionf(1,0,0,0)) {}
+
 Entity::~Entity() {}
 
-Eigen::Matrix4f Entity::generateModelM() {
+// direction should be normalized
+void Entity::moveAlong(Eigen::Vector3f direction, float distance) {
+   position += distance * direction;
+}
+
+void Entity::moveLeft(float dist) {
+   moveAlong(getLeft(), dist);
+}
+
+void Entity::moveRight(float dist) {
+   moveAlong(-getLeft(), dist);
+}
+
+void Entity::moveForward(float dist) {
+   moveAlong(getForward(), dist);
+}
+
+void Entity::moveBackward(float dist) {
+   moveAlong(-getForward(), dist);
+}
+
+void Entity::moveUp(float dist) {
+   moveAlong(getUp(), dist);
+}
+
+void Entity::moveDown(float dist) {
+   moveAlong(-getUp(), dist);
+}
+
+void Entity::rotateAlong(float angle, Eigen::Vector3f axis) {
+   rotation *= Eigen::Quaternionf(Eigen::AngleAxisf(angle, axis));
+}
+
+void Entity::lookAt(Eigen::Vector3f target) {
+   Eigen::Vector3f dir = (target - position).normalized();
+   rotation = Eigen::Quaternionf::FromTwoVectors(FORWARD_BASE, dir);
+}
+
+Eigen::Vector3f Entity::getLeft() {
+   return (rotation._transformVector(LEFT_BASE)).normalized();
+}
+
+Eigen::Vector3f Entity::getUp() {
+   return (rotation._transformVector(UP_BASE)).normalized();
+}
+
+Eigen::Vector3f Entity::getForward() {
+   return (rotation._transformVector(FORWARD_BASE)).normalized();
+}
+
+// --------------------------------------------------------- //
+// ===================== Model Entity ====================== //
+// --------------------------------------------------------- //
+ModelEntity::ModelEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
+: Entity(pos, rot), scale(scl), model(model) {}
+ModelEntity::ModelEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
+: Entity(pos, rot), scale(Eigen::Vector3f(1,1,1)), model(model) {}
+ModelEntity::ModelEntity(Eigen::Vector3f pos, Model * model)
+: Entity(pos), scale(Eigen::Vector3f(1,1,1)), model(model) {}
+
+Eigen::Matrix4f ModelEntity::generateModelM() {
    return Mmath::TransformationMatrix(position, rotation, scale);
 }
 
 // --------------------------------------------------------- //
-// ===================== Static Entity ===================== //
-// --------------------------------------------------------- //
-StaticEntity::StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
-: Entity(pos, rot, scl, model) {}
-StaticEntity::StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-: Entity(pos, rot, model) {}
-StaticEntity::StaticEntity(Eigen::Vector3f pos, Model * model)
-: Entity(pos, model) {}
-StaticEntity::~StaticEntity() {}
-
-// --------------------------------------------------------- //
 // ==================== Animated Entity ==================== //
 // --------------------------------------------------------- //
-// AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
-// : Entity(pos, rot, scl, model) {
-//    for (int i = 0; i < MAX_BONES; i++)
-//       this->animMs[i] = Eigen::Matrix4f::Identity();
-// }
-// AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-// : Entity(pos, rot, model) {
-//    for (int i = 0; i < MAX_BONES; i++)
-//       this->animMs[i] = Eigen::Matrix4f::Identity();
-// }
+AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
+: ModelEntity(pos, rot, scl, model) {
+   for (int i = 0; i < MAX_BONES; i++)
+      this->animMs[i] = Eigen::Matrix4f::Identity();
+}
+AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
+: ModelEntity(pos, rot, model) {
+   for (int i = 0; i < MAX_BONES; i++)
+      this->animMs[i] = Eigen::Matrix4f::Identity();
+}
 AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Model * model)
-: Entity(pos, model) {
+: ModelEntity(pos, model) {
    for (int i = 0; i < MAX_BONES; i++)
       this->animMs[i] = Eigen::Matrix4f::Identity();
 }
 AnimatedEntity::~AnimatedEntity() {}
+
 // --------------------------------------------------------- //
 // ====================== Mocap Entity ===================== //
 // --------------------------------------------------------- //
-// MocapEntity::MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
-// : AnimatedEntity(pos, rot, scl, model),
-//   animNum(0), animTime(0), animIsPlaying(false) {}
-// MocapEntity::MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-// : AnimatedEntity(pos, rot, model),
-//   animNum(0), animTime(0), animIsPlaying(false) {}
+MocapEntity::MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
+: AnimatedEntity(pos, rot, scl, model),
+  animNum(0), animTime(0), animIsPlaying(false) {}
+MocapEntity::MocapEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
+: AnimatedEntity(pos, rot, model),
+  animNum(0), animTime(0), animIsPlaying(false) {}
 MocapEntity::MocapEntity(Eigen::Vector3f pos, Model * model)
 : AnimatedEntity(pos, model),
   animNum(0), animTime(0), animIsPlaying(false) {}
@@ -92,7 +141,6 @@ void MocapEntity::update(float tickDelta) {
       }
    }
 }
-
 
 // --------------------------------------------------------- //
 // ==================== Bonified Entity =================== //
@@ -190,6 +238,7 @@ IKEntity::IKEntity(Eigen::Vector3f pos, Model * model)
       this->ikBones[i].angles = std::vector<double>(model->bones[i].joints.size());
       this->ikBones[i].limbs = std::vector<IKLimb *>(0);
    }
+   usingIK = false;
 }
 
 void IKEntity::addLimb(std::vector<int> boneIndices, Eigen::Vector3f offset, bool isBase) {
@@ -216,6 +265,14 @@ void IKEntity::update(float tickDelta) {
    }
 }
 
+void IKEntity::animateWithIK() {
+   usingIK = true;
+}
+
+void IKEntity::animateWithKeyframes() {
+   usingIK = false;
+}
+
 void IKEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
    int animNum = this->animNums[boneIndex];
    float tickTime = this->animTimes[boneIndex];
@@ -226,15 +283,17 @@ void IKEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
    AnimBone * animBone = & anim->animBones[boneIndex];
 
    // Compute rotation angles for all limbs who's root starts at this bone
-   if (ikBone->limbs.size())
+   if (usingIK && ikBone->limbs.size())
       solveLimbs(parentM, ikBone->limbs);
 
    // If this bone has a computed ik rotation, use it, otherwise use the animation rotation
-   Eigen::Matrix4f rotM = bone->joints.size() > 0 ?
-      constructJointMatrix(boneIndex) :
+   Eigen::Matrix4f animM = (usingIK) ? (
+      (bone->joints.size() > 0) ?
+         animM = constructJointMatrix(boneIndex) :
+         animM = bone->parentOffset) :
       AN::ComputeKeyframeTransform(animBone, anim->keyCount, tickTime, anim->duration);
 
-   boneMs[boneIndex] = parentM * rotM;
+   boneMs[boneIndex] = parentM * animM;
    animMs[boneIndex] = boneMs[boneIndex] * bone->invBonePose;
 
    for (int i = 0; i < bone->childCount; i++)

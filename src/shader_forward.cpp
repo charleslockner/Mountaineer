@@ -51,7 +51,7 @@ void ForwardShader::fillHandleTable(HandleTable * table, unsigned int program, b
    }
 }
 
-void ForwardShader::render(Camera * camera, LightData * lightData, Entity * entityBase) {
+void ForwardShader::render(Camera * camera, LightData * lightData, ModelEntity * entityBase) {
 
    Model * model = entityBase->model;
 
