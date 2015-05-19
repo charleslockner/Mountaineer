@@ -8,3 +8,5 @@ Skybox from http://css.gamebanana.com/textures/1776
 Marc Zych
 
 // vec3(inverse(transpose(uModelM)) * vec4(aTangent, 0.0));
+
+http://antongerdelan.net/opengl/raycasting.html

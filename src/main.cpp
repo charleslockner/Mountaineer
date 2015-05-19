@@ -37,7 +37,13 @@ EntityShader * entShader;
 TextureShader * texShader;
 TerrainGenerator * terrainGenerator;
 
+Eigen::Vector3f mouseDirection;
 Eigen::Vector3f camGoal;
+float fov;
+
+// ======================================================================== //
+// ======================= INPUT CALLBACK FUNCTIONS ======================= //
+// ======================================================================== //
 
 static void error_callback(int error, const char* description) {
    fputs(description, stderr);
@@ -77,6 +83,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             break;
          case GLFW_KEY_T:
             keyToggles[key] = !keyToggles[key];
+            keyToggles[key] ?
+               glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL) :
+               glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             break;
          case GLFW_KEY_L:
             keyToggles[key] = !keyToggles[key];
@@ -91,12 +100,25 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
                glEnable(GL_CULL_FACE);
             break;
          case GLFW_KEY_G:
-            terrainGenerator->UpdateMesh(camGoal, 10);
+            // terrainGenerator->UpdateMesh(camGoal, 10);
+            break;
          default:
             keyToggles[key] = false;
             break;
       }
    }
+}
+
+static Eigen::Vector2f calculateNDC(GLFWwindow * window) {
+   double mouse_x, mouse_y;
+   int width, height;
+
+   glfwGetCursorPos(window, & mouse_x, & mouse_y);
+   glfwGetWindowSize(window, & width, & height);
+
+   float x_ndc = (2.0 * mouse_x) / width - 1.0;
+   float y_ndc = 1.0 - (2.0 * mouse_y) / height;
+   return Eigen::Vector2f(x_ndc, y_ndc);
 }
 
 static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
@@ -105,10 +127,38 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
       lastScreenY = y;
    }
 
-   camera->aim(0.001 * (lastScreenX - x), 0.001 * (y - lastScreenY), 0);
+   if (!keyToggles[GLFW_KEY_T])
+      camera->aim(0.001 * (lastScreenX - x), 0.001 * (y - lastScreenY), 0);
+
    lastScreenX = x;
    lastScreenY = y;
 }
+
+static void mouse_click_callback(GLFWwindow* window, int button, int action, int mods) {
+   if (action == GLFW_PRESS) {
+      if (button == GLFW_MOUSE_BUTTON_1) {
+         Eigen::Vector2f ndc = calculateNDC(window);
+         mouseDirection = camera->rayFromNDCToWorld(ndc(0), ndc(1));
+         camGoal = camera->position + 20 * mouseDirection;
+
+         if (keyToggles[GLFW_KEY_I]) {
+            PointDist pd = terrainGenerator->FindClosestToPoint(camGoal);
+            if (pd.pnt)
+               climberEnt->setLimbGoal(goalIndex, pd.pnt->getPosition());
+            goalIndex = (goalIndex + 1) % numGoals;
+         }
+      }
+   }
+}
+
+static void scroll_callback(GLFWwindow* window, double x_offset, double y_offset) {
+   fov += 0.01 * y_offset;
+   camera->setHFOV(fov);
+}
+
+// ======================================================================== //
+// ========================== INITIALIZATION CODE ========================= //
+// ======================================================================== //
 
 static void setupLights() {
    lightData.lights[0].direction = Eigen::Vector3f(0.881, -0.365, 0.292);
@@ -124,7 +174,8 @@ static void initialize() {
    entShader = new ForwardShader();
    texShader = new TextureShader();
    camera = new Camera(Eigen::Vector3f(0,0,10));
-   camera->setHFOV(2);
+   fov = 1.0;
+   camera->setHFOV(fov);
    setupLights();
 
    // Skybox
@@ -178,7 +229,7 @@ static void initialize() {
    boneIndices.push_back(11);
    boneIndices.push_back(12);
    boneIndices.push_back(13);
-   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
    boneIndices.clear();
 
    boneIndices.push_back(0);
@@ -190,7 +241,7 @@ static void initialize() {
    boneIndices.push_back(17);
    boneIndices.push_back(18);
    boneIndices.push_back(19);
-   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
    boneIndices.clear();
 
    boneIndices.push_back(0);
@@ -199,7 +250,7 @@ static void initialize() {
    boneIndices.push_back(23);
    boneIndices.push_back(24);
    boneIndices.push_back(25);
-   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
    boneIndices.clear();
 
    boneIndices.push_back(0);
@@ -208,16 +259,25 @@ static void initialize() {
    boneIndices.push_back(28);
    boneIndices.push_back(29);
    boneIndices.push_back(30);
-   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
    boneIndices.clear();
 
    entities.push_back(climberEnt);
 }
 
-static void updateCamera(double timePassed) {
+// ======================================================================== //
+// ============================== UPDATE CODE ============================= //
+// ======================================================================== //
+
+static void updateCamera(GLFWwindow * window, double timePassed) {
 
    if (keyToggles[GLFW_KEY_T]) {
-      camera->smoothFollow(climberEnt->position - 20 * climberEnt->getForward() + 15 * climberEnt->getUp(), climberEnt->rotation);
+      Eigen::Vector2f ndc = calculateNDC(window);
+      Eigen::Vector3f mouseOffset = camera->rayFromNDCToView(-ndc(0), ndc(1));
+
+      Eigen::Quaternionf mouseRotation = Eigen::Quaternionf::FromTwoVectors(FORWARD_BASE, mouseOffset);
+      Eigen::Quaternionf destQuat = climberEnt->rotation * mouseRotation;
+      camera->smoothFollow(climberEnt->position - 20 * climberEnt->getForward() + 15 * climberEnt->getUp(), destQuat);
    } else {
       float distTraveled = 20 * timePassed;
 
@@ -240,7 +300,7 @@ static void updateCamera(double timePassed) {
    if (keyToggles[GLFW_KEY_E])
       camera->aim(0,0, 0.05);
 
-   camGoal = camera->position + 10 * camera->getForward();
+   // camGoal = camera->position + 10 * camera->getForward();
 }
 
 double timeCount = 0;
@@ -271,25 +331,6 @@ static void updateEntities(double timePassed) {
       if (keyToggles[GLFW_KEY_LEFT_SHIFT])
          climberEnt->moveDown(distTraveled);
    }
-
-   if (keyToggles[GLFW_KEY_I]) {
-      PointDist pd;
-      pd = terrainGenerator->FindClosestToPoint(climberEnt->position + Eigen::Vector3f(-3, 3, 0));
-      if (pd.pnt)
-         climberEnt->setLimbGoal(0, pd.pnt->getPosition());
-
-      pd = terrainGenerator->FindClosestToPoint(climberEnt->position + Eigen::Vector3f( 3, 3, 0));
-      if (pd.pnt)
-         climberEnt->setLimbGoal(1, pd.pnt->getPosition());
-
-      pd = terrainGenerator->FindClosestToPoint(climberEnt->position + Eigen::Vector3f(-3,-3, 0));
-      if (pd.pnt)
-         climberEnt->setLimbGoal(2, pd.pnt->getPosition());
-
-      pd = terrainGenerator->FindClosestToPoint(climberEnt->position + Eigen::Vector3f( 3,-3, 0));
-      if (pd.pnt)
-         climberEnt->setLimbGoal(3, pd.pnt->getPosition());
-   }
 }
 
 static void draw(double deltaTime) {
@@ -307,14 +348,18 @@ static void draw(double deltaTime) {
       entShader->renderBones(camera, climberEnt);
    }
 
-   // entShader->renderPoint(camera, camGoal);
+   entShader->renderPoint(camera, camGoal);
 }
 
-static void updateLoop(double deltaTime) {
-   updateCamera(deltaTime);
+static void updateLoop(GLFWwindow * window, double deltaTime) {
+   updateCamera(window, deltaTime);
    updateEntities(deltaTime);
    draw(deltaTime);
 }
+
+// ======================================================================== //
+// ================================= MAIN ================================= //
+// ======================================================================== //
 
 int main(int argc, char ** argv) {
    srand(time(NULL));
@@ -339,7 +384,10 @@ int main(int argc, char ** argv) {
 
    glfwSetKeyCallback(window, key_callback);
    glfwSetCursorPosCallback(window, cursor_pos_callback);
-   // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+   glfwSetMouseButtonCallback(window, mouse_click_callback);
+   glfwSetScrollCallback(window, scroll_callback);
+
+   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
    glEnable(GL_DEPTH_TEST);
    glDepthFunc(GL_LEQUAL);
@@ -361,7 +409,7 @@ int main(int argc, char ** argv) {
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      updateLoop(deltaTime); // game code
+      updateLoop(window, deltaTime); // game code
 
       glfwSwapBuffers(window);
       glfwPollEvents();
