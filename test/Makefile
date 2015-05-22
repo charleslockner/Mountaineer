@@ -2,6 +2,7 @@ OS := $(shell uname -s)
 CC=icpc
 EXENAME=test
 
+BIN_DIR=../bin
 SRC_DIR=../src
 OBJ_DIR=../obj
 TEST_SRC_DIR=src
@@ -9,7 +10,7 @@ TEST_OBJ_DIR=obj
 LIB_DIR=../lib
 INC_DIR=$(SRC_DIR)/include
 
-EXE=$(EXENAME)
+EXE=$(BIN_DIR)/$(EXENAME)
 
 INC=-I$(INC_DIR) -I$(LIB_DIR)/include -I$(LIB_DIR)/include/eigen
 HEADER=-DMACOSX -MMD
@@ -30,7 +31,7 @@ endif
 TEST_SRC=$(shell find $(TEST_SRC_DIR) -maxdepth 1 -type f -name "*.cpp" -exec basename {} .po \;)
 TEST_OBJS=$(patsubst %.cpp,$(TEST_OBJ_DIR)/%.o,$(TEST_SRC))
 
-OBJS=$(OBJ_DIR)/geometry.o $(OBJ_DIR)/model.o
+OBJS=$(OBJ_DIR)/geometry.o $(OBJ_DIR)/model.o $(OBJ_DIR)/grid.o
 
 .PHONY: exe run clean
 

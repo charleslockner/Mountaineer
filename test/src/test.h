@@ -56,5 +56,6 @@ inline void _nanCheck_(
 
 void testGeometry();
 void testModel();
+void testGrid();
 
 #endif // __TEST_H__

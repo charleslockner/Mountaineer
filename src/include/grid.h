@@ -8,9 +8,6 @@
 #include "matrix_math.h"
 #include "geometry.h"
 
-#define MIN_ACROSS 1
-#define ADD_RESIZE_SPACE 10
-
 typedef unsigned int uint;
 
 typedef struct {
@@ -26,8 +23,16 @@ public:
    uint xSize();
    uint ySize();
    uint zSize();
+   int minXIndex();
+   int maxXIndex();
+   int minYIndex();
+   int maxYIndex();
+   int minZIndex();
+   int maxZIndex();
+   uint numElements();
 
    void Add(Geom::Positionalf * pnt);
+   void Remove(Geom::Positionalf * pnt);
    PointDist FindClosestToPoint(Eigen::Vector3f target, float maxDist);
    PointDist FindClosestToLine(Geom::Rayf line, float maxDist);
 
@@ -51,24 +56,21 @@ private:
    int _xIndexOffset, _yIndexOffset, _zIndexOffset;
    std::deque<std::deque<std::deque<Cell> > > _cells;
 
-   // Helper functions for FindClosestToPoint
-   std::vector<Cell *> findCheckCells(Eigen::Vector3f target, float foundDistSq);
-   PointDist FindClosestToPointInNeighbors(Eigen::Vector3f target, int cellsOut);
-   std::vector<Cell *> findNeighborCells(Eigen::Vector3i centerIndexV, int cellsOut);
-   // PointDist FindNearestToPointInCells(std::vector<Cell *>& checkCells);
-
-   // Helper functions for FindClosestToLine
-   std::vector<Cell *> findCellsOnLine(Geom::Rayf line, float maxDist);
+   PointDist FindClosestToPointOutward(Eigen::Vector3f target, int cellsOut);
+   PointDist FindNearestToPointInCells(std::vector<Cell *>& checkCells, Eigen::Vector3f point);
    PointDist FindNearestToLineInCells(std::vector<Cell *>& checkCells, Geom::Rayf line);
 
-   // Utility functions
+   std::vector<Cell *> findRelevantNeighborCells(Eigen::Vector3f target, float foundDistSq);
+   std::vector<Cell *> findCellsOnLine(Geom::Rayf line, float maxDist);
+   std::vector<Cell *> findCellsOutwardOf(Eigen::Vector3i centerIndexV, int cellsOut);
+
+   // Helper functions
    Eigen::Vector3i RealToWorldIndex(Eigen::Vector3i indexV);
    Eigen::Vector3i WorldToRealIndex(Eigen::Vector3i indexV);
    // Returns the indices even if they are beyond the bounds of the grid
    Eigen::Vector3i PointToRealIndex(Eigen::Vector3f pnt);
    Eigen::Vector3i PointToWorldIndex(Eigen::Vector3f pnt);
    Eigen::Vector3f worldIndexToNegBounds(Eigen::Vector3i wIndexV);
-
 
    // Returns the cell at the REAL index, or NULL if there is no cell there
    Cell * GetCellAt(Eigen::Vector3i indexV);
