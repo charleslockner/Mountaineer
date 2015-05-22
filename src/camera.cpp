@@ -1,9 +1,5 @@
 #include "camera.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <iostream>
-
 #define HFOV   1.0f
 #define ASPECT (4.0f/3.0f)
 #define NEAR   0.1f
@@ -43,24 +39,17 @@ void Camera::smoothFollow(Eigen::Vector3f pos, Eigen::Quaternionf rot) {
 }
 
 Eigen::Vector3f Camera::rayFromNDCToWorld(float x_nds, float y_nds) {
-   Eigen::Matrix4f invPersM = getProjectionM().inverse();
-   Eigen::Matrix4f invViewM = getViewM().inverse();
-
-   Eigen::Vector4f ray_clip = Eigen::Vector4f(x_nds, y_nds, -1.0, 1.0);
-   Eigen::Vector4f ray_view = invPersM * ray_clip;
+   Eigen::Vector4f ray_clip = Eigen::Vector4f(x_nds, y_nds, 1.0, 1.0);
+   Eigen::Vector4f ray_view = getProjectionM().inverse() * ray_clip;
                    // unproject the x,y part, so make z component forwards, not a point
                    ray_view = Eigen::Vector4f(ray_view(0), ray_view(1), -1.0, 0.0);
-   Eigen::Vector4f ray_world = invViewM * ray_view;
-
+   Eigen::Vector4f ray_world = getViewM().inverse() * ray_view;
    return ray_world.head<3>().normalized();
 }
 
 Eigen::Vector3f Camera::rayFromNDCToView(float x_nds, float y_nds) {
-   Eigen::Matrix4f invPersM = getProjectionM().inverse();
-   Eigen::Matrix4f invViewM = getViewM().inverse();
-
    Eigen::Vector4f ray_clip = Eigen::Vector4f(x_nds, y_nds, 1.0, 1.0);
-   Eigen::Vector4f ray_view = invPersM * ray_clip;
+   Eigen::Vector4f ray_view = getProjectionM().inverse() * ray_clip;
    return Eigen::Vector3f(ray_view(0), ray_view(1), 1.0).normalized();
 }
 

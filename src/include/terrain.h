@@ -21,7 +21,7 @@ public:
    // Returns the closest point on the mesh to target point
    PointDist FindClosestToPoint(Eigen::Vector3f target);
    // Returns the closest point on the mesh to the line
-   PointDist FindClosestToLine(Geom::Linef line);
+   PointDist FindClosestToLine(Geom::Rayf line);
 
 private:
    class Path: public Geom::Positionalf {

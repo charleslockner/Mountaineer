@@ -1,15 +1,14 @@
 
 #include "entity.h"
 #include "matrix_math.h"
-#include "model.h"
 #include "ceres/ceres.h"
 
-#include <iostream>
 #include <vector>
-#include <stdio.h>
 #include <assert.h>
 
 using namespace Eigen;
+
+struct Model;
 
 template<typename T>
 Matrix<T,3,1> solveEndEffector(

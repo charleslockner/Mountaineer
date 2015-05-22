@@ -69,10 +69,15 @@ public:
    }
 };
 
-typedef struct Face {
+class Face {
+public:
    Vertex * vertices[NUM_FACE_EDGES];
    Eigen::Vector3f normal;
-} Face;
+
+   void calculateNormal();
+   Eigen::Vector3f intersectRay(Geom::Rayf ray);
+   bool pointCheckInside(Eigen::Vector3f pnt);
+};
 
 // typedef struct {
 //    Face * face;

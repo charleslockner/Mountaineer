@@ -26,22 +26,37 @@ namespace Geom {
       }
    };
 
-   class Linef {
+   class Rayf {
    public:
-      Pointf pntA;
-      Pointf pntB;
+      Eigen::Vector3f start;
+      Eigen::Vector3f direction;
 
-      Linef(Pointf pA, Pointf pB);
+      Rayf(Eigen::Vector3f pnt, Eigen::Vector3f dir);
+      Eigen::Vector3f getPointByDist(float dist);
+      float distToPoint(Eigen::Vector3f pnt);
+      float squaredDistToPoint(Eigen::Vector3f pnt);
    };
 
    class Planef {
    public:
-      Pointf pntA;
-      Pointf pntB;
-      Pointf pntC;
+      Eigen::Vector3f point;
+      Eigen::Vector3f normal;
 
-      Planef(Pointf pA, Pointf pB, Pointf pC);
+      Planef(Eigen::Vector3f pnt, Eigen::Vector3f norm);
+      float distToPoint(Eigen::Vector3f pnt);
    };
+
+   class Spheref {
+   public:
+      Eigen::Vector3f center;
+      float radius;
+
+      Spheref(Eigen::Vector3f cent, float rad);
+   };
+
+   // Find the point in which the ray intersects the plane
+   Eigen::Vector3f Intersectf(Rayf ray, Planef plane);
+   Eigen::Vector3f Intersectf(Rayf ray, Spheref sphere);
 
 }
 

@@ -2,7 +2,6 @@
 #include "matrix_math.h"
 #include "animation.h"
 
-#include <stdio.h>
 #include <assert.h>
 #include <math.h>
 

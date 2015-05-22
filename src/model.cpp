@@ -4,6 +4,39 @@
 
 #include <cstring>
 
+// ======================================================== //
+// ===================== FACE METHODS ===================== //
+// ======================================================== //
+
+void Face::calculateNormal() {
+   Vertex * v1 = vertices[0];
+   Vertex * v2 = vertices[1];
+   Vertex * v3 = vertices[2];
+   normal = ((v3->position - v2->position).cross(v1->position - v2->position)).normalized();
+}
+
+Eigen::Vector3f Face::intersectRay(Geom::Rayf ray) {
+   calculateNormal();
+   Geom::Planef plane = Geom::Planef(vertices[0]->position, normal);
+   return Geom::Intersectf(ray, plane);
+}
+
+bool Face::pointCheckInside(Eigen::Vector3f pnt) {
+   Vertex * v1 = vertices[0];
+   Vertex * v2 = vertices[1];
+   Vertex * v3 = vertices[2];
+
+   bool inside12 = (v2->position - v1->position).cross(pnt - v1->position).dot(normal) >= 0;
+   bool inside23 = (v3->position - v2->position).cross(pnt - v2->position).dot(normal) >= 0;
+   bool inside31 = (v1->position - v3->position).cross(pnt - v3->position).dot(normal) >= 0;
+
+   return inside12 && inside23 && inside31;
+}
+
+// ======================================================== //
+// ==================== MODEL METHODS ===================== //
+// ======================================================== //
+
 Model::Model() {
    hasNormals = false;
    hasColors = false;
@@ -45,17 +78,14 @@ void Model::CalculateNormals() {
    // Calculated face normals and add these to neighboring vertex normals
    for (int i = 0; i < faces.size(); i++) {
       Face * face = faces[i];
-      Vertex * v1 = face->vertices[0];
-      Vertex * v2 = face->vertices[1];
-      Vertex * v3 = face->vertices[2];
 
       // Fill in face normals
-      face->normal = ((v3->position - v2->position).cross(v1->position - v2->position)).normalized();
+      face->calculateNormal();
 
       // Add face normal to neighboring vertex normals
-      v1->normal += face->normal;
-      v2->normal += face->normal;
-      v3->normal += face->normal;
+      face->vertices[0]->normal += face->normal;
+      face->vertices[1]->normal += face->normal;
+      face->vertices[2]->normal += face->normal;
    }
 
    // Normalize the new vertex normals

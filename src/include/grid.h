@@ -28,8 +28,8 @@ public:
    uint zSize();
 
    void Add(Geom::Positionalf * pnt);
-   PointDist FindClosestToPoint(Eigen::Vector3f target);
-   PointDist FindClosestToLine(Geom::Linef line);
+   PointDist FindClosestToPoint(Eigen::Vector3f target, float maxDist);
+   PointDist FindClosestToLine(Geom::Rayf line, float maxDist);
 
 private:
    class Cell {
@@ -38,7 +38,8 @@ private:
       ~Cell();
 
       void Add(Geom::Positionalf * pnt);
-      PointDist FindClosest(Eigen::Vector3f target);
+      PointDist FindClosestToPoint(Eigen::Vector3f target);
+      PointDist FindClosestToLine(Geom::Rayf line);
 
    private:
       std::vector<Geom::Positionalf *> _points;
@@ -50,22 +51,32 @@ private:
    int _xIndexOffset, _yIndexOffset, _zIndexOffset;
    std::deque<std::deque<std::deque<Cell> > > _cells;
 
-
-   // Find all neighboring cells that need to be checked against the found point
+   // Helper functions for FindClosestToPoint
    std::vector<Cell *> findCheckCells(Eigen::Vector3f target, float foundDistSq);
-   // Recursively searches surrounding cells for the closest point
-   PointDist FindClosestToPointFromNeighbors(Eigen::Vector3f target, int cellsOut);
-   // Returns a list of all the cells that are "cellsOut" away from the index
-   std::vector<SpatialGrid::Cell *> findNeighborCells(Eigen::Vector3i centerIndexV, int cellsOut);
+   PointDist FindClosestToPointInNeighbors(Eigen::Vector3f target, int cellsOut);
+   std::vector<Cell *> findNeighborCells(Eigen::Vector3i centerIndexV, int cellsOut);
+   // PointDist FindNearestToPointInCells(std::vector<Cell *>& checkCells);
 
-   // Get the index as seen in the world, using the xyz offset indices
-   Eigen::Vector3i GetVirtualIndexFromReal(Eigen::Vector3i indexV);
+   // Helper functions for FindClosestToLine
+   std::vector<Cell *> findCellsOnLine(Geom::Rayf line, float maxDist);
+   PointDist FindNearestToLineInCells(std::vector<Cell *>& checkCells, Geom::Rayf line);
+
+   // Utility functions
+   Eigen::Vector3i RealToWorldIndex(Eigen::Vector3i indexV);
+   Eigen::Vector3i WorldToRealIndex(Eigen::Vector3i indexV);
    // Returns the indices even if they are beyond the bounds of the grid
-   Eigen::Vector3i FindIndicesFromPoint(Eigen::Vector3f pnt);
-   // Returns NULL, if pnt is not within any existing cell
-   Cell * GetCellAt(Eigen::Vector3i indexV);
+   Eigen::Vector3i PointToRealIndex(Eigen::Vector3f pnt);
+   Eigen::Vector3i PointToWorldIndex(Eigen::Vector3f pnt);
+   Eigen::Vector3f worldIndexToNegBounds(Eigen::Vector3i wIndexV);
 
+
+   // Returns the cell at the REAL index, or NULL if there is no cell there
+   Cell * GetCellAt(Eigen::Vector3i indexV);
+   // If REAL indexV is beyond the range of the grid, generate new cells
+   // Returns the new REAL indexV, since indices may have shifted
    Eigen::Vector3i expandIfNeeded(Eigen::Vector3i indexV);
+
+   // Add a block of cells to 1 of the 6 sides
    void AddSpaceNegX(uint numSlots);
    void AddSpacePosX(uint numSlots);
    void AddSpaceNegY(uint numSlots);
@@ -73,6 +84,7 @@ private:
    void AddSpaceNegZ(uint numSlots);
    void AddSpacePosZ(uint numSlots);
 
+   // Remove a block of cells from 1 of the 6 sides
    void RemoveFromNegX(uint numSlots);
    void RemoveFromPosX(uint numSlots);
    void RemoveFromNegY(uint numSlots);

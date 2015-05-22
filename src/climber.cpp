@@ -1,6 +1,5 @@
 #include "climber.h"
 #include "spline.h"
-#include "assert.h"
 
 Climber::Climber(Eigen::Vector3f pos, Model * model)
 : IKEntity(pos, model) {}

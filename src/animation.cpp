@@ -1,7 +1,6 @@
 
 #include "animation.h"
 
-#include "assert.h"
 #include "matrix_math.h"
 
 static Eigen::Vector3f lerpVec3(Eigen::Vector3f begin, Eigen::Vector3f end, float ratio) {
@@ -26,9 +25,9 @@ static Key interpolateKeys(Key earlyKey, Key lateKey, float tickTime) {
 
 namespace AN {
 
+   // Assuming keyCount >= 1
    Eigen::Matrix4f ComputeKeyframeTransform(AnimBone * animBone, int keyCount, float tickTime, float duration) {
       std::vector<Key>& keys = animBone->keys;
-      assert(keyCount >= 1);
 
       int earlyNdx = findEarlyKeyIndex(keyCount, tickTime, duration);
       int lateNdx = earlyNdx + 1;

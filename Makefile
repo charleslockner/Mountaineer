@@ -1,53 +1,61 @@
 OS := $(shell uname -s)
 CC=icpc
-EXENAME=game
+ENGINE_NAME=libengine.a
 
 BIN_DIR=bin
 SRC_DIR=src
 OBJ_DIR=obj
 LIB_DIR=lib
+INC_DIR=$(SRC_DIR)/include
 
-EXE=$(BIN_DIR)/$(EXENAME)
+ENGINE=$(BIN_DIR)/$(ENGINE_NAME)
+GAME=$(BIN_DIR)/game
 
-INC=-I$(SRC_DIR)/include -I$(LIB_DIR)/include -I$(LIB_DIR)/include/eigen -I$(LIB_DIR)/include/ceres/internal/miniglog
+INC=-I$(INC_DIR) -I$(LIB_DIR)/include -I$(LIB_DIR)/include/eigen -I$(LIB_DIR)/include/ceres/internal/miniglog
 HEADER=-DMACOSX -MMD
 DEBUG=-g
-OPT=-O3
-WARN=-ansi -pedantic
+OPT=-O1
+WARN=-ansi -pedantic #-w3 -wn383 -wn1418 -wn304
 CFLAGS=-std=c++11 -c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER)
-
-LIB=-L$(LIB_DIR)
-ifeq ($(OS),Darwin)
-FRAME_FWS=-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
-LIB+=-lceres_OSX -lglfw3_OSX $(FRAME_FWS)
-endif
-ifeq ($(OS),Linux)
-LIB+=-lceres_LIN -lglfw3_LIN -lGL -lXrandr -lXi -lXinerama -lXcursor
-endif
 
 SRC=$(shell find $(SRC_DIR) -maxdepth 1 -type f -name "*.cpp" -exec basename {} .po \;)
 OBJS=$(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
 
-.PHONY: exe model run clean
+.PHONY: ENGINE game run test clean
 
-exe: $(EXE)
+engine: $(ENGINE)
 
-model: $(EXE)
-	make -C converter run
-	./$(EXE)
+game: $(ENGINE)
+	make -C game
 
-run: $(EXE)
-	./$(EXE)
+run: $(ENGINE)
+	make -C game
+	./$(GAME)
+
+test:
+	make -C test run
 
 clean:
 	rm -rf $(BIN_DIR) $(OBJ_DIR) *.DS_Store *~
 	make -C converter clean
+	make -C test clean
+	make -C game clean
 
 -include $(OBJS:.o=.d)
 
-$(EXE): $(OBJS)
+# LIB=-L$(LIB_DIR)
+# ifeq ($(OS),Darwin)
+# FRAME_FWS=-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
+# LIB+=-lceres_OSX -lglfw3_OSX $(FRAME_FWS)
+# endif
+# ifeq ($(OS),Linux)
+# LIB+=-lceres_LIN -lglfw3_LIN -lGL -lXrandr -lXi -lXinerama -lXcursor
+# endif
+
+$(ENGINE): $(OBJS)
 	@mkdir -p $(@D)
-	$(CC) -o $(EXE) $(OBJS) $(LIB)
+	@rm -f $(ENGINE)
+	ar -cq $(ENGINE) $(OBJS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(@D)

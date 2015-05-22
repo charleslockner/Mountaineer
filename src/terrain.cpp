@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #define UV_STEP_SIZE .025
+#define MAX_FIND_DIST 40
 
 using namespace Eigen;
 
@@ -41,7 +42,7 @@ TerrainGenerator::TerrainGenerator() {};
 Model * TerrainGenerator::GenerateModel() {
    edgeLength = 1;
 
-   grid = new SpatialGrid(1000, 2 * edgeLength);
+   grid = new SpatialGrid(1000, 10 * edgeLength);
 
    // The general direction the mesh is heading towards
    Vector3f ultimateDirection = Vector3f(0.25,1.0,-0.25).normalized();
@@ -118,7 +119,11 @@ void TerrainGenerator::UpdateMesh(Vector3f center, float radius) {
 }
 
 PointDist TerrainGenerator::FindClosestToPoint(Eigen::Vector3f targetPnt) {
-   return grid->FindClosestToPoint(targetPnt);
+   return grid->FindClosestToPoint(targetPnt, MAX_FIND_DIST);
+}
+
+PointDist TerrainGenerator::FindClosestToLine(Geom::Rayf line) {
+   return grid->FindClosestToLine(line, MAX_FIND_DIST);
 }
 
 // ============================================================ //

@@ -1,13 +1,6 @@
 #include "grid.h"
 #include "assert.h"
-
-// ================================================================== //
-// ======================== STATIC FUNCTIONS ======================== //
-// ================================================================== //
-
-static inline float square(float n) {
-   return n*n;
-}
+#include "stdio.h"
 
 // ================================================================== //
 // ========================= CELL FUNCTIONS ========================= //
@@ -22,7 +15,7 @@ void SpatialGrid::Cell::Add(Geom::Positionalf * pnt) {
    _points.push_back(pnt);
 }
 
-PointDist SpatialGrid::Cell::FindClosest(Eigen::Vector3f targetPnt) {
+PointDist SpatialGrid::Cell::FindClosestToPoint(Eigen::Vector3f targetPnt) {
    PointDist shortest;
    shortest.distSq = -1;
    shortest.pnt = NULL;
@@ -35,6 +28,29 @@ PointDist SpatialGrid::Cell::FindClosest(Eigen::Vector3f targetPnt) {
 
       for (int i = 1; i < _points.size(); i++) {
          float distSq = (targetPnt - _points[i]->getPosition()).squaredNorm();
+         if (distSq < shortest.distSq) {
+            shortest.distSq = distSq;
+            shortest.pnt = _points[i];
+         }
+      }
+
+      return shortest;
+   }
+}
+
+PointDist SpatialGrid::Cell::FindClosestToLine(Geom::Rayf line) {
+   PointDist shortest;
+   shortest.distSq = -1;
+   shortest.pnt = NULL;
+
+   if (_points.size() == 0)
+      return shortest;
+   else {
+      shortest.distSq = line.squaredDistToPoint(_points[0]->getPosition());
+      shortest.pnt = _points[0];
+
+      for (int i = 1; i < _points.size(); i++) {
+         float distSq = line.squaredDistToPoint(_points[i]->getPosition());
          if (distSq < shortest.distSq) {
             shortest.distSq = distSq;
             shortest.pnt = _points[i];
@@ -79,21 +95,20 @@ uint SpatialGrid::zSize() {
 }
 
 void SpatialGrid::Add(Geom::Positionalf * pnt) {
-   Eigen::Vector3i indexV = FindIndicesFromPoint(pnt->getPosition());
-   indexV = expandIfNeeded(indexV);
-   Cell * cell = GetCellAt(indexV);
-   cell->Add(pnt);
+   Eigen::Vector3i indexV = PointToRealIndex(pnt->getPosition());
+   Cell * cell = GetCellAt(expandIfNeeded(indexV));
    assert(cell); // Since we resized to fit the cell, it shouldn't be null;
+
+   cell->Add(pnt);
    _pointCount++;
 }
 
-PointDist SpatialGrid::FindClosestToPoint(Eigen::Vector3f target) {
-   Eigen::Vector3i indexV = FindIndicesFromPoint(target);
-   indexV = expandIfNeeded(indexV);
-   Cell * cell = GetCellAt(indexV);
+PointDist SpatialGrid::FindClosestToPoint(Eigen::Vector3f target, float maxDist) {
+   Eigen::Vector3i indexV = PointToRealIndex(target);
+   Cell * cell = GetCellAt(expandIfNeeded(indexV));
    assert(cell); // Since we resized to fit the cell, it shouldn't be null;
 
-   PointDist closestPD = cell->FindClosest(target);
+   PointDist closestPD = cell->FindClosestToPoint(target);
 
    // If there is a vertex within the same cell as the target
    if (closestPD.pnt) {
@@ -102,7 +117,7 @@ PointDist SpatialGrid::FindClosestToPoint(Eigen::Vector3f target) {
 
       // Compare distances from each cell to find the shortest to the target
       for (int i = 0; i < checkCells.size(); i++) {
-         PointDist iPointDist = checkCells[i]->FindClosest(target);
+         PointDist iPointDist = checkCells[i]->FindClosestToPoint(target);
          if (iPointDist.pnt && iPointDist.distSq < closestPD.distSq)
             closestPD = iPointDist;
       }
@@ -112,110 +127,27 @@ PointDist SpatialGrid::FindClosestToPoint(Eigen::Vector3f target) {
    // If there are no points within the same cell as the target
    else {
       return closestPD;
-      // return FindClosestToPointFromNeighbors(target, 1);
+      // return FindClosestToPointInNeighbors(target, 1);
    }
+}
+
+PointDist SpatialGrid::FindClosestToLine(Geom::Rayf line, float maxDist) {
+   std::vector<SpatialGrid::Cell *> cells = findCellsOnLine(line, maxDist);
+   return FindNearestToLineInCells(cells, line);
 }
 
 // ================================================================== //
 // ======================== PRIVATE FUNCTIONS ======================= //
 // ================================================================== //
 
-
-PointDist SpatialGrid::FindClosestToPointFromNeighbors(Eigen::Vector3f target, int cellsOut) {
-   PointDist closestPD;
-   closestPD.pnt = NULL;
-   closestPD.distSq = -1;
-
-   if (_pointCount <= 0 || cellsOut >= std::max(std::max(xSize(), ySize()), zSize())) {
-      // printf("Too far out at %d\n", cellsOut);
-      return closestPD;
-   }
-   else {
-      Eigen::Vector3i centerIndexV = FindIndicesFromPoint(target);
-      std::vector<Cell *> checkCells = findNeighborCells(centerIndexV, cellsOut);
-      // printf("checkCells size = %d\n", checkCells.size());
-
-      // Compare distances from each cell to find the shortest to the target
-      for (int i = 0; i < checkCells.size(); i++) {
-         PointDist iPD = checkCells[i]->FindClosest(target);
-
-         if (closestPD.pnt)
-            if (iPD.pnt && iPD.distSq < closestPD.distSq) {
-               // printf("I found it!! %d\n", i);
-               closestPD = iPD;
-            }
-         else if (iPD.pnt) {
-            // printf("There is one! %d\n", i);
-            closestPD = iPD;
-         }
-      }
-
-      if (closestPD.pnt) {
-         // printf("got it %p\n", closestPD.pnt);
-         return closestPD;
-      }
-      else {
-         // printf("can't find it\n");
-         return FindClosestToPointFromNeighbors(target, cellsOut + 1);
-      }
-   }
+static inline float square(float n) {
+   return n*n;
 }
 
-std::vector<SpatialGrid::Cell *> SpatialGrid::findNeighborCells(Eigen::Vector3i centerIndexV, int cellsOut) {
-   std::vector<Cell *> checkCells = std::vector<Cell *>(0);
-   int sideLen = 2 * cellsOut + 1;
-   Cell * cell;
-
-   // printf("findNeighborcells center %d %d %d\n", centerIndexV(0), centerIndexV(1), centerIndexV(2));
-
-   // Add the left and right sides
-   // printf("sizes %d %d %d\n", xSize(), ySize(), zSize());
-   // printf("-sidelen/2 = %d\n", -sideLen/2);
-   // printf("sidelen/2 = %d\n", sideLen/2);
-   for (int j = -sideLen/2; j <= sideLen/2; j++) {
-      // printf("j = %d\n", j);
-      for (int k = -sideLen/2; k <= sideLen/2; k++) {
-         // printf("k = %d\n", k);
-         // printf("index %d %d %d\n", (centerIndexV + Eigen::Vector3i(-cellsOut, j, k))(0), (centerIndexV + Eigen::Vector3i(-cellsOut, j, k))(1), (centerIndexV + Eigen::Vector3i(-cellsOut, j, k))(2));
-         cell = GetCellAt(centerIndexV + Eigen::Vector3i(-cellsOut, j, k));
-         if (cell)
-            checkCells.push_back(cell);
-         cell = GetCellAt(centerIndexV + Eigen::Vector3i(cellsOut, j, k));
-         if (cell)
-            checkCells.push_back(cell);
-         // if (cell)
-         //    printf("there's a cell here! %d %d\n", j, k);
-      }
-   }
-   // Add the top and bottom sides
-   for (int i = -sideLen/2+1; i <= sideLen/2-1; i++) {
-      for (int k = -sideLen/2; k < sideLen/2; k++) {
-         cell = GetCellAt(centerIndexV + Eigen::Vector3i(i, -cellsOut, k));
-         if (cell)
-            checkCells.push_back(cell);
-         cell = GetCellAt(centerIndexV + Eigen::Vector3i(i, cellsOut, k));
-         if (cell)
-            checkCells.push_back(cell);
-      }
-   }
-   // Add the front and back sides
-   for (int i = -sideLen/2+1; i <= sideLen/2-1; i++) {
-      for (int j = -sideLen/2+1; j < sideLen/2-1; j++) {
-         cell = GetCellAt(centerIndexV + Eigen::Vector3i(i, j, -cellsOut));
-         if (cell)
-            checkCells.push_back(cell);
-         cell = GetCellAt(centerIndexV + Eigen::Vector3i(i, j, cellsOut));
-         if (cell)
-            checkCells.push_back(cell);
-      }
-   }
-
-   return checkCells;
-}
-
+// Find all neighboring cells that need to be checked against the found point
 std::vector<SpatialGrid::Cell *> SpatialGrid::findCheckCells(Eigen::Vector3f target, float foundDistSq) {
-   Eigen::Vector3i indexV = FindIndicesFromPoint(target);
-   Eigen::Vector3i worldIndexV = GetVirtualIndexFromReal(indexV);
+   Eigen::Vector3i indexV = PointToRealIndex(target);
+   Eigen::Vector3i worldIndexV = RealToWorldIndex(indexV);
 
    // Calculate the grid boundaries
    Eigen::Vector3f gridPositionNegV = _cellWidth * worldIndexV.cast<float>();
@@ -286,16 +218,202 @@ std::vector<SpatialGrid::Cell *> SpatialGrid::findCheckCells(Eigen::Vector3f tar
    return checkCells;
 }
 
-Eigen::Vector3i SpatialGrid::GetVirtualIndexFromReal(Eigen::Vector3i indexV) {
+// Recursively searches surrounding cells for the closest point
+PointDist SpatialGrid::FindClosestToPointInNeighbors(Eigen::Vector3f target, int cellsOut) {
+   PointDist closestPD;
+   closestPD.pnt = NULL;
+   closestPD.distSq = -1;
+
+   if (_pointCount <= 0 || cellsOut >= std::max(std::max(xSize(), ySize()), zSize())) {
+      // printf("Too far out at %d\n", cellsOut);
+      return closestPD;
+   }
+   else {
+      Eigen::Vector3i centerIndexV = PointToRealIndex(target);
+      std::vector<Cell *> checkCells = findNeighborCells(centerIndexV, cellsOut);
+      // printf("checkCells size = %d\n", checkCells.size());
+
+      // Compare distances from each cell to find the shortest to the target
+      for (int i = 0; i < checkCells.size(); i++) {
+         PointDist iPD = checkCells[i]->FindClosestToPoint(target);
+
+         if (closestPD.pnt) {
+            if (iPD.pnt && iPD.distSq < closestPD.distSq)
+               closestPD = iPD;
+         }
+         else if (iPD.pnt) {
+            closestPD = iPD;
+         }
+      }
+
+      if (closestPD.pnt) {
+         // printf("got it %p\n", closestPD.pnt);
+         return closestPD;
+      }
+      else {
+         // printf("can't find it\n");
+         return FindClosestToPointInNeighbors(target, cellsOut + 1);
+      }
+   }
+}
+
+// Returns a list of all the cells that are "cellsOut" away from the index
+std::vector<SpatialGrid::Cell *> SpatialGrid::findNeighborCells(Eigen::Vector3i centerIndexV, int cellsOut) {
+   std::vector<Cell *> checkCells = std::vector<Cell *>(0);
+   int sideLen = 2 * cellsOut + 1;
+   Cell * cell;
+
+   // printf("findNeighborcells center %d %d %d\n", centerIndexV(0), centerIndexV(1), centerIndexV(2));
+
+   // Add the left and right sides
+   // printf("sizes %d %d %d\n", xSize(), ySize(), zSize());
+   // printf("-sidelen/2 = %d\n", -sideLen/2);
+   // printf("sidelen/2 = %d\n", sideLen/2);
+   for (int j = -sideLen/2; j <= sideLen/2; j++) {
+      // printf("j = %d\n", j);
+      for (int k = -sideLen/2; k <= sideLen/2; k++) {
+         // printf("k = %d\n", k);
+         // printf("index %d %d %d\n", (centerIndexV + Eigen::Vector3i(-cellsOut, j, k))(0), (centerIndexV + Eigen::Vector3i(-cellsOut, j, k))(1), (centerIndexV + Eigen::Vector3i(-cellsOut, j, k))(2));
+         cell = GetCellAt(centerIndexV + Eigen::Vector3i(-cellsOut, j, k));
+         if (cell)
+            checkCells.push_back(cell);
+         cell = GetCellAt(centerIndexV + Eigen::Vector3i(cellsOut, j, k));
+         if (cell)
+            checkCells.push_back(cell);
+         // if (cell)
+         //    printf("there's a cell here! %d %d\n", j, k);
+      }
+   }
+   // Add the top and bottom sides
+   for (int i = -sideLen/2+1; i <= sideLen/2-1; i++) {
+      for (int k = -sideLen/2; k < sideLen/2; k++) {
+         cell = GetCellAt(centerIndexV + Eigen::Vector3i(i, -cellsOut, k));
+         if (cell)
+            checkCells.push_back(cell);
+         cell = GetCellAt(centerIndexV + Eigen::Vector3i(i, cellsOut, k));
+         if (cell)
+            checkCells.push_back(cell);
+      }
+   }
+   // Add the front and back sides
+   for (int i = -sideLen/2+1; i <= sideLen/2-1; i++) {
+      for (int j = -sideLen/2+1; j < sideLen/2-1; j++) {
+         cell = GetCellAt(centerIndexV + Eigen::Vector3i(i, j, -cellsOut));
+         if (cell)
+            checkCells.push_back(cell);
+         cell = GetCellAt(centerIndexV + Eigen::Vector3i(i, j, cellsOut));
+         if (cell)
+            checkCells.push_back(cell);
+      }
+   }
+
+   return checkCells;
+}
+
+static bool cellsLeft(Eigen::Vector3i boundOffV, Eigen::Vector3i indexV, Eigen::Vector3i endIndexV) {
+   return ((!boundOffV(0) && indexV(0) >= endIndexV(0)) ||
+           ( boundOffV(0) && indexV(0) <= endIndexV(0)) ) &&
+          ((!boundOffV(1) && indexV(1) >= endIndexV(1)) ||
+           ( boundOffV(1) && indexV(1) <= endIndexV(1)) ) &&
+          ((!boundOffV(2) && indexV(2) >= endIndexV(2)) ||
+           ( boundOffV(2) && indexV(2) <= endIndexV(2)) );
+}
+
+std::vector<SpatialGrid::Cell *> SpatialGrid::findCellsOnLine(Geom::Rayf line, float maxDist) {
+   Eigen::Vector3i boundOffV = Eigen::Vector3i( (line.direction(0) >= 0 ? 1 : 0),
+                                            (line.direction(1) >= 0 ? 1 : 0),
+                                            (line.direction(2) >= 0 ? 1 : 0) );
+   Eigen::Vector3i incrV = Eigen::Vector3i( (boundOffV(0) ? 1 : -1),
+                                            (boundOffV(1) ? 1 : -1),
+                                            (boundOffV(2) ? 1 : -1) );
+
+   std::vector<Cell *> checkCells = std::vector<Cell *>(0);
+
+   Eigen::Vector3i endIndexV = PointToWorldIndex(line.getPointByDist(maxDist));
+   Eigen::Vector3i indexV = PointToWorldIndex(line.start);
+   Eigen::Vector3f boundsV = worldIndexToNegBounds(indexV + boundOffV);
+
+   Geom::Planef nextPlaneX = Geom::Planef(Eigen::Vector3f(boundsV(0), 0, 0), Eigen::Vector3f(1,0,0));
+   Geom::Planef nextPlaneY = Geom::Planef(Eigen::Vector3f(0, boundsV(1), 0), Eigen::Vector3f(0,1,0));
+   Geom::Planef nextPlaneZ = Geom::Planef(Eigen::Vector3f(0, 0, boundsV(2)), Eigen::Vector3f(0,0,1));
+
+   // Move 1 cell forward each iteration and add it to the list
+   while (cellsLeft(boundOffV, indexV, endIndexV)) {
+      Cell * cell = GetCellAt(expandIfNeeded(WorldToRealIndex(indexV)));
+      assert(cell);
+      checkCells.push_back(cell);
+
+      float xNextDist = line.squaredDistToPoint(Geom::Intersectf(line, nextPlaneX));
+      float yNextDist = line.squaredDistToPoint(Geom::Intersectf(line, nextPlaneY));
+      float zNextDist = line.squaredDistToPoint(Geom::Intersectf(line, nextPlaneZ));
+
+      if (xNextDist < yNextDist && xNextDist < zNextDist)
+         indexV(0) += incrV(0);
+      else if (yNextDist < xNextDist && yNextDist < zNextDist)
+         indexV(1) += incrV(1);
+      else
+         indexV(2) += incrV(2);
+
+      boundsV = worldIndexToNegBounds(indexV + boundOffV);
+      nextPlaneX = Geom::Planef(Eigen::Vector3f(boundsV(0), 0, 0), Eigen::Vector3f(1,0,0));
+      nextPlaneY = Geom::Planef(Eigen::Vector3f(0, boundsV(1), 0), Eigen::Vector3f(0,1,0));
+      nextPlaneZ = Geom::Planef(Eigen::Vector3f(0, 0, boundsV(2)), Eigen::Vector3f(0,0,1));
+   }
+
+   return checkCells;
+}
+
+PointDist SpatialGrid::FindNearestToLineInCells(std::vector<Cell *>& checkCells, Geom::Rayf line) {
+   PointDist closestPD;
+   closestPD.pnt = NULL;
+   closestPD.distSq = -1;
+
+   // Compare distances from each cell to find the shortest to the line
+   for (int i = 0; i < checkCells.size(); i++) {
+      PointDist iPD = checkCells[i]->FindClosestToLine(line);
+
+      if (closestPD.pnt) {
+         if (iPD.pnt && iPD.distSq < closestPD.distSq)
+            closestPD = iPD;
+      }
+      else if (iPD.pnt) {
+         closestPD = iPD;
+      }
+   }
+
+   return closestPD;
+}
+
+// ================================================================== //
+// ======================== HELPER FUNCTIONS ======================== //
+// ================================================================== //
+
+Eigen::Vector3i SpatialGrid::RealToWorldIndex(Eigen::Vector3i indexV) {
    return indexV - Eigen::Vector3i(_xIndexOffset, _yIndexOffset, _zIndexOffset);
 }
 
-Eigen::Vector3i SpatialGrid::FindIndicesFromPoint(Eigen::Vector3f pnt) {
+Eigen::Vector3i SpatialGrid::WorldToRealIndex(Eigen::Vector3i indexV) {
+   return indexV + Eigen::Vector3i(_xIndexOffset, _yIndexOffset, _zIndexOffset);
+}
+
+Eigen::Vector3i SpatialGrid::PointToRealIndex(Eigen::Vector3f pnt) {
    int xIndex = int(pnt(0) / _cellWidth) + (pnt(0) < 0 ? -1 : 0) + _xIndexOffset;
    int yIndex = int(pnt(1) / _cellWidth) + (pnt(1) < 0 ? -1 : 0) + _yIndexOffset;
    int zIndex = int(pnt(2) / _cellWidth) + (pnt(2) < 0 ? -1 : 0) + _zIndexOffset;
    return Eigen::Vector3i(xIndex, yIndex, zIndex);
 }
+
+Eigen::Vector3i SpatialGrid::PointToWorldIndex(Eigen::Vector3f pnt) {
+   int xIndex = int(pnt(0) / _cellWidth) + (pnt(0) < 0 ? -1 : 0);
+   int yIndex = int(pnt(1) / _cellWidth) + (pnt(1) < 0 ? -1 : 0);
+   int zIndex = int(pnt(2) / _cellWidth) + (pnt(2) < 0 ? -1 : 0);
+   return Eigen::Vector3i(xIndex, yIndex, zIndex);
+}
+
+Eigen::Vector3f SpatialGrid::worldIndexToNegBounds(Eigen::Vector3i wIndexV) {
+   return _cellWidth * wIndexV.cast<float>();
+}
+
 
 SpatialGrid::Cell * SpatialGrid::GetCellAt(Eigen::Vector3i indexV) {
    if ( indexV(0) < 0 || indexV(0) >= xSize() ||
