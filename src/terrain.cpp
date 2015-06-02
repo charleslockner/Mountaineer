@@ -5,7 +5,6 @@
 
 #include <algorithm>
 
-#define UV_STEP_SIZE .025
 #define MAX_FIND_DIST 40
 
 using namespace Eigen;
@@ -88,7 +87,6 @@ Model * TerrainGenerator::GenerateModel() {
    }
 
    ExtendPaths();
-   SmoothPathPositions();
    MergePaths();
    CreateNeededPaths();
    AddVerticesAndFaces();
@@ -132,7 +130,6 @@ PointDist TerrainGenerator::FindClosestToLine(Geom::Rayf line) {
 
 void TerrainGenerator::BuildStep() {
    ExtendPaths();
-   SmoothPathPositions();
    MergePaths();
    CreateNeededPaths();
    AddVerticesAndFaces();
@@ -145,9 +142,13 @@ void TerrainGenerator::PickPathsToExtend(Vector3f center, float radius) {
    float radiusSq = radius * radius;
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
-      float distFromCenterSq = (p->headV->position - center).squaredNorm();
-      if (distFromCenterSq < radiusSq)
+      float headDistSq = (p->headV->position - center).squaredNorm();
+      float tailDistSq = (p->tailV->position - center).squaredNorm();
+
+      if (headDistSq < radiusSq)
          p->buildAction = Path::BuildAction::ADVANCE;
+      else if (headDistSq > radiusSq && tailDistSq > radiusSq)
+         p->buildAction = Path::BuildAction::RETREAT;
       else
          p->buildAction = Path::BuildAction::STATION;
    }
@@ -155,21 +156,19 @@ void TerrainGenerator::PickPathsToExtend(Vector3f center, float radius) {
 
 void TerrainGenerator::ExtendPaths() {
    int numPaths = paths.size();
+
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
+
       if (p->buildAction == Path::BuildAction::ADVANCE) {
-         Vector3f randY = randRange(-0.1, 0.1) * p->headV->normal;
-         Vector3f newPos = p->headV->position + edgeLength * (p->heading + randY).normalized();
+         Vector3f randY = randRange(-0.05, 0.05) * p->headV->normal;
 
          // Add vertex created from extending the path
          Vertex * v = new Vertex();
-         v->position = newPos;
+         v->position = p->headV->position + edgeLength * (p->heading + randY).normalized();
          v->tangent = p->headV->tangent;
          v->bitangent = p->headV->bitangent;
          v->normal = p->headV->normal;
-
-         Matrix3f iTBN = Mmath::InverseTBN(v->tangent, v->bitangent, v->normal);
-         v->uv = p->headV->uv + UV_STEP_SIZE * (iTBN * (newPos - p->headV->position)).head<2>();
 
          // Update the path
          p->tailV = p->headV;
@@ -178,14 +177,12 @@ void TerrainGenerator::ExtendPaths() {
          p->calculateHeading();
       }
    }
-}
 
-void TerrainGenerator::SmoothPathPositions() {
-   int numPaths = paths.size();
+   // Smooth the positions of the newly created vertices
    std::vector<Vector3f> updatedPositions = std::vector<Vector3f>(numPaths);
-
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
+
       if (p->buildAction == Path::BuildAction::ADVANCE) {
          Vector3f midTail = 0.5f * (p->leftP->tailV->position + p->rightP->tailV->position);
          Vector3f midHead = 0.5f * (p->leftP->headV->position + p->rightP->headV->position);
@@ -195,9 +192,13 @@ void TerrainGenerator::SmoothPathPositions() {
       }
    }
 
-   for (int i = 0; i < numPaths; i++)
+   // Update the position and uv coords
+   for (int i = 0; i < numPaths; i++) {
+      Path * p = paths[i];
       if (paths[i]->buildAction == Path::BuildAction::ADVANCE)
-         paths[i]->headV->position = updatedPositions[i];
+         p->headV->position = updatedPositions[i];
+      p->calculateUV();
+   }
 }
 
 void TerrainGenerator::MergePaths() {
@@ -211,12 +212,13 @@ void TerrainGenerator::MergePaths() {
       float headDistSq = (keepV->position - removeV->position).squaredNorm();
       float minDistSq = square(0.6f * edgeLength);
 
-      // If distance between the heads is too small
+      // If there is not enough distance between the heads
       if ( midP->buildAction == Path::BuildAction::ADVANCE &&
            rightP->buildAction == Path::BuildAction::ADVANCE &&
            midP->tailV != rightP->tailV &&
            headDistSq < minDistSq ) {
-         // Delete the right vertex and set all paths that had this vertex to the mid vertex
+
+         // Average the positions of the heads
          Path * curP = rightP;
          int numConverging = 1;
          while (curP->headV == removeV) {
@@ -225,8 +227,9 @@ void TerrainGenerator::MergePaths() {
             numConverging++;
             curP = curP->rightP;
          }
-
          keepV->position = (1.0f/numConverging) * keepV->position;
+
+         // Delete the vertex that all the paths to the right had as a head
          delete(removeV);
       }
    }

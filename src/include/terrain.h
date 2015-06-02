@@ -10,6 +10,8 @@
 class Model;
 struct Vertex;
 
+#define UV_STEP_SIZE .025
+
 class TerrainGenerator {
 public:
    TerrainGenerator();
@@ -40,6 +42,11 @@ private:
       inline void calculateHeading() {
          heading = (headV->position - tailV->position).normalized();
       }
+      inline void calculateUV() {
+         Eigen::Matrix3f iTBN = Mmath::InverseTBN(headV->tangent, headV->bitangent, headV->normal);
+         headV->uv = tailV->uv + UV_STEP_SIZE * (iTBN * (headV->position - tailV->position)).head<2>();
+      }
+
       inline Eigen::Vector3f getPosition() {
          return headV->getPosition();
       }
@@ -56,8 +63,8 @@ private:
 
    void BuildStep();
    void PickPathsToExtend(Eigen::Vector3f center, float radius);
+
    void ExtendPaths();
-   void SmoothPathPositions();
    void MergePaths();
    void CreateNeededPaths();
    void AddVerticesAndFaces();

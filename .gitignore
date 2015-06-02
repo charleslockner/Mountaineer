@@ -2,5 +2,7 @@
 *.swp
 bin/*
 obj/*
+game/obj/*
+test/obj/*
 .DS_Store
 *.zip

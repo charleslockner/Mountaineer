@@ -62,6 +62,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_I:
          case GLFW_KEY_M:
          case GLFW_KEY_G:
+            terrainGenerator->UpdateMesh(climberEnt->position, 100);
             break;
          default:
             keyToggles[key] = true;
@@ -251,7 +252,7 @@ static void initialize() {
    boneIndices.push_back(23);
    boneIndices.push_back(24);
    boneIndices.push_back(25);
-   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
    boneIndices.clear();
 
    boneIndices.push_back(0);
@@ -260,7 +261,7 @@ static void initialize() {
    boneIndices.push_back(28);
    boneIndices.push_back(29);
    boneIndices.push_back(30);
-   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
    boneIndices.clear();
 
    entities.push_back(climberEnt);
@@ -309,11 +310,11 @@ double timeCount = 0;
 static void updateEntities(double timePassed) {
    skyEnt->position = camera->position + Eigen::Vector3f(0, -250, 0);
 
-   timeCount += timePassed;
-   if (timeCount > 0) {
-      terrainGenerator->UpdateMesh(climberEnt->position, 100);
-      timeCount -= 0.05;
-   }
+   // timeCount += timePassed;
+   // if (timeCount > 0) {
+   //    terrainGenerator->UpdateMesh(climberEnt->position, 100);
+   //    timeCount -= 0.05;
+   // }
 
    if (keyToggles[GLFW_KEY_T]) {
       float distTraveled = 20 * timePassed;
