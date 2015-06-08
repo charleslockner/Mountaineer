@@ -40,6 +40,7 @@ clean:
 -include $(OBJS:.o=.d)
 
 $(EXE): $(OBJS) $(ENGINE)
+	@mkdir -p $(@D)
 	$(CC) -o $(EXE) $(OBJS) $(ENGINE) $(LIB)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp

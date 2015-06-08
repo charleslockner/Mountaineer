@@ -1,6 +1,6 @@
 
 #include "terrain.h"
-// #include "reducer.h"
+#include "reducer.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -473,16 +473,19 @@ void TerrainGenerator::RemoveRetreatingGeometry() {
                 neighV != p->rightP->headV && neighV != p->rightP->tailV &&
                 neighV != p->tailV) {
                printf("Merging pathless neighbors\n");
-               // MR::Collapse(model, neighV, removeV);
+               MR::Collapse(model, neighV, removeV);
             }
          }
 
          // Merge the head with the tail to delete the headV
-         // MR::Collapse(model, removeV, p->tailV);
+         MR::Collapse(model, removeV, p->tailV);
 
          // Move the path down
-         // p->headV = p->tailV;
-         // p->tailV = neighborFromDirection(p->tailV, - p->heading);
+         p->headV = p->tailV;
+         p->tailV = neighborFromDirection(p->tailV, - p->heading);
+
+         printf("p->head neighbor count %d\n", p->headV->neighbors.size());
+         printf("p->head face count %d\n", p->headV->faces.size());
       }
    }
    printf("Finished retreating =============== count = %d\n", paths.size());
