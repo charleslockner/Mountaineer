@@ -103,7 +103,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
                glEnable(GL_CULL_FACE);
             break;
          case GLFW_KEY_G:
-            // terrainGenerator->UpdateMesh(camGoal, 10);
             break;
          default:
             keyToggles[key] = false;
@@ -413,7 +412,6 @@ int main(int argc, char ** argv) {
       lastTime = timePassed;
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
       updateLoop(window, deltaTime); // game code
 
       glfwSwapBuffers(window);

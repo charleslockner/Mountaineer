@@ -1,8 +1,9 @@
 
 #include "terrain.h"
-#include "stdio.h"
-#include "assert.h"
+// #include "reducer.h"
 
+#include <stdio.h>
+#include <assert.h>
 #include <algorithm>
 
 #define MAX_FIND_DIST 40
@@ -44,50 +45,6 @@ static void addFaceToVertexReferences(Face * f) {
    f->vertices[2]->faces.push_back(f);
 }
 
-static void removeNeighborReferences(Vertex * v) {
-   int numNeighs = v->neighbors.size();
-   for (int i = 0; i < numNeighs; i++) {
-      Vertex * n = v->neighbors[i];
-      n->neighbors.erase(find(n->neighbors.begin(), n->neighbors.end(), v));
-   }
-}
-
-static void removeFaceFromVertexReferences(Face * f) {
-   std::vector<Face *>::iterator it = find(f->vertices[0]->faces.begin(), f->vertices[0]->faces.end(), f);
-   if (it == f->vertices[0]->faces.end())
-      printf("face not found at vertex 0!\n");
-   else
-      f->vertices[0]->faces.erase(it);
-
-   it = find(f->vertices[1]->faces.begin(), f->vertices[1]->faces.end(), f);
-   if (it == f->vertices[1]->faces.end())
-      printf("face not found at vertex 1!\n");
-   else
-      f->vertices[1]->faces.erase(it);
-
-   it = find(f->vertices[2]->faces.begin(), f->vertices[2]->faces.end(), f);
-   if (it == f->vertices[2]->faces.end())
-      printf("face not found at vertex 2!\n");
-   else
-      f->vertices[2]->faces.erase(it);
-}
-
-static bool areNeighbors(Vertex * a, Vertex * b) {
-   int aNumNeighs = a->neighbors.size();
-   int bNumNeighs = b->neighbors.size();
-
-   if (aNumNeighs < bNumNeighs)
-      for (int i = 0; i < aNumNeighs; i++)
-         if (a->neighbors[i] == b)
-            return true;
-   else
-      for (int i = 0; i < bNumNeighs; i++)
-         if (b->neighbors[i] == a)
-            return true;
-
-   return false;
-}
-
 static Vertex * neighborFromDirection(Vertex * baseV, Vector3f dir) {
    int numNeighs = baseV->neighbors.size();
    if (numNeighs == 0) {
@@ -107,7 +64,6 @@ static Vertex * neighborFromDirection(Vertex * baseV, Vector3f dir) {
    }
    return bestVert;
 }
-
 
 // ============================================================ //
 // ===================== PUBLIC FUNCTIONS ===================== //
@@ -224,7 +180,7 @@ void TerrainGenerator::ExtendPaths() {
       Path * p = paths[i];
 
       if (p->buildAction == Path::BuildAction::ADVANCE) {
-         printf("Advancing path %d\n", i);
+         // printf("Advancing path %d\n", i);
 
          Vector3f randY = randRange(-0.05, 0.05) * p->headV->normal;
 
@@ -497,72 +453,36 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
 }
 
 void TerrainGenerator::RemoveRetreatingGeometry() {
-   printf("Removing Reatreating Geometry =============== count = %d\n", paths.size());
+   printf("Removing Retreating Geometry =============== count = %d\n", paths.size());
    int numPaths = paths.size();
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
 
       if (p->buildAction == Path::BuildAction::RETREAT) {
          printf("Retreating path %d\n", i);
-         // printf("p head neighbor count = %d\n", p->headV->neighbors.size());
          if (p->headV == p->rightP->headV)
             printf("Path heads are the same\n");
-         // if (p->tailV == p->rightP->tailV)
-         //    printf("Path tails are the same\n");
 
          Vertex * removeV = p->headV;
 
-         // Remove adjacent faces
-         while (removeV->faces.size() > 0) {
-            // printf("removing face\n");
-            Face * f = removeV->faces[0];
-            removeFaceFromVertexReferences(f);
-            model->faces.erase(find(model->faces.begin(), model->faces.end(), f));
-            delete(f);
-         }
-
-         // Remove adjacent vertex references
-         removeNeighborReferences(removeV);
-
-         // Iterate through removeV's neighbors
+         // If a neighbor to path's headV is not on a path, merge it with the head
          int neighCount = removeV->neighbors.size();
          for (int j = 0; j < neighCount; j++) {
             Vertex * neighV = removeV->neighbors[j];
-
-            // If a neighbor is not on a path
             if (neighV != p->leftP->headV && neighV != p->leftP->tailV &&
                 neighV != p->rightP->headV && neighV != p->rightP->tailV &&
                 neighV != p->tailV) {
-               printf("Creating a new path\n");
-
-               // Create a path
-               Path * newP = new Path();
-               newP->headV = neighV;
-               newP->tailV = neighborFromDirection(neighV, -directionFromPoints(removeV->position, neighV->position));
-               if (areNeighbors(neighV, p->leftP->headV) || areNeighbors(neighV, p->leftP->tailV)) {
-                  newP->leftP = p->leftP;
-                  newP->rightP = p;
-                  p->leftP->rightP = newP;
-                  p->leftP = newP;
-               } else {
-                  newP->leftP = p;
-                  newP->rightP = p->rightP;
-                  p->rightP = newP;
-                  p->rightP->leftP = newP;
-               }
-               newP->buildAction = Path::BuildAction::STATION;
-               newP->heading = (newP->headV->position - newP->tailV->position).normalized();
-               paths.push_back(newP);
+               printf("Merging pathless neighbors\n");
+               // MR::Collapse(model, neighV, removeV);
             }
          }
 
-         // Move the path down
-         p->headV = p->tailV;
-         p->tailV = neighborFromDirection(p->tailV, -p->heading);
+         // Merge the head with the tail to delete the headV
+         // MR::Collapse(model, removeV, p->tailV);
 
-         // Delete the vertex finally
-         model->vertices.erase(find(model->vertices.begin(), model->vertices.end(), removeV));
-         delete(removeV);
+         // Move the path down
+         // p->headV = p->tailV;
+         // p->tailV = neighborFromDirection(p->tailV, - p->heading);
       }
    }
    printf("Finished retreating =============== count = %d\n", paths.size());
@@ -586,5 +506,5 @@ void TerrainGenerator::RemoveConvergingPaths() {
          i--;
       }
    }
-   printf("Finished removing converging. Count = %d\n", paths.size());
+   // printf("Finished removing converging. Count = %d\n", paths.size());
 }

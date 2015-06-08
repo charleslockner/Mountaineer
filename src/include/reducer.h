@@ -2,11 +2,12 @@
 #ifndef __REDUCER_H__
 #define __REDUCER_H__
 
+struct Model;
 struct Vertex;
 
 namespace MR {
 
-   void Collapse(Vertex * from, Vertex * to);
+   void Collapse(Model * model, Vertex * from, Vertex * to);
 
 }
 
