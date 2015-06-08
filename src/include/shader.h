@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "light.h"
 #include "entity.h"
+#include "terrain.h"
 
 class Entity;
 class ModelEntity;
@@ -21,6 +22,7 @@ public:
    void renderVertices(Camera * camera, ModelEntity * entity);
    void renderBones(Camera * camera, BonifiedEntity * entity);
    void renderPoint(Camera * camera, Eigen::Vector3f p);
+   void renderPaths(Camera * camera, TerrainGenerator * tg);
 
 protected:
    typedef struct {

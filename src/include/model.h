@@ -48,6 +48,8 @@ typedef struct BoneWeight {
    float weight;
 } BoneWeight;
 
+class Face;
+
 class Vertex: public Geom::Positionalf {
 public:
    unsigned int index;
@@ -60,6 +62,17 @@ public:
    float boneInfCount;
    float boneIndices[MAX_INFLUENCES];
    float boneWeights[MAX_INFLUENCES];
+
+   std::vector<Vertex *> neighbors; // neighboring vertices
+   std::vector<Face *> faces; // faces that use this vertex as a corner
+
+   inline bool hasNeighbor(Vertex * n) {
+      int numNeighs = neighbors.size();
+      for (int i = 0; i < numNeighs; i++)
+         if (neighbors[i] == n)
+            return true;
+      return false;
+   }
 
    inline Eigen::Vector3f getPosition() {
       return position;

@@ -105,6 +105,29 @@ void EntityShader::renderBones(Camera * camera, BonifiedEntity * entity) {
    }
 }
 
+void EntityShader::renderPaths(Camera * camera, TerrainGenerator * tg) {
+   Model * model = tg->model;
+
+   for (int i = 0; i < tg->paths.size(); i++) {
+      TerrainGenerator::Path * p = tg->paths[i];
+      float colorRatio = tg->paths.size() ? (1.0f * i / (tg->paths.size())) : 1;
+      Eigen::Vector3f h = p->headV->position;
+      Eigen::Vector3f t = p->tailV->position;
+      renderPoint(camera, Eigen::Vector3f(h(0), h(1), h(2)));
+      renderPoint(camera, Eigen::Vector3f(t(0), t(1), t(2)));
+
+      glLineWidth(3);
+      glBegin(GL_LINES);
+
+      glColor3f(colorRatio,0,1-colorRatio);
+      glVertex3f(t(0), t(1), t(2));
+      glVertex3f(h(0), h(1), h(2));
+
+      glEnd();
+      glLineWidth(1);
+   }
+}
+
 void EntityShader::renderPoint(Camera * camera, Eigen::Vector3f p) {
    glMatrixMode(GL_PROJECTION);
    glLoadMatrixf(camera->getProjectionM().data());

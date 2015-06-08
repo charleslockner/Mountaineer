@@ -61,8 +61,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_C:
          case GLFW_KEY_I:
          case GLFW_KEY_M:
+            break;
          case GLFW_KEY_G:
-            terrainGenerator->UpdateMesh(climberEnt->position, 100);
+            printf("pressed g\n");
+            terrainGenerator->UpdateMesh(camera->position, 10);
             break;
          default:
             keyToggles[key] = true;
@@ -310,11 +312,11 @@ double timeCount = 0;
 static void updateEntities(double timePassed) {
    skyEnt->position = camera->position + Eigen::Vector3f(0, -250, 0);
 
-   // timeCount += timePassed;
-   // if (timeCount > 0) {
-   //    terrainGenerator->UpdateMesh(climberEnt->position, 100);
-   //    timeCount -= 0.05;
-   // }
+   timeCount += timePassed;
+   if (timeCount > 0 && timeCount < 2) {
+      terrainGenerator->UpdateMesh(Eigen::Vector3f(0,0,0), 10);
+      // timeCount -= 0.05;
+   }
 
    if (keyToggles[GLFW_KEY_T]) {
       float distTraveled = 20 * timePassed;
@@ -348,6 +350,7 @@ static void draw(double deltaTime) {
       entShader->renderVertices(camera, terrainEnt);
       entShader->renderBones(camera, climberEnt);
       entShader->renderBones(camera, climberEnt);
+      entShader->renderPaths(camera, terrainGenerator);
    }
 
    entShader->renderPoint(camera, camGoal);

@@ -168,4 +168,4 @@ obj/main.o: src/main.cpp ../src/include/safe_gl.h ../lib/include/GLFW/glfw3.h \
  ../lib/include/eigen/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
  ../lib/include/eigen/Eigen/src/Core/util/ReenableStupidWarnings.h \
  ../src/include/model.h ../src/include/geometry.h ../src/include/light.h \
- ../src/include/climber.h ../src/include/terrain.h ../src/include/grid.h
+ ../src/include/terrain.h ../src/include/grid.h ../src/include/climber.h

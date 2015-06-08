@@ -25,7 +25,6 @@ public:
    // Returns the closest point on the mesh to the line
    PointDist FindClosestToLine(Geom::Rayf line);
 
-private:
    class Path: public Geom::Positionalf {
    public:
       enum BuildAction {
@@ -55,10 +54,13 @@ private:
       }
    };
 
+   std::vector<Path *> paths;
    Model * model;
+
+private:
+
    SpatialGrid * grid;
 
-   std::vector<Path *> paths;
    float edgeLength;
 
    void BuildStep();
@@ -69,6 +71,8 @@ private:
    void CreateNeededPaths();
    void AddVerticesAndFaces();
    void RemoveConvergingPaths();
+   void RemoveRetreatingGeometry();
+
 
    void HandleSameHead(Path * leftP, Path * rightP);
    void HandleSameTail(Path * leftP, Path * rightP);
