@@ -2,9 +2,19 @@
 #include "terrain.h"
 #include "reducer.h"
 
-#include <stdio.h>
+#include <iostream>
 #include <assert.h>
 #include <algorithm>
+#include <sys/time.h>
+
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range.h"
+#include "tbb/tbb_allocator.h"
+#include "tbb/atomic.h"
+#include "tbb/task_scheduler_init.h"
+#include "tbb/parallel_sort.h"
+#include "tbb/concurrent_vector.h"
+#include "tbb/mutex.h"
 
 #define MAX_FIND_DIST 40
 #define NUM_INIT_PATHS 6
@@ -63,6 +73,24 @@ static Vertex * neighborFromDirection(Vertex * baseV, Vector3f dir) {
       }
    }
    return bestVert;
+}
+
+long long last = 0;
+
+static void startTimer() {
+   struct timeval tp;
+   gettimeofday(&tp, NULL);
+   last = (long long) 1000000 * tp.tv_sec + tp.tv_usec;
+   std::cout << "Starting timer\n";
+}
+
+static void printTimeDelta() {
+   struct timeval tp;
+   gettimeofday(&tp, NULL);
+   long long curTime = (long long) 1000000 * tp.tv_sec + tp.tv_usec; //get current timestamp in milliseconds
+   long long timeDiff = curTime - last;
+   last = curTime;
+   std::cout << "time since last = " << timeDiff << std::endl;
 }
 
 // ============================================================ //
@@ -139,19 +167,35 @@ void TerrainGenerator::UpdateMesh(Vector3f center, float radius) {
 // ============================================================ //
 
 void TerrainGenerator::BuildStep() {
+   // startTimer();
+
    ExtendPaths();
+   // printTimeDelta();
+
    MergePaths();
+   // printTimeDelta();
+
    CreateNeededPaths();
+   // printTimeDelta();
+
    AddVerticesAndFaces();
+   // printTimeDelta();
+
    RemoveRetreatingGeometry();
+   // printTimeDelta();
+
    RemoveConvergingPaths();
+   // printTimeDelta();
+
    model->CalculateNormals();
+   // printTimeDelta();
 
    model->vertexCount = model->vertices.size();
    model->faceCount = model->faces.size();
 
    model->bufferVertices();
    model->bufferIndices();
+   // printTimeDelta();
 
    // printf("Step: paths %d, verts %d, faces %d, center (%.2f, %.2f, %.2f)\n", paths.size(), model->vertices.size(), model->faces.size(), center(0), center(1), center(2));
 }
@@ -159,7 +203,8 @@ void TerrainGenerator::BuildStep() {
 void TerrainGenerator::PickPathsToExtend(Vector3f center, float radius) {
    int numPaths = paths.size();
    float radiusSq = radius * radius;
-   for (int i = 0; i < numPaths; i++) {
+
+   tbb::parallel_for ((size_t)0, (size_t)numPaths, [&](size_t i) {
       Path * p = paths[i];
       float headDistSq = (p->headV->position - center).squaredNorm();
       float tailDistSq = (p->tailV->position - center).squaredNorm();
@@ -170,13 +215,13 @@ void TerrainGenerator::PickPathsToExtend(Vector3f center, float radius) {
          p->buildAction = Path::BuildAction::RETREAT;
       else
          p->buildAction = Path::BuildAction::STATION;
-   }
+   });
 }
 
 void TerrainGenerator::ExtendPaths() {
    int numPaths = paths.size();
 
-   for (int i = 0; i < numPaths; i++) {
+   tbb::parallel_for ((size_t)0, (size_t)numPaths, [&](size_t i) {
       Path * p = paths[i];
 
       if (p->buildAction == Path::BuildAction::ADVANCE) {
@@ -186,7 +231,7 @@ void TerrainGenerator::ExtendPaths() {
 
          // Add vertex created from extending the path
          Vertex * v = new Vertex();
-         v->position = p->headV->position + edgeLength * (p->heading + randY).normalized();
+         v->position = p->headV->position + edgeLength * (p->heading).normalized();
          v->tangent = p->headV->tangent;
          v->bitangent = p->headV->bitangent;
          v->normal = p->headV->normal;
@@ -197,11 +242,11 @@ void TerrainGenerator::ExtendPaths() {
 
          p->calculateHeading();
       }
-   }
+   });
 
    // Smooth the positions of the newly created vertices
    std::vector<Vector3f> updatedPositions = std::vector<Vector3f>(numPaths);
-   for (int i = 0; i < numPaths; i++) {
+   tbb::parallel_for ((size_t)0, (size_t)numPaths, [&](size_t i) {
       Path * p = paths[i];
 
       if (p->buildAction == Path::BuildAction::ADVANCE) {
@@ -211,15 +256,15 @@ void TerrainGenerator::ExtendPaths() {
          Vector3f properPos = midTail + edgeLength * midDir;
          updatedPositions[i] = 0.25f * p->headV->position + 0.75f * properPos;
       }
-   }
+   });
 
    // Update the position and uv coords
-   for (int i = 0; i < numPaths; i++) {
+   tbb::parallel_for ((size_t)0, (size_t)numPaths, [&](size_t i) {
       Path * p = paths[i];
       if (paths[i]->buildAction == Path::BuildAction::ADVANCE)
          p->headV->position = updatedPositions[i];
       p->calculateUV();
-   }
+   });
 }
 
 void TerrainGenerator::MergePaths() {
@@ -312,7 +357,6 @@ void TerrainGenerator::AddVerticesAndFaces() {
           selfP->headV != rightP->headV) {
          selfP->headV->index = model->vertices.size();
          model->vertices.push_back(selfP->headV);
-         grid->Add(selfP->headV);
       }
 
       // Add the faces and neighbors
@@ -322,8 +366,10 @@ void TerrainGenerator::AddVerticesAndFaces() {
          HandleSameTail(selfP, rightP);
       else if (selfP->headV != rightP->headV && selfP->tailV != rightP->tailV)
          HandleBothDiff(selfP, rightP);
-      else
+      else {
          printf("Overlapping path at %d. woops...\n", i);
+         exit(1);
+      }
    }
 }
 
@@ -453,42 +499,25 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
 }
 
 void TerrainGenerator::RemoveRetreatingGeometry() {
+   // startTimer();
+
    // printf("Removing Retreating Geometry =============== count = %d\n", paths.size());
    int numPaths = paths.size();
-   for (int i = 0; i < numPaths; i++) {
+
+   tbb::parallel_for ((size_t)0, (size_t)numPaths, [&](size_t i) {
       Path * p = paths[i];
 
       if (p->buildAction == Path::BuildAction::RETREAT) {
-         // printf("Retreating path %d\n", i);
-         // if (p->headV == p->rightP->headV)
-         //    printf("Path heads are the same\n");
-
-         Vertex * removeV = p->headV;
-
-         // If a neighbor to path's headV is not on a path, merge it with the head
-         int neighCount = removeV->neighbors.size();
-         for (int j = 0; j < neighCount; j++) {
-            Vertex * neighV = removeV->neighbors[j];
-            if (neighV != p->leftP->headV && neighV != p->leftP->tailV &&
-                neighV != p->rightP->headV && neighV != p->rightP->tailV &&
-                neighV != p->tailV) {
-               // printf("Merging pathless neighbors\n");
-               MR::Collapse(model, neighV, removeV);
-            }
-         }
-
          // Merge the head with the tail to delete the headV
-         MR::Collapse(model, removeV, p->tailV);
+         MR::Collapse(model, p->headV, p->tailV);
 
          // Move the path down
          p->headV = p->tailV;
          p->tailV = neighborFromDirection(p->tailV, - p->heading);
-
-         // printf("p->head neighbor count %d\n", p->headV->neighbors.size());
-         // printf("p->head face count %d\n", p->headV->faces.size());
       }
-   }
+   });
    // printf("Finished retreating =============== count = %d\n", paths.size());
+   // printTimeDelta();
 }
 
 void TerrainGenerator::RemoveConvergingPaths() {

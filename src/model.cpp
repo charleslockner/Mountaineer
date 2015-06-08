@@ -101,7 +101,7 @@ static void bufferVertexField(char ** ptrData, size_t offset, unsigned int vbo, 
       std::memcpy(& toGPU[size*i], & (ptrData[i][offset]), size);
 
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, numBytes, toGPU, GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, numBytes, toGPU, GL_DYNAMIC_DRAW);
    free(toGPU);
 }
 

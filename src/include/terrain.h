@@ -17,13 +17,13 @@ public:
    TerrainGenerator();
    // Creates and returns the initial model
    Model * GenerateModel();
-   // Extends the paths that are within the sphere,
-   // Removes the paths that are outside of it
+   // Extends the paths that are within the sphere, and removes the paths that are outside of it
    void UpdateMesh(Eigen::Vector3f center, float radius);
-   // Returns the closest point on the mesh to target point
-   PointDist FindClosestToPoint(Eigen::Vector3f target);
-   // Returns the closest point on the mesh to the line
-   PointDist FindClosestToLine(Geom::Rayf line);
+
+   // // Returns the closest point on the mesh to target point
+   // PointDist FindClosestToPoint(Eigen::Vector3f target);
+   // // Returns the closest point on the mesh to the line
+   // PointDist FindClosestToLine(Geom::Rayf line);
 
    class Path: public Geom::Positionalf {
    public:

@@ -1,7 +1,18 @@
 #include "reducer.h"
 #include "model.h"
+
 #include <assert.h>
-#include <stdio.h>
+#include <algorithm>
+#include <iostream>
+
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range.h"
+#include "tbb/tbb_allocator.h"
+#include "tbb/atomic.h"
+#include "tbb/task_scheduler_init.h"
+#include "tbb/parallel_sort.h"
+#include "tbb/concurrent_vector.h"
+#include "tbb/mutex.h"
 
 // ========================================================== //
 // ==================== STATIC FUNCTIONS ==================== //
@@ -54,8 +65,12 @@ static bool areNeighbors(Vertex * a, Vertex * b) {
 
 namespace MR {
 
+   tbb::mutex M1;
+   tbb::mutex M2;
+
    void Collapse(Model * model, Vertex * fromV, Vertex * toV) {
       // assert(areNeighbors(fromV, toV));
+      M1.lock();
 
       // Remove shared faces
       for (int i = 0; i < fromV->faces.size(); i++) {
@@ -71,21 +86,22 @@ namespace MR {
          }
       }
 
-      // Update fromV's faces' vertex references
       int numFromFaces = fromV->faces.size();
       for (int i = 0; i < fromV->faces.size(); i++) {
+         // Update fromV's faces' vertex references
          for (int j = 0; j < NUM_FACE_EDGES; j++) {
             if (fromV->faces[i]->vertices[j] == fromV) {
                fromV->faces[i]->vertices[j] = toV;
                break;
             }
          }
-      }
 
-      // Add each face of fromV to toV's face references
-      for (int i = 0; i < numFromFaces; i++) {
+         // Add each face of fromV to toV's face references
          toV->faces.push_back(fromV->faces[i]);
       }
+
+      M1.unlock();
+      M2.lock();
 
       // Update neighbor references
       int numFromNeighs = fromV->neighbors.size();
@@ -101,19 +117,21 @@ namespace MR {
       removeNeighborReferences(fromV);
 
       // Remove fromV from model's vertex list
-      int ndx = -1;
-      while (model->vertices[++ndx] != fromV);
-      model->vertices.erase(model->vertices.begin() + ndx);
+      std::vector<Vertex *>::iterator it = find(model->vertices.begin(), model->vertices.end(), fromV);
+      model->vertices.erase(it);
 
       // Update all id's after the one removed.
-      int numVerts = model->vertices.size();
-      while (ndx < numVerts) {
-         model->vertices[ndx]->index = model->vertices[ndx]->index - 1;
-         ndx++;
+      int delNdx = it - model->vertices.begin();
+      int numVerts = model->vertices.size() - delNdx;
+
+      for (int i = 0; i < numVerts; i++) {
+         model->vertices[delNdx + i]->index--;
       }
 
       // Finally delete the damn thing
       delete fromV;
+
+      M2.unlock();
    }
 
 }
