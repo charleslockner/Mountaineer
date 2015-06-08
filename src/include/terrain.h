@@ -70,9 +70,9 @@ private:
    void MergePaths();
    void CreateNeededPaths();
    void AddVerticesAndFaces();
-   void RemoveConvergingPaths();
    void RemoveRetreatingGeometry();
-
+   void RemoveConvergingPaths();
+   void CalculateVertexNormals();
 
    void HandleSameHead(Path * leftP, Path * rightP);
    void HandleSameTail(Path * leftP, Path * rightP);

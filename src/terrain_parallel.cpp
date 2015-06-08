@@ -167,35 +167,35 @@ void TerrainGenerator::UpdateMesh(Vector3f center, float radius) {
 // ============================================================ //
 
 void TerrainGenerator::BuildStep() {
-   // startTimer();
+   startTimer();
 
    ExtendPaths();
-   // printTimeDelta();
+   printTimeDelta();
 
    MergePaths();
-   // printTimeDelta();
+   printTimeDelta();
 
    CreateNeededPaths();
-   // printTimeDelta();
+   printTimeDelta();
 
    AddVerticesAndFaces();
-   // printTimeDelta();
+   printTimeDelta();
 
    RemoveRetreatingGeometry();
-   // printTimeDelta();
+   printTimeDelta();
 
    RemoveConvergingPaths();
-   // printTimeDelta();
+   printTimeDelta();
 
-   model->CalculateNormals();
-   // printTimeDelta();
+   CalculateVertexNormals();
+   printTimeDelta();
 
    model->vertexCount = model->vertices.size();
    model->faceCount = model->faces.size();
 
    model->bufferVertices();
    model->bufferIndices();
-   // printTimeDelta();
+   printTimeDelta();
 
    // printf("Step: paths %d, verts %d, faces %d, center (%.2f, %.2f, %.2f)\n", paths.size(), model->vertices.size(), model->faces.size(), center(0), center(1), center(2));
 }
@@ -386,6 +386,7 @@ void TerrainGenerator::HandleSameHead(Path * midP, Path * rightP) {
       f->vertices[0] = midP->headV;
       f->vertices[1] = midP->tailV;
       f->vertices[2] = rightP->tailV;
+      f->calculateNormal();
       model->faces.push_back(f);
       addFaceToVertexReferences(f);
 
@@ -402,6 +403,7 @@ void TerrainGenerator::HandleSameTail(Path * midP, Path * rightP) {
       f->vertices[0] = midP->headV;
       f->vertices[1] = midP->tailV;
       f->vertices[2] = rightP->headV;
+      f->calculateNormal();
       model->faces.push_back(f);
       addFaceToVertexReferences(f);
 
@@ -423,6 +425,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
       f->vertices[0] = midP->headV;
       f->vertices[1] = midP->tailV;
       f->vertices[2] = rightP->headV;
+      f->calculateNormal();
       model->faces.push_back(f);
       addFaceToVertexReferences(f);
 
@@ -438,6 +441,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
       f->vertices[0] = midP->headV;
       f->vertices[1] = rightP->tailV;
       f->vertices[2] = rightP->headV;
+      f->calculateNormal();
       model->faces.push_back(f);
       addFaceToVertexReferences(f);
 
@@ -459,6 +463,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
          f->vertices[0] = midP->headV;
          f->vertices[1] = midP->tailV;
          f->vertices[2] = rightP->headV;
+         f->calculateNormal();
          model->faces.push_back(f);
          addFaceToVertexReferences(f);
 
@@ -466,6 +471,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
          f->vertices[0] = rightP->headV;
          f->vertices[1] = midP->tailV;
          f->vertices[2] = rightP->tailV;
+         f->calculateNormal();
          model->faces.push_back(f);
          addFaceToVertexReferences(f);
 
@@ -480,6 +486,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
          f->vertices[0] = midP->headV;
          f->vertices[1] = midP->tailV;
          f->vertices[2] = rightP->tailV;
+         f->calculateNormal();
          model->faces.push_back(f);
          addFaceToVertexReferences(f);
 
@@ -487,6 +494,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
          f->vertices[0] = rightP->headV;
          f->vertices[1] = midP->headV;
          f->vertices[2] = rightP->tailV;
+         f->calculateNormal();
          model->faces.push_back(f);
          addFaceToVertexReferences(f);
 
@@ -539,4 +547,14 @@ void TerrainGenerator::RemoveConvergingPaths() {
       }
    }
    // printf("Finished removing converging. Count = %d\n", paths.size());
+}
+
+void TerrainGenerator::CalculateVertexNormals() {
+   for (int i = 0; i < paths.size(); i++) {
+      Path * p = paths[i];
+      if (p->buildAction == Path::BuildAction::ADVANCE) {
+         paths[i]->headV->calculateNormal();
+         paths[i]->tailV->calculateNormal();
+      }
+   }
 }

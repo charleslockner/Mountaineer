@@ -66,6 +66,8 @@ public:
    std::vector<Vertex *> neighbors; // neighboring vertices
    std::vector<Face *> faces; // faces that use this vertex as a corner
 
+   void calculateNormal();
+
    inline bool hasNeighbor(Vertex * n) {
       int numNeighs = neighbors.size();
       for (int i = 0; i < numNeighs; i++)
