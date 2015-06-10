@@ -20,10 +20,10 @@ public:
    // Extends the paths that are within the sphere, and removes the paths that are outside of it
    void UpdateMesh(Eigen::Vector3f center, float radius);
 
-   // // Returns the closest point on the mesh to target point
-   // PointDist FindClosestToPoint(Eigen::Vector3f target);
-   // // Returns the closest point on the mesh to the line
-   // PointDist FindClosestToLine(Geom::Rayf line);
+   // Returns the closest point on the mesh to target point
+   PointDist FindClosestToPoint(Eigen::Vector3f target);
+   // Returns the closest point on the mesh to the line
+   PointDist FindClosestToLine(Geom::Rayf line);
 
    class Path: public Geom::Positionalf {
    public:
@@ -73,6 +73,7 @@ private:
    void RemoveRetreatingGeometry();
    void RemoveConvergingPaths();
    void CalculateVertexNormals();
+   void collapsePath(Path * p);
 
    void HandleSameHead(Path * leftP, Path * rightP);
    void HandleSameTail(Path * leftP, Path * rightP);

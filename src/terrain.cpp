@@ -2,9 +2,10 @@
 #include "terrain.h"
 #include "reducer.h"
 
-#include <stdio.h>
+#include <iostream>
 #include <assert.h>
 #include <algorithm>
+#include <sys/time.h>
 
 #define MAX_FIND_DIST 40
 #define NUM_INIT_PATHS 6
@@ -65,6 +66,24 @@ static Vertex * neighborFromDirection(Vertex * baseV, Vector3f dir) {
    return bestVert;
 }
 
+long long last = 0;
+
+static void startTimer() {
+   struct timeval tp;
+   gettimeofday(&tp, NULL);
+   last = (long long) 1000000 * tp.tv_sec + tp.tv_usec;
+   std::cout << "Starting timer\n";
+}
+
+static void printTimeDelta() {
+   struct timeval tp;
+   gettimeofday(&tp, NULL);
+   long long curTime = (long long) 1000000 * tp.tv_sec + tp.tv_usec; //get current timestamp in milliseconds
+   long long timeDiff = curTime - last;
+   last = curTime;
+   std::cout << "time since last = " << timeDiff << std::endl;
+}
+
 // ============================================================ //
 // ===================== PUBLIC FUNCTIONS ===================== //
 // ============================================================ //
@@ -116,45 +135,48 @@ Model * TerrainGenerator::GenerateModel() {
       paths[i]->buildAction = Path::BuildAction::ADVANCE;
    }
 
-   BuildStep();
+   ExtendPaths();
+   CreateNeededPaths();
+   AddVerticesAndFaces();
+   CalculateVertexNormals();
+
+   model->vertexCount = model->vertices.size();
+   model->faceCount = model->faces.size();
+   model->bufferVertices();
+   model->bufferIndices();
 
    return model;
 }
 
 void TerrainGenerator::UpdateMesh(Vector3f center, float radius) {
    PickPathsToExtend(center, radius);
-   BuildStep();
-}
-
-// PointDist TerrainGenerator::FindClosestToPoint(Eigen::Vector3f targetPnt) {
-//    return grid->FindClosestToPoint(targetPnt, MAX_FIND_DIST);
-// }
-
-// PointDist TerrainGenerator::FindClosestToLine(Geom::Rayf line) {
-//    return grid->FindClosestToLine(line, MAX_FIND_DIST);
-// }
-
-// ============================================================ //
-// ===================== PRIVATE FUNCTIONS ==================== //
-// ============================================================ //
-
-void TerrainGenerator::BuildStep() {
    ExtendPaths();
    MergePaths();
    CreateNeededPaths();
    AddVerticesAndFaces();
    RemoveRetreatingGeometry();
    RemoveConvergingPaths();
-   model->CalculateNormals();
+   CalculateVertexNormals();
 
    model->vertexCount = model->vertices.size();
    model->faceCount = model->faces.size();
-
    model->bufferVertices();
    model->bufferIndices();
-
-   // printf("Step: paths %d, verts %d, faces %d, center (%.2f, %.2f, %.2f)\n", paths.size(), model->vertices.size(), model->faces.size(), center(0), center(1), center(2));
 }
+
+PointDist TerrainGenerator::FindClosestToPoint(Eigen::Vector3f targetPnt) {
+   return grid->FindClosestToPoint(targetPnt, MAX_FIND_DIST);
+}
+
+PointDist TerrainGenerator::FindClosestToLine(Geom::Rayf line) {
+   return grid->FindClosestToLine(line, MAX_FIND_DIST);
+}
+
+// ============================================================ //
+// ===================== PRIVATE FUNCTIONS ==================== //
+// ============================================================ //
+
+void TerrainGenerator::BuildStep() {}
 
 void TerrainGenerator::PickPathsToExtend(Vector3f center, float radius) {
    int numPaths = paths.size();
@@ -340,6 +362,7 @@ void TerrainGenerator::HandleSameHead(Path * midP, Path * rightP) {
       f->vertices[0] = midP->headV;
       f->vertices[1] = midP->tailV;
       f->vertices[2] = rightP->tailV;
+      f->calculateNormal();
       model->faces.push_back(f);
       addFaceToVertexReferences(f);
 
@@ -356,6 +379,7 @@ void TerrainGenerator::HandleSameTail(Path * midP, Path * rightP) {
       f->vertices[0] = midP->headV;
       f->vertices[1] = midP->tailV;
       f->vertices[2] = rightP->headV;
+      f->calculateNormal();
       model->faces.push_back(f);
       addFaceToVertexReferences(f);
 
@@ -377,6 +401,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
       f->vertices[0] = midP->headV;
       f->vertices[1] = midP->tailV;
       f->vertices[2] = rightP->headV;
+      f->calculateNormal();
       model->faces.push_back(f);
       addFaceToVertexReferences(f);
 
@@ -392,6 +417,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
       f->vertices[0] = midP->headV;
       f->vertices[1] = rightP->tailV;
       f->vertices[2] = rightP->headV;
+      f->calculateNormal();
       model->faces.push_back(f);
       addFaceToVertexReferences(f);
 
@@ -413,6 +439,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
          f->vertices[0] = midP->headV;
          f->vertices[1] = midP->tailV;
          f->vertices[2] = rightP->headV;
+         f->calculateNormal();
          model->faces.push_back(f);
          addFaceToVertexReferences(f);
 
@@ -420,6 +447,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
          f->vertices[0] = rightP->headV;
          f->vertices[1] = midP->tailV;
          f->vertices[2] = rightP->tailV;
+         f->calculateNormal();
          model->faces.push_back(f);
          addFaceToVertexReferences(f);
 
@@ -434,6 +462,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
          f->vertices[0] = midP->headV;
          f->vertices[1] = midP->tailV;
          f->vertices[2] = rightP->tailV;
+         f->calculateNormal();
          model->faces.push_back(f);
          addFaceToVertexReferences(f);
 
@@ -441,6 +470,7 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
          f->vertices[0] = rightP->headV;
          f->vertices[1] = midP->headV;
          f->vertices[2] = rightP->tailV;
+         f->calculateNormal();
          model->faces.push_back(f);
          addFaceToVertexReferences(f);
 
@@ -452,43 +482,22 @@ void TerrainGenerator::HandleBothDiff(Path * midP, Path * rightP) {
    }
 }
 
+// void TerrainGenerator::collapsePath(Path * p) {
+//    MR::Collapse(model, p->headV, p->tailV);
+//    p->headV = p->tailV;
+//    p->tailV = neighborFromDirection(p->tailV, - p->heading);
+// }
+
 void TerrainGenerator::RemoveRetreatingGeometry() {
-   // printf("Removing Retreating Geometry =============== count = %d\n", paths.size());
    int numPaths = paths.size();
    for (int i = 0; i < numPaths; i++) {
       Path * p = paths[i];
-
-      if (p->buildAction == Path::BuildAction::RETREAT) {
-         // printf("Retreating path %d\n", i);
-         // if (p->headV == p->rightP->headV)
-         //    printf("Path heads are the same\n");
-
-         Vertex * removeV = p->headV;
-
-         // If a neighbor to path's headV is not on a path, merge it with the head
-         int neighCount = removeV->neighbors.size();
-         for (int j = 0; j < neighCount; j++) {
-            Vertex * neighV = removeV->neighbors[j];
-            if (neighV != p->leftP->headV && neighV != p->leftP->tailV &&
-                neighV != p->rightP->headV && neighV != p->rightP->tailV &&
-                neighV != p->tailV) {
-               // printf("Merging pathless neighbors\n");
-               MR::Collapse(model, neighV, removeV);
-            }
-         }
-
-         // Merge the head with the tail to delete the headV
-         MR::Collapse(model, removeV, p->tailV);
-
-         // Move the path down
+      if (paths[i]->buildAction == Path::BuildAction::RETREAT) {
+         MR::Collapse(model, p->headV, p->tailV);
          p->headV = p->tailV;
          p->tailV = neighborFromDirection(p->tailV, - p->heading);
-
-         // printf("p->head neighbor count %d\n", p->headV->neighbors.size());
-         // printf("p->head face count %d\n", p->headV->faces.size());
       }
    }
-   // printf("Finished retreating =============== count = %d\n", paths.size());
 }
 
 void TerrainGenerator::RemoveConvergingPaths() {
@@ -496,6 +505,17 @@ void TerrainGenerator::RemoveConvergingPaths() {
       Path * midP = paths[i];
       Path * leftP = midP->leftP;
       Path * rightP = midP->rightP;
+
+      // In case one path goes in front of another
+      if (midP->tailV == rightP->headV) {
+         MR::Collapse(model, midP->headV, midP->tailV);
+         midP->headV = midP->tailV;
+         midP->tailV = neighborFromDirection(midP->tailV, - midP->heading);
+      } else if (midP->headV == rightP->tailV) {
+         MR::Collapse(model, rightP->headV, rightP->tailV);
+         rightP->headV = rightP->tailV;
+         rightP->tailV = neighborFromDirection(rightP->tailV, - rightP->heading);
+      }
 
       if (midP->headV == rightP->headV) {
          // Fix the left/right paths of the neighbors
@@ -510,4 +530,15 @@ void TerrainGenerator::RemoveConvergingPaths() {
       }
    }
    // printf("Finished removing converging. Count = %d\n", paths.size());
+}
+
+void TerrainGenerator::CalculateVertexNormals() {
+   int numPaths = paths.size();
+   for (int i = 0; i < numPaths; i++) {
+      Path * p = paths[i];
+      if (p->buildAction == Path::BuildAction::ADVANCE) {
+         paths[i]->headV->calculateNormal();
+         paths[i]->tailV->calculateNormal();
+      }
+   }
 }
