@@ -25,8 +25,10 @@ double lastScreenY;
 int goalIndex = 0;
 int numGoals = 4;
 Eigen::Vector3f goals[4];
+Eigen::Vector3f limbNormals[4];
 
 bool keyToggles[512] = {false};
+bool mouseToggle = false;
 
 Model * guyModel;
 AnimatedEntity * chebEnt;
@@ -139,17 +141,28 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 static void mouse_click_callback(GLFWwindow* window, int button, int action, int mods) {
    if (action == GLFW_PRESS) {
       if (button == GLFW_MOUSE_BUTTON_1) {
+         mouseToggle = true;
+
          if (keyToggles[GLFW_KEY_I]) {
             Eigen::Vector2f ndc = calculateNDC(window);
             Geom::Rayf mouseRay(camera->position, camera->rayFromNDCToWorld(ndc(0), -ndc(1)));
 
-            // PointDist pd = terrainGenerator->FindClosestToLine(mouseRay);
-            // if (pd.pnt) {
-            //    climberEnt->setLimbGoal(goalIndex, pd.pnt->getPosition());
-            //    camGoal = pd.pnt->getPosition();
-            // }
-            goalIndex = (goalIndex + 1) % numGoals;
+            float leastDistSq = mouseRay.squaredDistToPoint(climberEnt->ikLimbs[0]->goal);
+            int leastNdx = 0;
+            for (int limbNdx = 1; limbNdx < 4; limbNdx++) {
+               float distSq = mouseRay.squaredDistToPoint(climberEnt->ikLimbs[limbNdx]->goal);
+               if (distSq < leastDistSq) {
+                  leastDistSq = distSq;
+                  leastNdx = limbNdx;
+               }
+            }
+            goalIndex = leastNdx;
          }
+      }
+   }
+   else if (action == GLFW_RELEASE) {
+      if (button == GLFW_MOUSE_BUTTON_1) {
+         mouseToggle = false;
       }
    }
 }
@@ -308,13 +321,29 @@ static void updateCamera(GLFWwindow * window, double timePassed) {
 
 double timeCount = 0;
 
-static void updateEntities(double timePassed) {
+static void updateEntities(GLFWwindow * window, double timePassed) {
    skyEnt->position = camera->position + Eigen::Vector3f(0, -250, 0);
 
    timeCount += timePassed;
    if (timeCount > 0 && timeCount < 2) {
-      terrainGenerator->UpdateMesh(Eigen::Vector3f(0,0,0), 10);
+      terrainGenerator->UpdateMesh(Eigen::Vector3f(0,0,0), 20);
       // timeCount -= 0.05;
+   }
+
+   if (keyToggles[GLFW_KEY_I] && mouseToggle) {
+      Eigen::Vector2f ndc = calculateNDC(window);
+      Geom::Rayf mouseRay(camera->position, camera->rayFromNDCToWorld(ndc(0), -ndc(1)));
+
+      for (int i = 0; i < terrainGenerator->model->faces.size(); i++) {
+         Face * f = terrainGenerator->model->faces[i];
+         Eigen::Vector3f pnt = f->intersectRay(mouseRay);
+
+         if (f->pointCheckInside(pnt)) {
+            climberEnt->setLimbGoal(goalIndex, pnt);
+            camGoal = pnt;
+            break;
+         }
+      }
    }
 
    if (keyToggles[GLFW_KEY_T]) {
@@ -350,13 +379,15 @@ static void draw(double deltaTime) {
       entShader->renderBones(camera, climberEnt);
       entShader->renderBones(camera, climberEnt);
       entShader->renderPaths(camera, terrainGenerator);
-      entShader->renderPoint(camera, camGoal);
    }
+
+   entShader->renderPoint(camera, climberEnt->ikLimbs[goalIndex]->goal);
+   entShader->renderPoint(camera, camGoal);
 }
 
 static void updateLoop(GLFWwindow * window, double deltaTime) {
    updateCamera(window, deltaTime);
-   updateEntities(deltaTime);
+   updateEntities(window, deltaTime);
    draw(deltaTime);
 }
 

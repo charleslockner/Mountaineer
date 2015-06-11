@@ -124,8 +124,9 @@ public:
    void animateWithIK();
    void animateWithKeyframes();
 
-protected:
    std::vector<IKLimb *> ikLimbs;
+
+protected:
    std::vector<IKBone> ikBones;
    bool usingIK;
 

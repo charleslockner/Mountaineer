@@ -1,6 +1,5 @@
 
 #include "entity.h"
-#include "animation.h"
 #include "matrix_math.h"
 #include "ceres/ceres.h"
 
@@ -92,7 +91,7 @@ class BaseLimbCostFunctor {
 private:
    Model * model;
    std::vector<int> boneIndices;
-   Matrix4f scaleParentM;
+   Matrix4f scaleRotateParentM;
    Eigen::Vector3f goal;
    int numAngles;
 
@@ -100,13 +99,13 @@ public:
    BaseLimbCostFunctor(
       Model * model,
       std::vector<int>& boneIndices,
-      Matrix4f scaleParentM,
+      Matrix4f scaleRotateParentM,
       Vector3f goal,
       int numAngles
    ) {
       this->model = model;
       this->boneIndices = boneIndices;
-      this->scaleParentM = scaleParentM;
+      this->scaleRotateParentM = scaleRotateParentM;
       this->goal = goal;
       this->numAngles = numAngles;
    }
@@ -115,10 +114,8 @@ public:
    bool operator()(T const* const* params, T* residuals) const {
       T const* angles = params[0];
       Matrix<T,3,1> worldPos = Map<const Matrix<T,3,1> >(params[1], 3, 1);
-      Quaternion<T> worldRot = Map<const Quaternion<T> >(params[2]);
       Matrix<T,4,4> baseM = Mmath::TranslationMatrix(worldPos) *
-                            Mmath::RotationMatrix(worldRot) *
-                            scaleParentM.cast<T>();
+                            scaleRotateParentM.cast<T>();
       Matrix<T,3,1> goalT = goal.cast<T>();
       Matrix<T,3,1> offset = Matrix<T,3,1>(T(0), T(0), T(0));
       Matrix<T,3,1> endPoint = solveEndEffector(model, angles, numAngles, boneIndices, baseM, offset);
@@ -137,9 +134,9 @@ void IKEntity::solveLimbs(Eigen::Matrix4f parentM, std::vector<IKLimb *> limbs) 
 
    // Setup the position as a double vec3
    Vector3d positionD = position.cast<double>();
-   Quaterniond rotationD = rotation.cast<double>();
+   // Quaterniond rotationD = rotation.cast<double>();
    double * posData = positionD.data();
-   double * rotData = (double *)(& rotationD);
+   // double * rotData = (double *)(& rotationD);
 
    std::vector<std::vector<double> > angleValuesByLimb = std::vector<std::vector<double> >(limbs.size());
 
@@ -160,20 +157,21 @@ void IKEntity::solveLimbs(Eigen::Matrix4f parentM, std::vector<IKLimb *> limbs) 
       // Create the cost functor and problem
       if (limb->isBase) {
          // Create the rotScaleParent part of the base matrix
+         Matrix4f rotM = Mmath::RotationMatrix(rotation);
          Matrix4f sclM = Mmath::ScaleMatrix(scale);
-         Matrix4f scaleParentM = sclM * parentM;
+         Matrix4f scaleRotateParentM = rotM * sclM * parentM;
 
          // Create the Cost function
          ceres::DynamicAutoDiffCostFunction<BaseLimbCostFunctor, 4> * costFunction =
             new ceres::DynamicAutoDiffCostFunction<BaseLimbCostFunctor, 4>(
-               new BaseLimbCostFunctor(this->model, limb->boneIndices, scaleParentM, limb->goal, angleCount));
+               new BaseLimbCostFunctor(this->model, limb->boneIndices, scaleRotateParentM, limb->goal, angleCount));
 
          // Set up the cost function parameter and residual blocks
          costFunction->AddParameterBlock(angleCount); // angles
          costFunction->AddParameterBlock(3);          // position
-         costFunction->AddParameterBlock(4);          // rotation
+         // costFunction->AddParameterBlock(4);          // rotation
          costFunction->SetNumResiduals(3);            // residuals
-         problem.AddResidualBlock(costFunction, NULL, angleData, posData, rotData);
+         problem.AddResidualBlock(costFunction, NULL, angleData, posData);
 
       } else {
          // Set up the base matrix
@@ -220,106 +218,5 @@ void IKEntity::solveLimbs(Eigen::Matrix4f parentM, std::vector<IKLimb *> limbs) 
 
    // Update the entity's position in case a base limb was used
    position = positionD.cast<float>();
-   rotation = rotationD.cast<float>();
+   // rotation = rotationD.cast<float>();
 }
-
-
-// ------------------------ IK Bone ------------------------ //
-IKLimb::IKLimb() {}
-IKLimb::~IKLimb() {}
-// --------------------------------------------------------- //
-// ======================= IK Entity ======================= //
-// --------------------------------------------------------- //
-IKEntity::IKEntity(Eigen::Vector3f pos, Model * model)
-: BonifiedEntity(pos, model) {
-   this->ikLimbs = std::vector<IKLimb *>(0);
-   this->ikBones = std::vector<IKBone>(model->boneCount);
-   for (int i = 0; i < model->boneCount; i++) {
-      this->ikBones[i].angles = std::vector<double>(model->bones[i].joints.size());
-      this->ikBones[i].limbs = std::vector<IKLimb *>(0);
-   }
-   usingIK = false;
-}
-
-void IKEntity::addLimb(std::vector<int> boneIndices, Eigen::Vector3f offset, bool isBase) {
-   assert(boneIndices.size() > 0);
-
-   IKLimb * limb = new IKLimb();
-   limb->isBase = isBase;
-   limb->boneIndices = boneIndices;
-   limb->offset = offset;
-   limb->goal = Eigen::Vector3f(0,0,0);
-   limb->jointAngles = constructJointAnglePtrs(boneIndices);
-   this->ikBones[boneIndices[0]].limbs.push_back(limb);
-   this->ikLimbs.push_back(limb);
-}
-
-void IKEntity::setLimbGoal(int limbIndex, Eigen::Vector3f goal) {
-   this->ikLimbs[limbIndex]->goal = goal;
-}
-
-void IKEntity::update(float tickDelta) {
-   if (model->hasBoneTree && model->hasAnimations) {
-      BonifiedEntity::replayIfNeeded(tickDelta);
-      computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());
-   }
-}
-
-void IKEntity::animateWithIK() {
-   usingIK = true;
-}
-
-void IKEntity::animateWithKeyframes() {
-   usingIK = false;
-}
-
-void IKEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
-   int animNum = this->animNums[boneIndex];
-   float tickTime = this->animTimes[boneIndex];
-
-   Bone * bone = & model->bones[boneIndex];
-   IKBone * ikBone = & this->ikBones[boneIndex];
-   Animation * anim = & model->animations[animNum];
-   AnimBone * animBone = & anim->animBones[boneIndex];
-
-   // Compute rotation angles for all limbs who's root starts at this bone
-   if (usingIK && ikBone->limbs.size())
-      solveLimbs(parentM, ikBone->limbs);
-
-   // If this bone has a computed ik rotation, use it, otherwise use the animation rotation
-   Eigen::Matrix4f animM = (usingIK) ? (
-      (bone->joints.size() > 0) ?
-         animM = constructJointMatrix(boneIndex) :
-         animM = bone->parentOffset) :
-      AN::ComputeKeyframeTransform(animBone, anim->keyCount, tickTime, anim->duration);
-
-   boneMs[boneIndex] = parentM * animM;
-   animMs[boneIndex] = boneMs[boneIndex] * bone->invBonePose;
-
-   for (int i = 0; i < bone->childCount; i++)
-      computeAnimMs(bone->childIndices[i], boneMs[boneIndex]);
-}
-
-std::vector<double *> IKEntity::constructJointAnglePtrs(std::vector<int>& boneIndices) {
-   std::vector<double *> jointAngles = std::vector<double *>();
-   for (int i = 0; i < boneIndices.size(); i++) {
-      IKBone * ikBone = & ikBones[boneIndices[i]];
-      for (int j = 0; j < ikBone->angles.size(); j++)
-         jointAngles.push_back(& ikBone->angles[j]);
-   }
-   return jointAngles;
-}
-
-Eigen::Matrix4f IKEntity::constructJointMatrix(int boneIndex) {
-   Bone * bone = & model->bones[boneIndex];
-   IKBone * ikBone = & ikBones[boneIndex];
-
-   Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
-   for (int i = 0; i < bone->joints.size(); i++) {
-      assert(bone->joints.size() == ikBone->angles.size());
-      jointRotationM *= Mmath::AngleAxisMatrix<float>(ikBone->angles[i], bone->joints[i].axis);
-   }
-
-   return bone->parentOffset * jointRotationM;
-}
-
