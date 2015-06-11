@@ -64,7 +64,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             break;
          case GLFW_KEY_G:
             printf("pressed g\n");
-            terrainGenerator->UpdateMesh(camera->position, 10);
+            terrainGenerator->UpdateMesh(camera->position, 1000);
             break;
          default:
             keyToggles[key] = true;
@@ -143,11 +143,11 @@ static void mouse_click_callback(GLFWwindow* window, int button, int action, int
             Eigen::Vector2f ndc = calculateNDC(window);
             Geom::Rayf mouseRay(camera->position, camera->rayFromNDCToWorld(ndc(0), -ndc(1)));
 
-            PointDist pd = terrainGenerator->FindClosestToLine(mouseRay);
-            if (pd.pnt) {
-               climberEnt->setLimbGoal(goalIndex, pd.pnt->getPosition());
-               camGoal = pd.pnt->getPosition();
-            }
+            // PointDist pd = terrainGenerator->FindClosestToLine(mouseRay);
+            // if (pd.pnt) {
+            //    climberEnt->setLimbGoal(goalIndex, pd.pnt->getPosition());
+            //    camGoal = pd.pnt->getPosition();
+            // }
             goalIndex = (goalIndex + 1) % numGoals;
          }
       }
@@ -165,10 +165,10 @@ static void scroll_callback(GLFWwindow* window, double x_offset, double y_offset
 
 static void setupLights() {
    lightData.lights[0].direction = Eigen::Vector3f(0.881, -0.365, 0.292);
-   lightData.lights[0].color = Eigen::Vector3f(0.7, 0.44, 0.38);
+   lightData.lights[0].color = 1.2 * Eigen::Vector3f(0.7, 0.44, 0.38);
 
    lightData.lights[1].direction = Eigen::Vector3f(-0.881, 0.365, -0.292);
-   lightData.lights[1].color = Eigen::Vector3f(0.03, 0.05, 0.2);
+   lightData.lights[1].color = 1.2 * Eigen::Vector3f(0.03, 0.05, 0.2);
 
    lightData.numLights = 2;
 }
@@ -253,7 +253,7 @@ static void initialize() {
    boneIndices.push_back(23);
    boneIndices.push_back(24);
    boneIndices.push_back(25);
-   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
    boneIndices.clear();
 
    boneIndices.push_back(0);
@@ -262,7 +262,7 @@ static void initialize() {
    boneIndices.push_back(28);
    boneIndices.push_back(29);
    boneIndices.push_back(30);
-   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), false);
+   climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
    boneIndices.clear();
 
    entities.push_back(climberEnt);
@@ -350,9 +350,8 @@ static void draw(double deltaTime) {
       entShader->renderBones(camera, climberEnt);
       entShader->renderBones(camera, climberEnt);
       entShader->renderPaths(camera, terrainGenerator);
+      entShader->renderPoint(camera, camGoal);
    }
-
-   entShader->renderPoint(camera, camGoal);
 }
 
 static void updateLoop(GLFWwindow * window, double deltaTime) {
@@ -395,7 +394,7 @@ int main(int argc, char ** argv) {
 
    glEnable(GL_DEPTH_TEST);
    glDepthFunc(GL_LEQUAL);
-   glClearColor(0.2,0.2,0.2,1);
+   glClearColor(0.5,0.5,0.5,1);
 
    glEnable(GL_CULL_FACE);
    glCullFace(GL_BACK);

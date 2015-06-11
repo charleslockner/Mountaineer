@@ -92,8 +92,7 @@ TerrainGenerator::TerrainGenerator() {};
 
 Model * TerrainGenerator::GenerateModel() {
    edgeLength = 1;
-
-   grid = new SpatialGrid(1000, 10 * edgeLength);
+   shouldUpdate = false;
 
    // The general direction the mesh is heading towards
    Vector3f ultimateDirection = Vector3f(0.25,1.0,-0.25).normalized();
@@ -119,9 +118,8 @@ Model * TerrainGenerator::GenerateModel() {
    model->hasTexCoords = true;
    model->hasTansAndBitans = true;
 
-   // Add the vertex to the model and grid
+   // Add the vertex to the model
    model->vertices.push_back(vStart);
-   grid->Add(vStart);
 
    // Initialize the starting paths
    paths = std::vector<Path *>(0);
@@ -150,26 +148,21 @@ Model * TerrainGenerator::GenerateModel() {
 
 void TerrainGenerator::UpdateMesh(Vector3f center, float radius) {
    PickPathsToExtend(center, radius);
-   ExtendPaths();
-   MergePaths();
-   CreateNeededPaths();
-   AddVerticesAndFaces();
-   RemoveRetreatingGeometry();
-   RemoveConvergingPaths();
-   CalculateVertexNormals();
 
-   model->vertexCount = model->vertices.size();
-   model->faceCount = model->faces.size();
-   model->bufferVertices();
-   model->bufferIndices();
-}
+   if (shouldUpdate) {
+      ExtendPaths();
+      MergePaths();
+      CreateNeededPaths();
+      AddVerticesAndFaces();
+      RemoveRetreatingGeometry();
+      RemoveConvergingPaths();
+      CalculateVertexNormals();
 
-PointDist TerrainGenerator::FindClosestToPoint(Eigen::Vector3f targetPnt) {
-   return grid->FindClosestToPoint(targetPnt, MAX_FIND_DIST);
-}
-
-PointDist TerrainGenerator::FindClosestToLine(Geom::Rayf line) {
-   return grid->FindClosestToLine(line, MAX_FIND_DIST);
+      model->vertexCount = model->vertices.size();
+      model->faceCount = model->faces.size();
+      model->bufferVertices();
+      model->bufferIndices();
+   }
 }
 
 // ============================================================ //
@@ -179,6 +172,7 @@ PointDist TerrainGenerator::FindClosestToLine(Geom::Rayf line) {
 void TerrainGenerator::BuildStep() {}
 
 void TerrainGenerator::PickPathsToExtend(Vector3f center, float radius) {
+   this->shouldUpdate = false;
    int numPaths = paths.size();
    float radiusSq = radius * radius;
    for (int i = 0; i < numPaths; i++) {
@@ -186,12 +180,17 @@ void TerrainGenerator::PickPathsToExtend(Vector3f center, float radius) {
       float headDistSq = (p->headV->position - center).squaredNorm();
       float tailDistSq = (p->tailV->position - center).squaredNorm();
 
-      if (headDistSq < radiusSq)
+      if (headDistSq < radiusSq) {
          p->buildAction = Path::BuildAction::ADVANCE;
-      else if (headDistSq > radiusSq && tailDistSq > radiusSq)
+         this->shouldUpdate = true;
+      }
+      else if (headDistSq > radiusSq && tailDistSq > radiusSq) {
          p->buildAction = Path::BuildAction::RETREAT;
-      else
+         this->shouldUpdate = true;
+      }
+      else {
          p->buildAction = Path::BuildAction::STATION;
+      }
    }
 }
 
@@ -204,7 +203,7 @@ void TerrainGenerator::ExtendPaths() {
       if (p->buildAction == Path::BuildAction::ADVANCE) {
          // printf("Advancing path %d\n", i);
 
-         Vector3f randY = randRange(-0.01, 0.01) * p->headV->normal;
+         Vector3f randY = randRange(-0.05, 0.05) * p->headV->normal;
 
          // Add vertex created from extending the path
          Vertex * v = new Vertex();
@@ -334,7 +333,6 @@ void TerrainGenerator::AddVerticesAndFaces() {
           selfP->headV != rightP->headV) {
          selfP->headV->index = model->vertices.size();
          model->vertices.push_back(selfP->headV);
-         grid->Add(selfP->headV);
       }
 
       // Add the faces and neighbors

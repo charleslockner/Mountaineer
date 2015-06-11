@@ -4,11 +4,9 @@
 #include "matrix_math.h"
 #include "geometry.h"
 #include "grid.h"
+#include "model.h"
 
 #include <vector>
-
-class Model;
-struct Vertex;
 
 #define UV_STEP_SIZE .025
 
@@ -20,12 +18,7 @@ public:
    // Extends the paths that are within the sphere, and removes the paths that are outside of it
    void UpdateMesh(Eigen::Vector3f center, float radius);
 
-   // Returns the closest point on the mesh to target point
-   PointDist FindClosestToPoint(Eigen::Vector3f target);
-   // Returns the closest point on the mesh to the line
-   PointDist FindClosestToLine(Geom::Rayf line);
-
-   class Path: public Geom::Positionalf {
+   class Path {
    public:
       enum BuildAction {
          ADVANCE, // path is about to create some geometry
@@ -45,22 +38,13 @@ public:
          Eigen::Matrix3f iTBN = Mmath::InverseTBN(headV->tangent, headV->bitangent, headV->normal);
          headV->uv = tailV->uv + UV_STEP_SIZE * (iTBN * (headV->position - tailV->position)).head<2>();
       }
-
-      inline Eigen::Vector3f getPosition() {
-         return headV->getPosition();
-      }
-      inline void setPosition(Eigen::Vector3f pos) {
-         headV->setPosition(pos);
-      }
    };
 
    std::vector<Path *> paths;
    Model * model;
 
 private:
-
-   SpatialGrid * grid;
-
+   bool shouldUpdate;
    float edgeLength;
 
    void BuildStep();

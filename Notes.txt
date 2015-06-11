@@ -3,15 +3,18 @@ http://www.calpoly.edu/~jgphelan/_Media%20Assets/shannon_moran_messer_final_draf
 http://kinesiology.calpoly.edu/content/faculty/profiles/bob_dark
 http://kinesiology.calpoly.edu/content/faculty/index
 
-Skybox from http://css.gamebanana.com/textures/1776
 
 Marc Zych
 
 // vec3(inverse(transpose(uModelM)) * vec4(aTangent, 0.0));
 
-http://antongerdelan.net/opengl/raycasting.html
+
 
 open vdb
+
+Skybox from http://css.gamebanana.com/textures/1776
+
+http://antongerdelan.net/opengl/raycasting.html
 
 http://people.cs.clemson.edu/~dhouse/courses/405/notes/raycast.pdf
 

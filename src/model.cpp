@@ -8,6 +8,13 @@
 // ==================== VERTEX METHODS ==================== //
 // ======================================================== //
 
+bool Vertex::hasNeighbor(Vertex * n) {
+   int numNeighs = neighbors.size();
+   for (int i = 0; i < numNeighs; i++)
+      if (neighbors[i] == n)
+         return true;
+   return false;
+}
 
 void Vertex::calculateNormal() {
    normal = Eigen::Vector3f(0,0,0);

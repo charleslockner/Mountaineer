@@ -5,25 +5,12 @@
 
 namespace Geom {
 
-   class Positionalf {
-   public:
-      inline virtual Eigen::Vector3f getPosition()=0;
-      inline virtual void setPosition(Eigen::Vector3f pos)=0;
-   };
-
-   class Pointf : public Positionalf {
+   class Pointf {
    public:
       Eigen::Vector3f position;
 
       Pointf(Eigen::Vector3f pos)
       : position(pos) {}
-
-      inline Eigen::Vector3f getPosition() {
-         return position;
-      }
-      inline void setPosition(Eigen::Vector3f pos) {
-         position = pos;
-      }
    };
 
    class Rayf {
