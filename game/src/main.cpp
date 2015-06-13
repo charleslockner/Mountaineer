@@ -231,7 +231,7 @@ static void initialize() {
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_tex.bmp", false);
    guyModel->loadConstraints("assets/models/guy.cns");
-   climberEnt = new Climber(Eigen::Vector3f(0, 0, 25), guyModel);
+   climberEnt = new Climber(Eigen::Vector3f(0, 0, 5), guyModel);
    climberEnt->playAnimation(0);
 
    // Set up limbs
@@ -326,8 +326,8 @@ static void updateEntities(GLFWwindow * window, double timePassed) {
 
    timeCount += timePassed;
    if (timeCount > 0 && timeCount < 2) {
-      terrainGenerator->UpdateMesh(Eigen::Vector3f(0,0,0), 20);
-      // timeCount -= 0.05;
+      terrainGenerator->UpdateMesh(climberEnt->position + Eigen::Vector3f(0,5,0), 20);
+      timeCount -= 0.05;
    }
 
    if (keyToggles[GLFW_KEY_I] && mouseToggle) {
