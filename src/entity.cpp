@@ -187,10 +187,12 @@ void BonifiedEntity::stopAnimation(int boneNum, bool isRecursive) {
 }
 
 void BonifiedEntity::update(float tickDelta) {
-   // Start replaying animation if finished
-   replayIfNeeded(tickDelta);
-   // Recursively fill in the animMs
-   computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());
+   if (model->hasAnimations && model->hasBoneTree) {
+      // Start replaying animation if finished
+      replayIfNeeded(tickDelta);
+      // Recursively fill in the animMs
+      computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());
+   }
 }
 
 void BonifiedEntity::replayIfNeeded(float tickDelta) {

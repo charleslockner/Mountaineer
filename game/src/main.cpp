@@ -30,7 +30,7 @@ Eigen::Vector3f limbNormals[4];
 bool keyToggles[512] = {false};
 bool mouseToggle = false;
 
-Model * guyModel;
+Model * guyModel, * jackModel;
 AnimatedEntity * chebEnt;
 Climber * climberEnt;
 IKEntity * trexEnt;
@@ -206,7 +206,7 @@ static void initialize() {
    // Terrain Stuff
    terrainGenerator = new TerrainGenerator();
    Model * terrainModel = terrainGenerator->GenerateModel();
-   terrainModel->loadTexture("assets/textures/rock.png", true);
+   terrainModel->loadTexture("assets/textures/rock_DIFF.png", true);
    terrainModel->loadNormalMap("assets/textures/rock_NORM.png", true);
    terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
    terrainEnt = new ModelEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
@@ -225,6 +225,13 @@ static void initialize() {
    // trexModel->loadNormalMap("assets/textures/masonry_NORM.png", false);
    // entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
    // entities[1]->playAnimation(0);
+
+   // Lumberjack 
+   jackModel = new Model();
+   jackModel->loadCIAB("assets/models/lumberJack.ciab");
+   jackModel->loadTexture("assets/textures/lumberJack_DIFF.png", true);
+   jackModel->loadNormalMap("assets/textures/lumberJack_NORM.png", true);
+   entities.push_back(new BonifiedEntity(Eigen::Vector3f(0, 0, 20), jackModel));
 
    // The main character
    guyModel = new Model();
@@ -277,8 +284,6 @@ static void initialize() {
    boneIndices.push_back(30);
    climberEnt->addLimb(boneIndices, Eigen::Vector3f(0, 0, 0), true);
    boneIndices.clear();
-
-   entities.push_back(climberEnt);
 }
 
 // ======================================================================== //
@@ -374,9 +379,11 @@ static void draw(double deltaTime) {
    for (int i = 0; i < entities.size(); i++)
       entShader->render(camera, & lightData, entities[i]);
 
+   climberEnt->update(deltaTime);
+   entShader->render(camera, & lightData, climberEnt);
+
    if (keyToggles[GLFW_KEY_K]) {
       entShader->renderVertices(camera, terrainEnt);
-      entShader->renderBones(camera, climberEnt);
       entShader->renderBones(camera, climberEnt);
       entShader->renderPaths(camera, terrainGenerator);
    }

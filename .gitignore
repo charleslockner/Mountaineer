@@ -4,5 +4,8 @@ bin/*
 obj/*
 game/obj/*
 test/obj/*
+parallel/obj/*
+terrain/obj/*
+*/obj/*
 .DS_Store
 *.zip
