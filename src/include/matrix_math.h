@@ -58,9 +58,14 @@ namespace Mmath {
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> AngleAxisMatrix(T angle, Eigen::Matrix<T,3,1> axis) {
+   Eigen::Quaternion<T> AngleAxisQuat(T angle, Eigen::Matrix<T,3,1> axis) {
       Eigen::Quaternion<T> rotQuat(Eigen::AngleAxis<T>(angle, axis));
-      return RotationMatrix(rotQuat);
+      return rotQuat;
+   }
+
+   template <typename T>
+   Eigen::Matrix<T,4,4> AngleAxisMatrix(T angle, Eigen::Matrix<T,3,1> axis) {
+      return RotationMatrix(AngleAxisQuat(angle, axis));
    }
 
    template <typename T>

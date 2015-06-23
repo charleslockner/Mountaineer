@@ -197,7 +197,7 @@ static void initialize() {
    // Skybox
    Model * skyModel = new Model();
    skyModel->loadCIAB("assets/models/skybox.ciab");
-   skyModel->loadTexture("assets/textures/night.png", false);
+   skyModel->loadTexture("assets/textures/night_DIFF.png", false);
    skyEnt = new ModelEntity(Eigen::Vector3f(0,-250,0),
                             Eigen::Quaternionf(1,0,0,0),
                             Eigen::Vector3f(500,500,500),
@@ -226,7 +226,7 @@ static void initialize() {
    // entities.push_back(new BonifiedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
    // entities[1]->playAnimation(0);
 
-   // Lumberjack 
+   // Lumberjack
    jackModel = new Model();
    jackModel->loadCIAB("assets/models/lumberJack.ciab");
    jackModel->loadTexture("assets/textures/lumberJack_DIFF.png", true);
@@ -236,7 +236,7 @@ static void initialize() {
    // The main character
    guyModel = new Model();
    guyModel->loadCIAB("assets/models/guy.ciab");
-   guyModel->loadTexture("assets/textures/guy_tex.bmp", false);
+   guyModel->loadTexture("assets/textures/guy_DIFF.bmp", false);
    guyModel->loadConstraints("assets/models/guy.cns");
    climberEnt = new Climber(Eigen::Vector3f(0, 0, 5), guyModel);
    climberEnt->playAnimation(0);

@@ -6,6 +6,8 @@ game/obj/*
 test/obj/*
 parallel/obj/*
 terrain/obj/*
+rigid/obj/*
+converter/obj/*
 */obj/*
 .DS_Store
 *.zip

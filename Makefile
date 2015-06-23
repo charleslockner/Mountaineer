@@ -21,7 +21,7 @@ CFLAGS=-std=c++11 -c $(INC) $(WARN) $(OPT) $(DEBUG) $(HEADER)
 SRC=$(shell find $(SRC_DIR) -maxdepth 1 -type f -name "*.cpp" -exec basename {} .po \;)
 OBJS=$(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
 
-.PHONY: ENGINE game terrain parallel run test clean
+.PHONY: ENGINE game terrain rigid run test clean
 
 engine: $(ENGINE)
 
@@ -29,9 +29,9 @@ terrain:
 	make -C terrain
 	./$(BIN_DIR)/terrain
 
-parallel:
-	make -C parallel
-	./$(BIN_DIR)/parallel
+rigid:
+	make -C rigid
+	./$(BIN_DIR)/rigid
 
 game: $(ENGINE)
 	make -C game
@@ -48,6 +48,8 @@ clean:
 	make -C converter clean
 	make -C test clean
 	make -C game clean
+	make -C terrain clean
+	make -C rigid clean
 
 -include $(OBJS:.o=.d)
 

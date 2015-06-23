@@ -1,6 +1,6 @@
 OS := $(shell uname -s)
 CC=icpc
-EXE_NAME=parallel
+EXE_NAME=rigid
 
 BIN_DIR=../bin
 SRC_DIR=../src
@@ -26,7 +26,7 @@ ifeq ($(OS),Linux)
 LIB+=-lglfw3_LIN -lGL -lXrandr -lXi -lXinerama -lXcursor
 endif
 
-OBJS=obj/main.o $(OBJ_DIR)/animation.o $(OBJ_DIR)/attachment_loader.o $(OBJ_DIR)/attachment_loader.o $(OBJ_DIR)/camera.o $(OBJ_DIR)/entity.o $(OBJ_DIR)/geometry.o $(OBJ_DIR)/grid.o $(OBJ_DIR)/loader_ciab.o $(OBJ_DIR)/loader_texture.o $(OBJ_DIR)/model.o $(OBJ_DIR)/reducer_parallel.o $(OBJ_DIR)/shader.o $(OBJ_DIR)/shader_builder.o $(OBJ_DIR)/shader_forward.o $(OBJ_DIR)/shader_texture.o $(OBJ_DIR)/terrain_parallel.o $(OBJ_DIR)/tiny_obj_loader.o
+OBJS=obj/main.o $(OBJ_DIR)/camera.o $(OBJ_DIR)/entity.o $(OBJ_DIR)/geometry.o $(OBJ_DIR)/loader_ciab.o $(OBJ_DIR)/loader_texture.o $(OBJ_DIR)/model.o $(OBJ_DIR)/shader.o $(OBJ_DIR)/shader_builder.o $(OBJ_DIR)/shader_texture.o
 
 .PHONY: exe run clean
 

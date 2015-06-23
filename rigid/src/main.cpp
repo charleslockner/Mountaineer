@@ -7,6 +7,7 @@
 #include "light.h"
 #include "model.h"
 #include "entity.h"
+#include "climber.h"
 #include "terrain.h"
 
 #include <vector>
@@ -16,22 +17,17 @@
 
 LightData lightData;
 Camera * camera;
-std::vector<ModelEntity *> staticEntities;
 
 double lastScreenX;
 double lastScreenY;
-int goalIndex = 0;
-Eigen::Vector3f goals[4];
 
 bool keyToggles[512] = {false};
+bool mouseToggle = false;
 
-ModelEntity * skyEnt, * terrainEnt;
-EntityShader * entShader;
+Model * cubeModel;
+RigidEntity * cubeEnt;
 TextureShader * texShader;
-TerrainGenerator * terrainGenerator;
 
-Eigen::Vector3f mouseDirection;
-Eigen::Vector3f camGoal;
 float fov;
 
 // ======================================================================== //
@@ -54,10 +50,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_C:
          case GLFW_KEY_I:
          case GLFW_KEY_M:
-            break;
-         case GLFW_KEY_G:
-            printf("pressed g\n");
-            terrainGenerator->UpdateMesh(camera->position, 10);
             break;
          default:
             keyToggles[key] = true;
@@ -120,7 +112,28 @@ static void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 static void mouse_click_callback(GLFWwindow* window, int button, int action, int mods) {
    if (action == GLFW_PRESS) {
       if (button == GLFW_MOUSE_BUTTON_1) {
+         mouseToggle = true;
 
+         // if (keyToggles[GLFW_KEY_I]) {
+         //    Eigen::Vector2f ndc = calculateNDC(window);
+         //    Geom::Rayf mouseRay(camera->position, camera->rayFromNDCToWorld(ndc(0), -ndc(1)));
+
+         //    float leastDistSq = mouseRay.squaredDistToPoint(climberEnt->ikLimbs[0]->goal);
+         //    int leastNdx = 0;
+         //    for (int limbNdx = 1; limbNdx < 4; limbNdx++) {
+         //       float distSq = mouseRay.squaredDistToPoint(climberEnt->ikLimbs[limbNdx]->goal);
+         //       if (distSq < leastDistSq) {
+         //          leastDistSq = distSq;
+         //          leastNdx = limbNdx;
+         //       }
+         //    }
+         //    goalIndex = leastNdx;
+         // }
+      }
+   }
+   else if (action == GLFW_RELEASE) {
+      if (button == GLFW_MOUSE_BUTTON_1) {
+         mouseToggle = false;
       }
    }
 }
@@ -136,100 +149,67 @@ static void scroll_callback(GLFWwindow* window, double x_offset, double y_offset
 
 static void setupLights() {
    lightData.lights[0].direction = Eigen::Vector3f(0.881, -0.365, 0.292);
-   lightData.lights[0].color = Eigen::Vector3f(0.7, 0.44, 0.38);
+   lightData.lights[0].color = 1.2 * Eigen::Vector3f(0.7, 0.44, 0.38);
 
    lightData.lights[1].direction = Eigen::Vector3f(-0.881, 0.365, -0.292);
-   lightData.lights[1].color = Eigen::Vector3f(0.03, 0.05, 0.2);
+   lightData.lights[1].color = 1.2 * Eigen::Vector3f(0.03, 0.05, 0.2);
 
    lightData.numLights = 2;
 }
 
 static void initialize() {
-   entShader = new ForwardShader();
    texShader = new TextureShader();
-   camera = new Camera(Eigen::Vector3f(-100,0,200));
-   camera->rotation = Eigen::Quaternionf(0.5, 0, 1, 0);
+   camera = new Camera(Eigen::Vector3f(0,0,10));
    fov = 1.0;
    camera->setHFOV(fov);
    setupLights();
 
-   // Skybox
-   Model * skyModel = new Model();
-   skyModel->loadCIAB("assets/models/skybox.ciab");
-   skyModel->loadTexture("assets/textures/night.png", false);
-   skyEnt = new ModelEntity(Eigen::Vector3f(0,-250,0),
-                            Eigen::Quaternionf(1,0,0,0),
-                            Eigen::Vector3f(1000,1000,1000),
-                            skyModel);
-
-   // Terrain Stuff
-   terrainGenerator = new TerrainGenerator();
-   Model * terrainModel = terrainGenerator->GenerateModel();
-   terrainModel->loadTexture("assets/textures/rock.png", true);
-   terrainModel->loadNormalMap("assets/textures/rock_NORM.png", true);
-   terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
-   terrainEnt = new ModelEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
+   // The rigid body
+   cubeModel = new Model();
+   cubeModel->loadCIAB("assets/models/cube.ciab");
+   cubeModel->loadTexture("assets/textures/masonry_DIFF.png", false);
+   cubeEnt = new RigidEnt(Eigen::Vector3f(0, 0, 0), cubeModel);
 }
 
 // ======================================================================== //
 // ============================== UPDATE CODE ============================= //
 // ======================================================================== //
 
-// static void updateCamera(GLFWwindow * window, double timePassed) {
-//    float distTraveled = 20 * timePassed;
+static void updateCamera(GLFWwindow * window, double timePassed) {
 
-//    if (keyToggles[GLFW_KEY_W])
-//       camera->moveForward(distTraveled);
-//    if (keyToggles[GLFW_KEY_S])
-//       camera->moveBackward(distTraveled);
-//    if (keyToggles[GLFW_KEY_A])
-//       camera->moveLeft(distTraveled);
-//    if (keyToggles[GLFW_KEY_D])
-//       camera->moveRight(distTraveled);
-//    if (keyToggles[GLFW_KEY_SPACE])
-//       camera->moveUp(distTraveled);
-//    if (keyToggles[GLFW_KEY_LEFT_SHIFT])
-//       camera->moveDown(distTraveled);
+   float distDelta = 20 * timePassed;
 
-//    if (keyToggles[GLFW_KEY_Q])
-//       camera->aim(0,0, -0.05);
-//    if (keyToggles[GLFW_KEY_E])
-//       camera->aim(0,0, 0.05);
+   if (keyToggles[GLFW_KEY_W])
+      camera->moveForward(distDelta);
+   if (keyToggles[GLFW_KEY_S])
+      camera->moveBackward(distDelta);
+   if (keyToggles[GLFW_KEY_A])
+      camera->moveLeft(distDelta);
+   if (keyToggles[GLFW_KEY_D])
+      camera->moveRight(distDelta);
+   if (keyToggles[GLFW_KEY_SPACE])
+      camera->moveUp(distDelta);
+   if (keyToggles[GLFW_KEY_LEFT_SHIFT])
+      camera->moveDown(distDelta);
 
-//    camGoal = camera->position + 10 * camera->getForward();
-// }
-
-static void draw() {
-   texShader->render(camera, & lightData, skyEnt);
-   entShader->render(camera, & lightData, terrainEnt);
-
-   if (keyToggles[GLFW_KEY_K]) {
-      entShader->renderVertices(camera, terrainEnt);
-      entShader->renderPaths(camera, terrainGenerator);
-      entShader->renderPoint(camera, camGoal);}
-
+   if (keyToggles[GLFW_KEY_Q])
+      camera->aim(0,0, -0.05);
+   if (keyToggles[GLFW_KEY_E])
+      camera->aim(0,0, 0.05);
 }
 
-static void update(GLFWwindow * window, float radius) {
-   // updateCamera(window, timePassed);
-
-   skyEnt->position = camera->position + Eigen::Vector3f(0, -500, 0);
-   terrainGenerator->UpdateMesh(Eigen::Vector3f(0,0,0), radius);
-
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-   draw();
-   glfwSwapBuffers(window);
-   glfwPollEvents();
-
+static void updateEntities(GLFWwindow * window, double deltaTime) {
+   cubeEnt->update(deltaTime);
 }
 
-double lastTime;
+static void draw(double deltaTime) {
+   texShader->render(camera, & lightData, cubeEnt);
+}
 
-double timeSinceLast() {
-   double timePassed = glfwGetTime();
-   double deltaTime = timePassed - lastTime;
-   lastTime = timePassed;
-   return deltaTime;
+static void updateLoop(GLFWwindow * window, double deltaTime) {
+   updateCamera(window, deltaTime);
+   updateEntities(window, deltaTime);
+   draw(deltaTime);
 }
 
 // ======================================================================== //
@@ -262,34 +242,32 @@ int main(int argc, char ** argv) {
    glfwSetMouseButtonCallback(window, mouse_click_callback);
    glfwSetScrollCallback(window, scroll_callback);
 
-   // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
    glEnable(GL_DEPTH_TEST);
    glDepthFunc(GL_LEQUAL);
-   glClearColor(0.2,0.2,0.2,1);
+   glClearColor(0.5,0.5,0.5,1);
 
    glEnable(GL_CULL_FACE);
    glCullFace(GL_BACK);
 
    initialize(); // game code
 
-   double totalTime = 0;
-   lastTime = glfwGetTime();
+   double timePassed = 0;
+   unsigned int numFrames = 0;
+   double lastTime = glfwGetTime();
 
-   for (int i = 0; i < 200; i++)
-      update(window, 1000000000); // game code
+   while (!glfwWindowShouldClose(window)) {
+      timePassed = glfwGetTime();
+      double deltaTime = timePassed - lastTime;
+      lastTime = timePassed;
 
-   double time = timeSinceLast();
-   totalTime += time;
-   printf("First loop time = %0.3f\n", time);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      updateLoop(window, deltaTime); // game code
 
-   for (int i = 0; i < 200; i++)
-      update(window, 0); // game code
-   
-   time = timeSinceLast();
-   totalTime += time;
-   printf("Second loop time = %0.3f\n", time);
-   printf("Total time = %0.3f\n", totalTime);
+      glfwSwapBuffers(window);
+      glfwPollEvents();
+   }
 
    glfwDestroyWindow(window);
    glfwTerminate();

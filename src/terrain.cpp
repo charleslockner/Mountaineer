@@ -154,7 +154,7 @@ void TerrainGenerator::UpdateMesh(Vector3f center, float radius) {
       MergePaths();
       CreateNeededPaths();
       AddVerticesAndFaces();
-      RemoveRetreatingGeometry();
+      // RemoveRetreatingGeometry();
       RemoveConvergingPaths();
       CalculateVertexNormals();
 
