@@ -13,7 +13,7 @@ struct RigidBody {
 
    /* Computed quantities */
    Eigen::Vector3f    force;              /* total force acting on the body */
-   Eigen::Vector3f    torque;          /* total torque acting on the body */
+   Eigen::Vector3f    torque;             /* total torque acting on the body */
 };
 
 #define NBODIES 1

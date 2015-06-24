@@ -6,9 +6,7 @@
 #include "shader.h"
 #include "light.h"
 #include "model.h"
-#include "entity.h"
-#include "climber.h"
-#include "terrain.h"
+#include "entity_rigid.h"
 
 #include <vector>
 
@@ -45,6 +43,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             glfwSetWindowShouldClose(window, GL_TRUE);
             break;
          case GLFW_KEY_ENTER:
+            cubeEnt->bodies[0].torque = camera->getForward();
+            break;
          case GLFW_KEY_T:
          case GLFW_KEY_L:
          case GLFW_KEY_C:
@@ -57,6 +57,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       }
    } else if (action == GLFW_RELEASE) {
       switch (key) {
+         case GLFW_KEY_ENTER:
+            cubeEnt->bodies[0].torque = Eigen::Vector3f(0,0,0);
+            break;
          case GLFW_KEY_T:
             keyToggles[key] = !keyToggles[key];
             keyToggles[key] ?
@@ -159,7 +162,7 @@ static void setupLights() {
 
 static void initialize() {
    texShader = new TextureShader();
-   camera = new Camera(Eigen::Vector3f(0,0,10));
+   camera = new Camera(Eigen::Vector3f(0,0,-10));
    fov = 1.0;
    camera->setHFOV(fov);
    setupLights();
@@ -167,8 +170,8 @@ static void initialize() {
    // The rigid body
    cubeModel = new Model();
    cubeModel->loadCIAB("assets/models/cube.ciab");
-   cubeModel->loadTexture("assets/textures/masonry_DIFF.png", false);
-   cubeEnt = new RigidEnt(Eigen::Vector3f(0, 0, 0), cubeModel);
+   cubeModel->loadTexture("assets/textures/rock_DIFF.png", false);
+   cubeEnt = new RigidEntity(Eigen::Vector3f(0, 0, 0), cubeModel);
 }
 
 // ======================================================================== //
@@ -177,7 +180,7 @@ static void initialize() {
 
 static void updateCamera(GLFWwindow * window, double timePassed) {
 
-   float distDelta = 20 * timePassed;
+   float distDelta = 5 * timePassed;
 
    if (keyToggles[GLFW_KEY_W])
       camera->moveForward(distDelta);

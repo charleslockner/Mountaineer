@@ -26,7 +26,7 @@ ifeq ($(OS),Linux)
 LIB+=-lglfw3_LIN -lGL -lXrandr -lXi -lXinerama -lXcursor
 endif
 
-OBJS=obj/main.o $(OBJ_DIR)/camera.o $(OBJ_DIR)/entity.o $(OBJ_DIR)/geometry.o $(OBJ_DIR)/loader_ciab.o $(OBJ_DIR)/loader_texture.o $(OBJ_DIR)/model.o $(OBJ_DIR)/shader.o $(OBJ_DIR)/shader_builder.o $(OBJ_DIR)/shader_texture.o
+OBJS=obj/main.o $(OBJ_DIR)/animation.o $(OBJ_DIR)/camera.o $(OBJ_DIR)/entity.o $(OBJ_DIR)/entity_rigid.o $(OBJ_DIR)/geometry.o $(OBJ_DIR)/loader_ciab.o $(OBJ_DIR)/loader_texture.o $(OBJ_DIR)/model.o $(OBJ_DIR)/shader.o $(OBJ_DIR)/shader_builder.o $(OBJ_DIR)/shader_texture.o
 
 .PHONY: exe run clean
 
