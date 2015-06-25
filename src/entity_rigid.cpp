@@ -9,8 +9,14 @@ RigidEntity::RigidEntity(Eigen::Vector3f pos, Model * model)
    for (int i = 0; i < NBODIES; i++) {
       RigidBody * rb = & bodies[i];
 
+      float h = 1.79f;
+      float w = 0.33f;
+      float d = 1.00f;
+
       rb->mass = 1;
-      rb->Ibody = Eigen::Matrix3f::Identity();
+      rb->Ibody << (1.0f/12.0f)*rb->mass*(h*h+d*d), 0, 0,
+                   0, (1.0f/12.0f)*rb->mass*(w*w+d*d), 0,
+                   0, 0, (1.0f/12.0f)*rb->mass*(w*w+h*h);
       rb->Ibodyinv = rb->Ibody.inverse();
 
       rb->translation = Eigen::Vector3f(0,0,0);
@@ -52,16 +58,14 @@ void RigidEntity::update(float dt) {
       timeTot += dt;
       if (timeTot > 1) {
          timeTot -= 1;
-
-         printf("velocity:  %f %f %f\n", velocity(0), velocity(1), velocity(2));
-         printf("translation:  %f %f %f\n", rb->translation(0), rb->translation(1), rb->translation(2));
-
-         printf("linearMomentum:  %f %f %f\n", rb->linearMomentum(0), rb->linearMomentum(1), rb->linearMomentum(2));
-         printf("angularMomentum: %f %f %f\n", rb->angularMomentum(0), rb->angularMomentum(1), rb->angularMomentum(2));
-         printf("omega: %f %f %f\n", omega(0), omega(1), omega(2));
-         printf("omegaRotation: %f %f %f %f\n", omegaRotation.w(), omegaRotation.x(), omegaRotation.y(), omegaRotation.z());
-         printf("orientation: %f %f %f %f\n", rb->orientation.w(), rb->orientation.x(), rb->orientation.y(), rb->orientation.z());
-         printf("dt: %f, Rot Energy: %f\n\n", dt, getRotationalEnergy(rb));
+         // printf("velocity:  %f %f %f\n", velocity(0), velocity(1), velocity(2));
+         // printf("translation:  %f %f %f\n", rb->translation(0), rb->translation(1), rb->translation(2));
+         // printf("linearMomentum:  %f %f %f\n", rb->linearMomentum(0), rb->linearMomentum(1), rb->linearMomentum(2));
+         // printf("angularMomentum: %f %f %f\n", rb->angularMomentum(0), rb->angularMomentum(1), rb->angularMomentum(2));
+         // printf("omega: %f %f %f\n", omega(0), omega(1), omega(2));
+         // printf("omegaRotation: %f %f %f %f\n", omegaRotation.w(), omegaRotation.x(), omegaRotation.y(), omegaRotation.z());
+         // printf("orientation: %f %f %f %f\n", rb->orientation.w(), rb->orientation.x(), rb->orientation.y(), rb->orientation.z());
+         printf("Energy Lin: %f, Rot: %f\n\n", getLinearEnergy(rb), getRotationalEnergy(rb));
       }
 
       position = rb->translation;
@@ -69,8 +73,14 @@ void RigidEntity::update(float dt) {
    }
 }
 
+float RigidEntity::getLinearEnergy(RigidBody * rb) {
+   Eigen::Vector3f velocity = rb->linearMomentum / rb->mass;
+   return 0.5f * rb->mass * velocity.transpose() * velocity;
+}
+
 float RigidEntity::getRotationalEnergy(RigidBody * rb) {
    Eigen::Matrix3f Iworldinv = rb->orientation * rb->Ibodyinv * rb->orientation.conjugate();
    Eigen::Vector3f omega = Iworldinv * rb->angularMomentum;
    return 0.5f * omega.transpose() * (rb->orientation * rb->Ibody * rb->orientation.conjugate()) * omega;
 }
+

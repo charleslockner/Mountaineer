@@ -169,16 +169,20 @@ static GLuint buildProgram(GLuint vs, GLuint fs) {
    return program;
 }
 
-GLuint SB_buildFromPaths(const char * vertPath, const char * fragPath) {
-   GLuint vs = buildShaderFromPath(vertPath, GL_VERTEX_SHADER);
-   GLuint fs = buildShaderFromPath(fragPath, GL_FRAGMENT_SHADER);
+namespace SB {
 
-   return buildProgram(vs, fs);
-}
+   GLuint BuildProgramFromPaths(const char * vertPath, const char * fragPath) {
+      GLuint vs = buildShaderFromPath(vertPath, GL_VERTEX_SHADER);
+      GLuint fs = buildShaderFromPath(fragPath, GL_FRAGMENT_SHADER);
 
-GLuint SB_buildFromSrings(const char * vertString, const char * fragString) {
-   GLuint vs = buildShaderFromString(vertString, GL_VERTEX_SHADER);
-   GLuint fs = buildShaderFromString(fragString, GL_FRAGMENT_SHADER);
+      return buildProgram(vs, fs);
+   }
 
-   return buildProgram(vs, fs);
+   GLuint BuildProgramFromStrings(const char * vertString, const char * fragString) {
+      GLuint vs = buildShaderFromString(vertString, GL_VERTEX_SHADER);
+      GLuint fs = buildShaderFromString(fragString, GL_FRAGMENT_SHADER);
+
+      return buildProgram(vs, fs);
+   }
+
 }

@@ -3,7 +3,7 @@
 #include "safe_gl.h"
 
 TextureShader::TextureShader() {
-   program = SB_buildFromPaths("shaders/texture.vert.glsl", "shaders/texture.frag.glsl");
+   program = SB::BuildProgramFromPaths("shaders/texture.vert.glsl", "shaders/texture.frag.glsl");
 
    h_uProjViewModelM = glGetUniformLocation(program, "uProjViewModelM");
    h_uTexture = glGetUniformLocation(program, "uTexture");

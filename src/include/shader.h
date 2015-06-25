@@ -55,6 +55,23 @@ private:
    void fillHandleTable(HandleTable * table, unsigned int prog, bool animated);
 };
 
+
+class StaticShader: public EntityShader {
+public:
+   StaticShader();
+   ~StaticShader();
+   void render(Camera * camera, LightData * lightdata, ModelEntity * entity);
+
+protected:
+   unsigned int h_uHasNormals, h_uHasColors, h_uHasTexture, h_uHasNormalMap, h_uHasSpecularMap;
+   unsigned int h_uModelM, h_uProjViewM, h_uCameraPosition, h_uLights, h_uTexture;
+   unsigned int h_uNormalMap, h_uSpecularMap;
+   unsigned int h_aPosition, h_aColor, h_aNormal, h_aTangent, h_aBitangent, h_aUV;
+
+   unsigned int program;
+};
+
+
 class TextureShader: public EntityShader {
 public:
    TextureShader();

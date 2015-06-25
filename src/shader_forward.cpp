@@ -7,8 +7,8 @@
 #include "safe_gl.h"
 
 ForwardShader::ForwardShader() {
-   statProg = SB_buildFromPaths("shaders/forward_static.vert.glsl", "shaders/forward.frag.glsl");
-   animProg = SB_buildFromPaths("shaders/forward_animated.vert.glsl", "shaders/forward.frag.glsl");
+   statProg = SB::BuildProgramFromPaths("shaders/forward_static.vert.glsl", "shaders/forward.frag.glsl");
+   animProg = SB::BuildProgramFromPaths("shaders/forward_animated.vert.glsl", "shaders/forward.frag.glsl");
    fillHandleTable(& animTable, animProg, true);
    fillHandleTable(& statTable, statProg, false);
 }

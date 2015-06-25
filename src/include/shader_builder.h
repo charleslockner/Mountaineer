@@ -4,7 +4,9 @@
 /* Builds a vertex and fragment shader from the two given
 	paths to glsl files. Returns an integer representing
 	the opengl shader program handle */
-unsigned int SB_buildFromPaths(const char * vertPath, const char * fragPath);
-unsigned int SB_buildFromSrings(const char * vertString, const char * fragString);
+namespace SB {
+   unsigned int BuildProgramFromPaths(const char * vertPath, const char * fragPath);
+   unsigned int BuildProgramFromStrings(const char * vertString, const char * fragString);
+}
 
 #endif

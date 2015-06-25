@@ -29,6 +29,7 @@ public:
    RigidEntity(Eigen::Vector3f pos, Model * model);
 
    void update(float timeDelta);
+   float getLinearEnergy(RigidBody * rb);
    float getRotationalEnergy(RigidBody * rb);
 
    RigidBody bodies[NBODIES];

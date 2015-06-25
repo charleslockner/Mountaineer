@@ -24,7 +24,7 @@ bool mouseToggle = false;
 
 Model * cubeModel;
 RigidEntity * cubeEnt;
-TextureShader * texShader;
+StaticShader * shader;
 
 float fov;
 
@@ -45,6 +45,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_ENTER:
             cubeEnt->bodies[0].torque = camera->getForward();
             break;
+         case GLFW_KEY_RIGHT_SHIFT:
+            cubeEnt->bodies[0].force = camera->getForward();
+            break;
          case GLFW_KEY_T:
          case GLFW_KEY_L:
          case GLFW_KEY_C:
@@ -59,6 +62,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       switch (key) {
          case GLFW_KEY_ENTER:
             cubeEnt->bodies[0].torque = Eigen::Vector3f(0,0,0);
+            break;
+         case GLFW_KEY_RIGHT_SHIFT:
+            cubeEnt->bodies[0].force = Eigen::Vector3f(0,0,0);
             break;
          case GLFW_KEY_T:
             keyToggles[key] = !keyToggles[key];
@@ -152,7 +158,7 @@ static void scroll_callback(GLFWwindow* window, double x_offset, double y_offset
 
 static void setupLights() {
    lightData.lights[0].direction = Eigen::Vector3f(0.881, -0.365, 0.292);
-   lightData.lights[0].color = 1.2 * Eigen::Vector3f(0.7, 0.44, 0.38);
+   lightData.lights[0].color = 1.4 * Eigen::Vector3f(0.7, 0.44, 0.38);
 
    lightData.lights[1].direction = Eigen::Vector3f(-0.881, 0.365, -0.292);
    lightData.lights[1].color = 1.2 * Eigen::Vector3f(0.03, 0.05, 0.2);
@@ -161,7 +167,7 @@ static void setupLights() {
 }
 
 static void initialize() {
-   texShader = new TextureShader();
+   shader = new StaticShader();
    camera = new Camera(Eigen::Vector3f(0,0,-10));
    fov = 1.0;
    camera->setHFOV(fov);
@@ -169,8 +175,8 @@ static void initialize() {
 
    // The rigid body
    cubeModel = new Model();
-   cubeModel->loadCIAB("assets/models/cube.ciab");
-   cubeModel->loadTexture("assets/textures/rock_DIFF.png", false);
+   cubeModel->loadCIAB("assets/models/book.ciab");
+   cubeModel->loadTexture("assets/textures/book_DIFF.png", false);
    cubeEnt = new RigidEntity(Eigen::Vector3f(0, 0, 0), cubeModel);
 }
 
@@ -206,7 +212,7 @@ static void updateEntities(GLFWwindow * window, double deltaTime) {
 }
 
 static void draw(double deltaTime) {
-   texShader->render(camera, & lightData, cubeEnt);
+   shader->render(camera, & lightData, cubeEnt);
 }
 
 static void updateLoop(GLFWwindow * window, double deltaTime) {
