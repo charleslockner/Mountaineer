@@ -212,12 +212,12 @@ static void initialize() {
    terrainEnt = new ModelEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
 
    // // Animated Entities
-   // Model * chebModel = new Model();
-   // chebModel->loadOBJ("assets/cheb/cheb2.obj");
-   // chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
-   // chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
-   // entities.push_back(new MocapEntity(Eigen::Vector3f(-10, 0, 0), chebModel));
-   // entities[0]->playAnimation(0);
+   Model * chebModel = new Model();
+   chebModel->loadOBJ("assets/cheb/cheb2.obj");
+   chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
+   chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
+   entities.push_back(new MocapEntity(Eigen::Vector3f(-10, 0, 0), chebModel));
+   entities[0]->playAnimation(0);
 
    // Model * trexModel = new Model();
    // trexModel->loadCIAB("assets/models/trex.ciab");
@@ -368,6 +368,8 @@ static void updateEntities(GLFWwindow * window, double timePassed) {
       if (keyToggles[GLFW_KEY_LEFT_SHIFT])
          climberEnt->moveDown(distTraveled);
    }
+
+   entities[0]->position += Eigen::Vector3f(0.01, 0, 0);
 }
 
 static void draw(double deltaTime) {

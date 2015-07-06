@@ -21,3 +21,13 @@ http://people.cs.clemson.edu/~dhouse/courses/405/notes/raycast.pdf
 https://courses.cs.washington.edu/courses/cse457/09sp/lectures/triangle_intersection.pdf
 
 http://www.cs.virginia.edu/~gfx/Courses/2003/ImageSynthesis/scribed_notes/03_acceleration.pdf
+
+
+david wu
+quadratic deformation
+composit rigid body method (generalized explicit)
+ode integrator: shampine ode23s
+featherstone solver
+
+books:
+Shabana
