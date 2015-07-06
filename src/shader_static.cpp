@@ -1,3 +1,13 @@
+
+/*
+ * Mountaineer - A Rock Climbing Engine
+ * Charles Lockner
+ * Ask me before using this, or you shall be judged. Copyright 2015
+ *
+ * shader_static.cpp
+ * Shades an entity without displaying its animation, even if it has one.
+ */
+
 #include "shader.h"
 #include "shader_builder.h"
 #include "safe_gl.h"
@@ -25,12 +35,11 @@ StaticShader::StaticShader() {
    h_aTangent           = glGetAttribLocation(program, "aTangent");
    h_aBitangent         = glGetAttribLocation(program, "aBitangent");
    h_aUV                = glGetAttribLocation(program, "aUV");
-
 }
 
 StaticShader::~StaticShader() {}
 
-void StaticShader::render(Camera * camera, LightData * lightData, ModelEntity * entity) {
+void StaticShader::render(Camera * camera, LightData * lightData, StaticEntity * entity) {
    Model * model = entity->model;
 
    glUseProgram(program);
@@ -78,7 +87,7 @@ void StaticShader::render(Camera * camera, LightData * lightData, ModelEntity * 
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->indexID);
    glDrawElements(GL_TRIANGLES, 3 * model->faceCount, GL_UNSIGNED_INT, 0);
 
-   // // cleanup
+   // cleanup
    glUseProgram(0);
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);

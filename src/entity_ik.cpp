@@ -1,5 +1,5 @@
 
-#include "entity.h"
+#include "entity_ik.h"
 
 #include <vector>
 #include <assert.h>
@@ -12,7 +12,7 @@ IKLimb::~IKLimb() {}
 // ======================= IK Entity ======================= //
 // --------------------------------------------------------- //
 IKEntity::IKEntity(Eigen::Vector3f pos, Model * model)
-: BonifiedEntity(pos, model) {
+: SkinnedEntity(pos, model) {
    this->ikLimbs = std::vector<IKLimb *>(0);
    this->ikBones = std::vector<IKBone>(model->boneCount);
    for (int i = 0; i < model->boneCount; i++) {
@@ -41,7 +41,7 @@ void IKEntity::setLimbGoal(int limbIndex, Eigen::Vector3f goal) {
 
 void IKEntity::update(float tickDelta) {
    if (model->hasBoneTree && model->hasAnimations) {
-      BonifiedEntity::replayIfNeeded(tickDelta);
+      SkinnedEntity::replayIfNeeded(tickDelta);
       computeAnimMs(model->boneRoot, Eigen::Matrix4f::Identity());
    }
 }

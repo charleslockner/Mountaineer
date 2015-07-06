@@ -22,7 +22,7 @@ struct RigidBody {
    Eigen::Vector3f    torque;             /* total torque acting on the body */
 };
 
-class RigidEntity : public ModelEntity {
+class RigidEntity : public StaticEntity {
 public:
    RigidEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
    RigidEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);

@@ -66,16 +66,16 @@ Eigen::Vector3f Entity::getForward() {
 }
 
 // --------------------------------------------------------- //
-// ===================== Model Entity ====================== //
+// ==================== Static Entity ====================== //
 // --------------------------------------------------------- //
-ModelEntity::ModelEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
+StaticEntity::StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
 : Entity(pos, rot), scale(scl), model(model) {}
-ModelEntity::ModelEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
+StaticEntity::StaticEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
 : Entity(pos, rot), scale(Eigen::Vector3f(1,1,1)), model(model) {}
-ModelEntity::ModelEntity(Eigen::Vector3f pos, Model * model)
+StaticEntity::StaticEntity(Eigen::Vector3f pos, Model * model)
 : Entity(pos), scale(Eigen::Vector3f(1,1,1)), model(model) {}
 
-Eigen::Matrix4f ModelEntity::generateModelM() {
+Eigen::Matrix4f StaticEntity::generateModelM() {
    return Mmath::TransformationMatrix(position, rotation, scale);
 }
 
@@ -83,17 +83,17 @@ Eigen::Matrix4f ModelEntity::generateModelM() {
 // ==================== Animated Entity ==================== //
 // --------------------------------------------------------- //
 AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
-: ModelEntity(pos, rot, scl, model) {
+: StaticEntity(pos, rot, scl, model) {
    for (int i = 0; i < MAX_BONES; i++)
       this->animMs[i] = Eigen::Matrix4f::Identity();
 }
 AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-: ModelEntity(pos, rot, model) {
+: StaticEntity(pos, rot, model) {
    for (int i = 0; i < MAX_BONES; i++)
       this->animMs[i] = Eigen::Matrix4f::Identity();
 }
 AnimatedEntity::AnimatedEntity(Eigen::Vector3f pos, Model * model)
-: ModelEntity(pos, model) {
+: StaticEntity(pos, model) {
    for (int i = 0; i < MAX_BONES; i++)
       this->animMs[i] = Eigen::Matrix4f::Identity();
 }
@@ -142,9 +142,9 @@ void MocapEntity::update(float tickDelta) {
 }
 
 // --------------------------------------------------------- //
-// ==================== Bonified Entity =================== //
+// ===================== Skinned Entity ==================== //
 // --------------------------------------------------------- //
-BonifiedEntity::BonifiedEntity(Eigen::Vector3f pos, Model * model)
+SkinnedEntity::SkinnedEntity(Eigen::Vector3f pos, Model * model)
 : AnimatedEntity(pos, model) {
 
    this->boneMs = std::vector<Eigen::Matrix4f>(model->boneCount);
@@ -160,11 +160,11 @@ BonifiedEntity::BonifiedEntity(Eigen::Vector3f pos, Model * model)
    }
 }
 
-void BonifiedEntity::playAnimation(int animNum) {
+void SkinnedEntity::playAnimation(int animNum) {
    playAnimation(animNum, model->boneRoot, true);
 }
 
-void BonifiedEntity::playAnimation(int animNum, int boneNum, bool isRecursive) {
+void SkinnedEntity::playAnimation(int animNum, int boneNum, bool isRecursive) {
    assert(animNum < model->animationCount);
    this->animNums[boneNum] = animNum;
    this->bonesPlaying[boneNum] = true;
@@ -174,11 +174,11 @@ void BonifiedEntity::playAnimation(int animNum, int boneNum, bool isRecursive) {
          playAnimation(animNum, model->bones[boneNum].childIndices[i], isRecursive);
 }
 
-void BonifiedEntity::stopAnimation() {
+void SkinnedEntity::stopAnimation() {
    stopAnimation(model->boneRoot, true);
 }
 
-void BonifiedEntity::stopAnimation(int boneNum, bool isRecursive) {
+void SkinnedEntity::stopAnimation(int boneNum, bool isRecursive) {
    this->bonesPlaying[boneNum] = false;
 
    if (isRecursive)
@@ -186,7 +186,7 @@ void BonifiedEntity::stopAnimation(int boneNum, bool isRecursive) {
          stopAnimation(model->bones[boneNum].childIndices[i], isRecursive);
 }
 
-void BonifiedEntity::update(float tickDelta) {
+void SkinnedEntity::update(float tickDelta) {
    if (model->hasAnimations && model->hasBoneTree) {
       // Start replaying animation if finished
       replayIfNeeded(tickDelta);
@@ -195,7 +195,7 @@ void BonifiedEntity::update(float tickDelta) {
    }
 }
 
-void BonifiedEntity::replayIfNeeded(float tickDelta) {
+void SkinnedEntity::replayIfNeeded(float tickDelta) {
    for (int i = 0; i < model->boneCount; i++) {
       if (!model->hasBoneTree || bonesPlaying[i]) {
          float duration = model->animations[animNums[i]].duration;
@@ -207,7 +207,7 @@ void BonifiedEntity::replayIfNeeded(float tickDelta) {
    }
 }
 
-void BonifiedEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
+void SkinnedEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
    int animNum = animNums[boneIndex];
    float tickTime = animTimes[boneIndex];
 

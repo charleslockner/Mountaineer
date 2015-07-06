@@ -30,7 +30,7 @@ void EntityShader::sendTexture(unsigned int handle, unsigned int id, GLenum unit
 }
 
 // debug tangents/bitangents
-void EntityShader::renderVertices(Camera * camera, ModelEntity * entity) {
+void EntityShader::renderVertices(Camera * camera, StaticEntity * entity) {
    Model * model = entity->model;
 
    glMatrixMode(GL_PROJECTION);
@@ -72,7 +72,7 @@ void EntityShader::renderVertices(Camera * camera, ModelEntity * entity) {
    glEnd();
 }
 
-void EntityShader::renderBones(Camera * camera, BonifiedEntity * entity) {
+void EntityShader::renderBones(Camera * camera, SkinnedEntity * entity) {
    Model * model = entity->model;
 
    for (int i = 0; i < model->boneCount; i++) {

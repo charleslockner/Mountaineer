@@ -1,11 +1,11 @@
 #include "entity_rigid.h"
 
 RigidEntity::RigidEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model)
-: ModelEntity(pos, rot, scl, model) {}
+: StaticEntity(pos, rot, scl, model) {}
 RigidEntity::RigidEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model)
-: ModelEntity(pos, rot, model) {}
+: StaticEntity(pos, rot, model) {}
 RigidEntity::RigidEntity(Eigen::Vector3f pos, Model * model)
-: ModelEntity(pos, model) {
+: StaticEntity(pos, model) {
    for (int i = 0; i < NBODIES; i++) {
       RigidBody * rb = & bodies[i];
 

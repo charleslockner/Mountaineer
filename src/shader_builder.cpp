@@ -1,3 +1,15 @@
+
+/*
+ * Mountaineer - A Rock Climbing Engine
+ * Charles Lockner
+ * Ask me before using this, or you shall be judged. Copyright 2015
+ *
+ * shader_builder.cpp
+ * Builds an OpenGL shader program either from fragment and shader files, or from strings that
+ * contain glsl code.
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

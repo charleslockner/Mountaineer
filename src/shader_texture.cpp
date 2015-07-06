@@ -1,3 +1,13 @@
+
+/*
+ * Mountaineer - A Rock Climbing Engine
+ * Charles Lockner
+ * Ask me before using this, or you shall be judged. Copyright 2015
+ *
+ * shader_texture.cpp
+ * Shades an entity with a texture. Doesn't care about lighting. Only useful for rendering a skybox.
+ */
+
 #include "shader.h"
 #include "shader_builder.h"
 #include "safe_gl.h"
@@ -13,7 +23,7 @@ TextureShader::TextureShader() {
 
 TextureShader::~TextureShader() {}
 
-void TextureShader::render(Camera * camera, LightData * lightdata, ModelEntity * entity) {
+void TextureShader::render(Camera * camera, LightData * lightdata, StaticEntity * entity) {
    Model * model = entity->model;
 
    glUseProgram(program);
