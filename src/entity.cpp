@@ -23,25 +23,20 @@ void Entity::moveAlong(Eigen::Vector3f direction, float distance) {
 void Entity::moveLeft(float dist) {
    moveAlong(getLeft(), dist);
 }
-
 void Entity::moveRight(float dist) {
-   moveAlong(-getLeft(), dist);
+   moveAlong(getRight(), dist);
 }
-
 void Entity::moveForward(float dist) {
    moveAlong(getForward(), dist);
 }
-
 void Entity::moveBackward(float dist) {
-   moveAlong(-getForward(), dist);
+   moveAlong(getBackward(), dist);
 }
-
 void Entity::moveUp(float dist) {
    moveAlong(getUp(), dist);
 }
-
 void Entity::moveDown(float dist) {
-   moveAlong(-getUp(), dist);
+   moveAlong(getDown(), dist);
 }
 
 void Entity::rotateAlong(float angle, Eigen::Vector3f axis) {
@@ -56,13 +51,20 @@ void Entity::lookAt(Eigen::Vector3f target) {
 Eigen::Vector3f Entity::getLeft() {
    return (rotation._transformVector(LEFT_BASE)).normalized();
 }
-
+Eigen::Vector3f Entity::getRight() {
+   return (rotation._transformVector(-LEFT_BASE)).normalized();
+}
 Eigen::Vector3f Entity::getUp() {
    return (rotation._transformVector(UP_BASE)).normalized();
 }
-
+Eigen::Vector3f Entity::getDown() {
+   return (rotation._transformVector(-UP_BASE)).normalized();
+}
 Eigen::Vector3f Entity::getForward() {
    return (rotation._transformVector(FORWARD_BASE)).normalized();
+}
+Eigen::Vector3f Entity::getBackward() {
+   return (rotation._transformVector(-FORWARD_BASE)).normalized();
 }
 
 // --------------------------------------------------------- //

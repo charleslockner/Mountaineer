@@ -12,6 +12,11 @@ void Model::loadConstraints(const char * path) {
       this->bones[i].joints.clear();
 
    std::ifstream infile(path);
+   if (!infile) {
+     fprintf(stderr, "Joint file \"%s\" not found.\n", path);
+     exit(1);
+   }
+
    std::string line;
    int lineNum = 0;
 
@@ -28,9 +33,9 @@ void Model::loadConstraints(const char * path) {
          joint.maxAngle = max;
          this->bones[boneNum].joints.push_back(joint);
       } else {
-         fprintf(stderr, "cns error on line %d\n", lineNum);
+         // skip the empty line
       }
    }
 
-   fprintf(stderr, "Loaded CNS: %s\n", path);
+   fprintf(stderr, "Loaded JNT: %s\n", path);
 }

@@ -20,8 +20,9 @@ public:
    Eigen::Vector3f rayFromNDCToWorld(float x_nds, float y_nds);
    Eigen::Vector3f rayFromNDCToView(float x_nds, float y_nds);
 
+   void setViewFrustum();
    void setAspectRatio(float aspect);
-   void setHFOV(float hfov);
+   void setFOVY(float fovy);
    void setNearDistance(float near);
    void setFarDistance(float far);
 
@@ -29,10 +30,13 @@ public:
    Eigen::Matrix4f getProjectionM();
 
 private:
-   float             _hfov;
+   float             _fovy;
    float             _aspect;
-   float             _near;
-   float             _far;
+   float             _nearDist;
+   float             _farDist;
+
+   // Frustum in camera space
+   Geom::Frustumf    _viewFrustum;
 
    Eigen::Matrix4f   _viewM;
    Eigen::Matrix4f   _projectionM;

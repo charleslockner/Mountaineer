@@ -31,9 +31,10 @@ bool keyToggles[512] = {false};
 bool mouseToggle = false;
 
 Model * guyModel, * jackModel;
-AnimatedEntity * chebEnt;
+StaticEntity * skyEnt, * terrainEnt, * jackEnt;
+MocapEntity * chebEnt;
+SkinnedEntity * trexEnt;
 IKEntity * climberEnt;
-StaticEntity * skyEnt, * terrainEnt;
 
 StaticShader * staticShader;
 AnimatedShader * animShader;
@@ -81,7 +82,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             goalIndex = (goalIndex + 1) % numGoals;
             break;
          case GLFW_KEY_M:
-            guyModel->loadConstraints("assets/models/guy.cns");
+            guyModel->loadConstraints("assets/joints/guy.jnt");
             break;
          case GLFW_KEY_I:
             keyToggles[key] = !keyToggles[key];
@@ -172,7 +173,7 @@ static void mouse_click_callback(GLFWwindow* window, int button, int action, int
 
 static void scroll_callback(GLFWwindow* window, double x_offset, double y_offset) {
    fov += 0.01 * y_offset;
-   camera->setHFOV(fov);
+   camera->setFOVY(fov);
 }
 
 // ======================================================================== //
@@ -195,7 +196,7 @@ static void initialize() {
    texShader = new TextureShader();
    camera = new Camera(Eigen::Vector3f(0,0,10));
    fov = 1.0;
-   camera->setHFOV(fov);
+   camera->setFOVY(fov);
    setupLights();
 
    // Skybox
@@ -215,33 +216,33 @@ static void initialize() {
    terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
    terrainEnt = new StaticEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
 
-   // // Animated Entities
+   // Animated Entities
    Model * chebModel = new Model();
    chebModel->loadOBJ("assets/cheb/cheb2.obj");
    chebModel->loadSkinningPIN("assets/cheb/cheb_attachment.txt");
    chebModel->loadAnimationPIN("assets/cheb/cheb_skel_walkAndSkip.txt");
-   entities.push_back(new MocapEntity(Eigen::Vector3f(-10, 0, 0), chebModel));
-   entities[0]->playAnimation(0);
+   chebEnt = new MocapEntity(Eigen::Vector3f(-10, 0, 20), chebModel);
+   chebEnt->playAnimation(0);
 
-   // Model * trexModel = new Model();
-   // trexModel->loadCIAB("assets/models/trex.ciab");
-   // trexModel->loadTexture("assets/textures/masonry.png", false);
-   // trexModel->loadNormalMap("assets/textures/masonry_NORM.png", false);
-   // entities.push_back(new SkinnedEntity(Eigen::Vector3f(10, 0, 0), trexModel));
-   // entities[1]->playAnimation(0);
+   Model * trexModel = new Model();
+   trexModel->loadCIAB("assets/models/trex.ciab");
+   trexModel->loadTexture("assets/textures/masonry_DIFF.png", false);
+   trexModel->loadNormalMap("assets/textures/masonry_NORM.png", false);
+   trexEnt = new SkinnedEntity(Eigen::Vector3f(10, 0, 20), trexModel);
+   trexEnt->playAnimation(0);
 
    // Lumberjack
    jackModel = new Model();
    jackModel->loadCIAB("assets/models/lumberJack.ciab");
    jackModel->loadTexture("assets/textures/lumberJack_DIFF.png", true);
    jackModel->loadNormalMap("assets/textures/lumberJack_NORM.png", true);
-   entities.push_back(new SkinnedEntity(Eigen::Vector3f(0, 0, 20), jackModel));
+   jackEnt = new SkinnedEntity(Eigen::Vector3f(0, 0, 20), jackModel);
 
    // The main character
    guyModel = new Model();
    guyModel->loadCIAB("assets/models/guy.ciab");
    guyModel->loadTexture("assets/textures/guy_DIFF.bmp", false);
-   guyModel->loadConstraints("assets/models/guy.cns");
+   guyModel->loadConstraints("assets/joints/guy.jnt");
    climberEnt = new IKEntity(Eigen::Vector3f(0, 0, 5), guyModel);
    climberEnt->playAnimation(0);
 
@@ -373,19 +374,21 @@ static void updateEntities(GLFWwindow * window, double timePassed) {
          climberEnt->moveDown(distTraveled);
    }
 
-   entities[0]->position += Eigen::Vector3f(0.01, 0, 0);
+   chebEnt->update(timePassed);
+   trexEnt->update(timePassed);
+   climberEnt->update(timePassed);
+
+   // chebEnt->position += Eigen::Vector3f(0.01, 0, 0);
 }
 
 static void draw(double deltaTime) {
-   staticShader->render(camera, & lightData, terrainEnt);
    texShader->render(camera, & lightData, skyEnt);
 
-   for (int i = 0; i < entities.size(); i++)
-      entities[i]->update(deltaTime);
-   for (int i = 0; i < entities.size(); i++)
-      animShader->render(camera, & lightData, entities[i]);
+   staticShader->render(camera, & lightData, terrainEnt);
+   staticShader->render(camera, & lightData, jackEnt);
 
-   climberEnt->update(deltaTime);
+   animShader->render(camera, & lightData, chebEnt);
+   animShader->render(camera, & lightData, trexEnt);
    animShader->render(camera, & lightData, climberEnt);
 
    if (keyToggles[GLFW_KEY_K]) {

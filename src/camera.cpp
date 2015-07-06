@@ -1,15 +1,15 @@
 #include "camera.h"
 
-#define HFOV   1.0f
+#define FOVY   1.0f
 #define ASPECT (4.0f/3.0f)
 #define NEAR   0.1f
 #define FAR    1500.0f
 
 Camera::Camera(Eigen::Vector3f pos, Eigen::Quaternionf rot) :
-   Entity(pos, rot), _hfov(HFOV), _aspect(ASPECT), _near(NEAR), _far(FAR) {
+   Entity(pos, rot), _fovy(FOVY), _aspect(ASPECT), _nearDist(NEAR), _farDist(FAR) {
 }
 Camera::Camera(Eigen::Vector3f pos) :
-   Entity(pos), _hfov(HFOV), _aspect(ASPECT), _near(NEAR), _far(FAR) {
+   Entity(pos), _fovy(FOVY), _aspect(ASPECT), _nearDist(NEAR), _farDist(FAR) {
 }
 
 void Camera::aim(double deltaYaw, double deltaPitch, double deltaRoll) {
@@ -21,10 +21,10 @@ void Camera::aim(double deltaYaw, double deltaPitch, double deltaRoll) {
 void Camera::rigidFollow(Eigen::Vector3f pos, Eigen::Quaternionf rot) {
    if (pos(0) != position(0) || pos(1) != position(1) || pos(2) != position(2)) {
       Eigen::Vector3f dirToPos = (pos - position).normalized();
-      float           distTo = (pos - position).norm();
+      float           distance = (pos - position).norm();
 
-      moveAlong(dirToPos, (distTo < 1 ? 0.05 * distTo : 0.05));
-      rotation = rotation.slerp(0.01, rot);
+      moveAlong(dirToPos, (distance < 1 ? distance : 0.2 * distance));
+      rotation = rotation.slerp(0.1, rot);
    }
 }
 
@@ -53,17 +53,42 @@ Eigen::Vector3f Camera::rayFromNDCToView(float x_nds, float y_nds) {
    return Eigen::Vector3f(ray_view(0), ray_view(1), 1.0).normalized();
 }
 
+void Camera::setViewFrustum() {
+   float halfNearH = tan(_fovy / 2) * _nearDist;
+   float halfNearW = halfNearH * _aspect;
+   float halfFarH  = tan(_fovy / 2) * _farDist;
+   float halfFarW  = halfFarH * _aspect;
+
+   Eigen::Vector3f nbl = Eigen::Vector3f(-halfNearW, -halfNearH, _nearDist);
+   Eigen::Vector3f nbr = Eigen::Vector3f( halfNearW, -halfNearH, _nearDist);
+   Eigen::Vector3f ntl = Eigen::Vector3f(-halfNearW,  halfNearH, _nearDist);
+   Eigen::Vector3f ntr = Eigen::Vector3f( halfNearW,  halfNearH, _nearDist);
+   Eigen::Vector3f fbl = Eigen::Vector3f(-halfFarW, -halfFarH, _farDist);
+   Eigen::Vector3f fbr = Eigen::Vector3f( halfFarW, -halfFarH, _farDist);
+   Eigen::Vector3f ftl = Eigen::Vector3f(-halfFarW,  halfFarH, _farDist);
+   Eigen::Vector3f ftr = Eigen::Vector3f( halfFarW,  halfFarH, _farDist);
+
+   Geom::Planef leftP   = Geom::Planef(ftl, ntl, nbl);
+   Geom::Planef rightP  = Geom::Planef(ntr, ftr, fbr);
+   Geom::Planef bottomP = Geom::Planef(fbr, fbl, nbl);
+   Geom::Planef topP    = Geom::Planef(ntr, ntl, ftl);
+   Geom::Planef nearP   = Geom::Planef(nbl, FORWARD_BASE);
+   Geom::Planef farP    = Geom::Planef(fbl, -FORWARD_BASE);
+
+   _viewFrustum = Geom::Frustumf(leftP, rightP, bottomP, topP, nearP, farP);
+}
+
 void Camera::setAspectRatio(float ar) {
    _aspect = ar;
 }
-void Camera::setHFOV(float hfov) {
-   _hfov = hfov;
+void Camera::setFOVY(float fovy) {
+   _fovy = fovy;
 }
 void Camera::setNearDistance(float near) {
-   _near = near;
+   _nearDist = near;
 }
 void Camera::setFarDistance(float far) {
-   _far = far;
+   _farDist = far;
 }
 
 Eigen::Matrix4f Camera::getViewM() {
@@ -71,5 +96,5 @@ Eigen::Matrix4f Camera::getViewM() {
 }
 
 Eigen::Matrix4f Camera::getProjectionM() {
-   return Mmath::PerspectiveMatrix(_hfov, _aspect, _near, _far);
+   return Mmath::PerspectiveMatrix(_fovy, _aspect, _nearDist, _farDist);
 }

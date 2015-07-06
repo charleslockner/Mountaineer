@@ -31,8 +31,11 @@ public:
    void lookAt(Eigen::Vector3f target);
 
    Eigen::Vector3f getLeft();
+   Eigen::Vector3f getRight();
+   Eigen::Vector3f getDown();
    Eigen::Vector3f getUp();
    Eigen::Vector3f getForward();
+   Eigen::Vector3f getBackward();
 };
 
 class StaticEntity : public Entity {

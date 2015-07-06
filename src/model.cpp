@@ -91,26 +91,13 @@ Model::~Model() {
 }
 
 void Model::CalculateNormals() {
-   // Zero out vertex normals so we can sum from face normals starting at 0
+   // Calculate face normals
+   for (int i = 0; i < faces.size(); i++)
+      faces[i]->calculateNormal();
+
+   // Calculate vertex normals
    for (int i = 0; i < vertices.size(); i++)
-      vertices[i]->normal = Eigen::Vector3f(0,0,0);
-
-   // Calculated face normals and add these to neighboring vertex normals
-   for (int i = 0; i < faces.size(); i++) {
-      Face * face = faces[i];
-
-      // Fill in face normals
-      face->calculateNormal();
-
-      // Add face normal to neighboring vertex normals
-      face->vertices[0]->normal += face->normal;
-      face->vertices[1]->normal += face->normal;
-      face->vertices[2]->normal += face->normal;
-   }
-
-   // Normalize the new vertex normals
-   for (int i = 0; i < vertices.size(); i++)
-      vertices[i]->normal.normalize();
+      vertices[i]->calculateNormal();
 }
 
 static void bufferVertexField(char ** ptrData, size_t offset, unsigned int vbo, int size, int count) {

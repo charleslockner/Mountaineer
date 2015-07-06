@@ -29,8 +29,28 @@ namespace Geom {
       Eigen::Vector3f point;
       Eigen::Vector3f normal;
 
+      Planef();
       Planef(Eigen::Vector3f pnt, Eigen::Vector3f norm);
+      // Constructs a plane who's normal is defined by (c - b)x(a - b)
+      // Wind counterclockwise for normal to face inwards or towards you
+      Planef(Eigen::Vector3f a, Eigen::Vector3f b, Eigen::Vector3f c);
+
+      // Returns a positive distance if the point is on the same side as the direction of the normal.
+      // Returns a negative distance if the point is on the other side of the plane
       float distToPoint(Eigen::Vector3f pnt);
+   };
+
+   class Frustumf {
+   public:
+      Planef left, right;
+      Planef bottom, top;
+      Planef near, far;
+
+      Frustumf();
+      Frustumf(Planef left, Planef right, Planef bottom, Planef top, Planef near, Planef far);
+      Frustumf(Eigen::Vector3f nbl, Eigen::Vector3f nbr, Eigen::Vector3f ntl, Eigen::Vector3f ntr,
+               Eigen::Vector3f fbl, Eigen::Vector3f fbr, Eigen::Vector3f ftl, Eigen::Vector3f ftr);
+      bool Contains(Eigen::Vector3f pnt);
    };
 
    class Spheref {
