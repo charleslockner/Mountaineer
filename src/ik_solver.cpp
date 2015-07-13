@@ -33,7 +33,7 @@ Matrix<T,3,1> solveEndEffector(
          assert(jointI >= 0);
          T angle = angles[angleI];
          Matrix<T,3,1> axis = (*joints)[jointI].axis.cast<T>();
-         Matrix<T,4,4> jointRotM = Mmath::AngleAxisMatrix(angle, axis);
+         Matrix<T,4,4> jointRotM = Mmath::AngleAxisMatrix4(angle, axis);
 
          endEffector = jointRotM * endEffector;
       }

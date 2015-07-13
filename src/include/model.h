@@ -36,11 +36,16 @@ typedef struct IKJoint {
 
 typedef struct Bone {
    int parentIndex;
-   unsigned int childCount;
    std::vector<int> childIndices;
    Eigen::Matrix4f invBonePose;
    Eigen::Matrix4f parentOffset;
    std::vector<IKJoint> joints;
+
+   // Rigid body Quantities
+   float              mass;               /* mass M */
+   Eigen::Matrix3f    inertiaTensor;      /* inertia tensor (in body space) */
+   Eigen::Matrix3f    invInertiaTensor;   /* inverse of the inertia tensor (in body space) */
+   Eigen::Vector3f    com;                /* vector pointing from 0,0,0 to the center of mass */
 } Bone;
 
 typedef struct BoneWeight {
@@ -109,14 +114,28 @@ public:
    void loadAnimationPIN(const char * path);
    void loadConstraints(const char * path);
 
-   void CalculateNormals(); // Calculate vertex and face normals from vertex positions
-   void bufferVertices(); // Send the vertex data to the GPU memory
-   void bufferIndices(); // Send the index array to the GPU
+   void CalculateNormals();   // Calculate vertex and face normals from vertex positions
+   void bufferVertices();     // Send the vertex data to the GPU memory
+   void bufferIndices();      // Send the index array to the GPU
 
    void printVertices();
    void printFaces();
    void printBoneTree();
    void printAnimations();
+
+   // Rigid body properties
+   float              mass;               /* mass M */
+   Eigen::Matrix3f    inertiaTensor;      /* inertia tensor (in body space) */
+   Eigen::Matrix3f    invInertiaTensor;   /* inverse of the inertia tensor (in body space) */
+   Eigen::Vector3f    com;                /* vector pointing from 0,0,0 to the center of mass */
+
+   // Mesh properties
+   std::vector<Vertex *> vertices;
+   std::vector<Face *> faces;
+   std::vector<Bone> bones;
+   std::vector<Animation> animations;
+
+   unsigned int boneRoot;
 
    unsigned int vertexCount, faceCount, boneCount, animationCount;
 
@@ -125,12 +144,6 @@ public:
 
    bool hasNormals, hasColors, hasTexCoords, hasTexture, hasNormalMap, hasSpecularMap,
         hasTansAndBitans, hasBoneWeights, hasBoneTree, hasAnimations, isAnimated;
-
-   unsigned int boneRoot;
-   std::vector<Vertex *> vertices;
-   std::vector<Face *> faces;
-   std::vector<Bone> bones;
-   std::vector<Animation> animations;
 };
 
 #endif // __MODEL_H__

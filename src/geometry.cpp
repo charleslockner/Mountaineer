@@ -32,6 +32,10 @@ namespace Geom {
       return normal.dot(pnt - point);
    }
 
+   Planef operator *(Eigen::Matrix4f transformM, Planef planeOp) {
+      return Planef((transformM * Mmath::vec3To4(planeOp.point, 1.0f)).head<3>(),
+                    (transformM * Mmath::vec3To4(planeOp.normal, 0.0f)).head<3>());
+   }
 
    Frustumf::Frustumf() {};
 
@@ -46,6 +50,12 @@ namespace Geom {
       top      = Planef(ntr, ntl, ftl);
       near     = Planef(ntl, ntr, nbr);
       far      = Planef(ftr, ftl, fbl);
+   }
+
+   Frustumf operator *(Eigen::Matrix4f transformM, Frustumf frustOp) {
+      return Frustumf(transformM * frustOp.left, transformM * frustOp.right,
+                      transformM * frustOp.bottom, transformM * frustOp.top,
+                      transformM * frustOp.near, transformM * frustOp.far);
    }
 
    bool Frustumf::Contains(Eigen::Vector3f pnt) {

@@ -158,7 +158,7 @@ void Model::printBoneTree() {
       Bone * bone = & bones[i];
       printf("Bone: %d\n", i);
       printf("  parent: %d\n", bone->parentIndex);
-      for (int j = 0; j < bone->childCount; j++) {
+      for (int j = 0; j < bone->childIndices.size(); j++) {
          printf("  child: %d\n", bone->childIndices[j]);
       }
       Eigen::Matrix4f m = bone->invBonePose;

@@ -31,7 +31,7 @@ bool keyToggles[512] = {false};
 bool mouseToggle = false;
 
 Model * guyModel, * jackModel;
-StaticEntity * skyEnt, * terrainEnt, * jackEnt;
+StaticEntity * skyEnt, * terrainEnt, * jackEnt, * bookEnt;
 MocapEntity * chebEnt;
 SkinnedEntity * trexEnt;
 IKEntity * climberEnt;
@@ -68,6 +68,22 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
          case GLFW_KEY_I:
          case GLFW_KEY_M:
             break;
+         // case GLFW_KEY_LEFT_BRACKET:
+         //    bookEnt->applyTorque(camera->getForward());
+         //    printf("torquing\n");
+         //    break;
+         // case GLFW_KEY_RIGHT_BRACKET:
+         //    trexEnt->applyTorque(camera->getForward());
+         //    printf("forcing\n");
+         //    break;
+         case GLFW_KEY_LEFT_BRACKET:
+            bookEnt->torque = camera->getForward();
+            printf("torquing book\n");
+            break;
+         case GLFW_KEY_RIGHT_BRACKET:
+            trexEnt->torque = camera->getForward();
+            printf("torquing trex\n");
+            break;
          case GLFW_KEY_G:
             printf("pressed g\n");
             terrainGenerator->UpdateMesh(camera->position, 1000);
@@ -80,6 +96,12 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       switch (key) {
          case GLFW_KEY_ENTER:
             goalIndex = (goalIndex + 1) % numGoals;
+            break;
+         case GLFW_KEY_LEFT_BRACKET:
+            bookEnt->torque = Eigen::Vector3f(0,0,0);
+            break;
+         case GLFW_KEY_RIGHT_BRACKET:
+            trexEnt->torque = Eigen::Vector3f(0,0,0);
             break;
          case GLFW_KEY_M:
             guyModel->loadConstraints("assets/joints/guy.jnt");
@@ -215,6 +237,12 @@ static void initialize() {
    terrainModel->loadNormalMap("assets/textures/rock_NORM.png", true);
    terrainModel->loadSpecularMap("assets/textures/rock_SPEC.png", true);
    terrainEnt = new StaticEntity(Eigen::Vector3f(0, 0, 0), terrainModel);
+
+   // Rigid Body
+   Model * bookModel = new Model();
+   bookModel->loadCIAB("assets/models/book.ciab");
+   bookModel->loadTexture("assets/textures/book_DIFF.png", false);
+   bookEnt = new StaticEntity(Eigen::Vector3f(0,50,0), bookModel);
 
    // Animated Entities
    Model * chebModel = new Model();
@@ -374,6 +402,9 @@ static void updateEntities(GLFWwindow * window, double timePassed) {
          climberEnt->moveDown(distTraveled);
    }
 
+   bookEnt->physicsStep(timePassed);
+   trexEnt->physicsStep(timePassed);
+
    chebEnt->update(timePassed);
    trexEnt->update(timePassed);
    climberEnt->update(timePassed);
@@ -386,6 +417,7 @@ static void draw(double deltaTime) {
 
    staticShader->render(camera, & lightData, terrainEnt);
    staticShader->render(camera, & lightData, jackEnt);
+   staticShader->render(camera, & lightData, bookEnt);
 
    animShader->render(camera, & lightData, chebEnt);
    animShader->render(camera, & lightData, trexEnt);

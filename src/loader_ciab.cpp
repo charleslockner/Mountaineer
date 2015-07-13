@@ -200,14 +200,25 @@ static void readBoneTree(FILE *fp, Model * model) {
    for (int i = 0; i < model->boneCount; i++) {
       Bone * bone = & model->bones[i];
       fread(& bone->parentIndex, sizeof(int), 1, fp);
-      fread(& bone->childCount, sizeof(unsigned int), 1, fp);
+      int childCount;
+      fread(& childCount, sizeof(unsigned int), 1, fp);
 
-      bone->childIndices = std::vector<int>(bone->childCount);
-      for (int j = 0; j < bone->childCount; j++)
+      bone->childIndices = std::vector<int>(childCount);
+      for (int j = 0; j < childCount; j++)
          fread(& bone->childIndices[j], sizeof(int), 1, fp);
 
       fread(& bone->invBonePose, sizeof(Eigen::Matrix4f), 1, fp);
       fread(& bone->parentOffset, sizeof(Eigen::Matrix4f), 1, fp);
+
+      // Rigid body properties
+      // fread(& bone->mass, sizeof(float), 1, fp);
+      // fread(& bone->inertiaTensor, sizeof(Eigen::Matrix3f), 1, fp);
+      // freed(& bone->com, sizeof(Eigen::Vector3f), 1, fp);
+      // Replace this with actual stuff
+      bone->mass = 1;
+      bone->inertiaTensor = Eigen::Matrix3f::Identity();
+      bone->com = Eigen::Vector3f(0,0,0);
+      bone->invInertiaTensor = bone->inertiaTensor.inverse();
    }
 }
 
@@ -312,6 +323,18 @@ static void loadMeshData(FILE *fp, Model * model) {
       }
    }
 
+   // Rigid body stuff
+   float h = 1.79f;
+   float w = 0.33f;
+   float d = 1.00f;
+   model->mass = 1;
+   model->inertiaTensor << (1.0f/12.0f)*model->mass*(h*h+d*d), 0, 0,
+                           0, (1.0f/12.0f)*model->mass*(w*w+d*d), 0,
+                           0, 0, (1.0f/12.0f)*model->mass*(w*w+h*h);
+   model->invInertiaTensor = model->inertiaTensor.inverse();
+   model->com = Eigen::Vector3f(0,0,0);
+
+   // Send data to the graphics card
    model->bufferVertices();
    model->bufferIndices();
 

@@ -77,7 +77,7 @@ void IKEntity::computeAnimMs(int boneIndex, Eigen::Matrix4f parentM) {
    boneMs[boneIndex] = parentM * animM;
    animMs[boneIndex] = boneMs[boneIndex] * bone->invBonePose;
 
-   for (int i = 0; i < bone->childCount; i++)
+   for (int i = 0; i < bone->childIndices.size(); i++)
       computeAnimMs(bone->childIndices[i], boneMs[boneIndex]);
 }
 
@@ -98,7 +98,7 @@ Eigen::Matrix4f IKEntity::constructJointMatrix(int boneIndex) {
    Eigen::Matrix4f jointRotationM = Eigen::Matrix4f::Identity();
    for (int i = 0; i < bone->joints.size(); i++) {
       assert(bone->joints.size() == ikBone->angles.size());
-      jointRotationM *= Mmath::AngleAxisMatrix<float>(ikBone->angles[i], bone->joints[i].axis);
+      jointRotationM *= Mmath::AngleAxisMatrix4<float>(ikBone->angles[i], bone->joints[i].axis);
    }
 
    return bone->parentOffset * jointRotationM;

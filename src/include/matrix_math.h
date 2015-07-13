@@ -64,8 +64,15 @@ namespace Mmath {
    }
 
    template <typename T>
-   Eigen::Matrix<T,4,4> AngleAxisMatrix(T angle, Eigen::Matrix<T,3,1> axis) {
+   Eigen::Matrix<T,4,4> AngleAxisMatrix4(T angle, Eigen::Matrix<T,3,1> axis) {
       return RotationMatrix(AngleAxisQuat(angle, axis));
+   }
+
+   template <typename T>
+   Eigen::Matrix<T,3,3> AngleAxisMatrix3(T angle, Eigen::Matrix<T,3,1> axis) {
+      Eigen::Matrix<T,3,3> mat;
+      mat = Eigen::AngleAxis<T>(angle, axis);;
+      return mat;
    }
 
    template <typename T>
@@ -160,6 +167,14 @@ namespace Mmath {
       iTBN.block(1,0,1,3) = bitangent.transpose();
       iTBN.block(2,0,1,3) = normal.transpose();
       return iTBN;
+   }
+
+   template <typename T>
+   Eigen::Matrix<T,4,1> vec3To4(
+      const Eigen::Matrix<T,3,1> vec3,
+      const T elem
+   ) {
+      return Eigen::Matrix<T,4,1>(vec3(0), vec3(1), vec3(2), elem);
    }
 }
 

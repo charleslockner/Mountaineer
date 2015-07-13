@@ -5,37 +5,37 @@
 
 #define NBODIES 1
 
-struct RigidBody {
-   /* Constant quantities */
-   float              mass;               /* mass M */
-   Eigen::Matrix3f    Ibody;              /* inertia tensor (in body space) */
-   Eigen::Matrix3f    Ibodyinv;           /* inverse of the inertia tensor (in body space) */
+class RigidEntity : public SkinnedEntity {
+private:
+   // RigidBody/Joint values that are specific to an entity
+   class RJoint {
+   public:
+      float angle;
+      Eigen::Vector3f angularVelocity;
+      Eigen::Vector3f angularAcceleration;
+      RJoint();
+   };
 
-   /* State variables */
-   Eigen::Vector3f    translation;
-   Eigen::Quaternionf orientation;
-   Eigen::Vector3f    linearMomentum;
-   Eigen::Vector3f    angularMomentum;
+   class RBone {
+   public:
+      Eigen::Vector3f     force;       /* total force acting on the body */
+      Eigen::Vector3f     torque;      /* total torque acting on the body */
+      std::vector<RJoint> rjoints;     /* the entity-specific joints at this bone */
+      RBone();
+   };
 
-   /* Computed quantities */
-   Eigen::Vector3f    force;              /* total force acting on the body */
-   Eigen::Vector3f    torque;             /* total torque acting on the body */
-};
+   std::vector<RBone> rbones;
 
-class RigidEntity : public StaticEntity {
+   void updateJoint(int boneNdx);
+
 public:
    RigidEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Eigen::Vector3f scl, Model * model);
    RigidEntity(Eigen::Vector3f pos, Eigen::Quaternionf rot, Model * model);
    RigidEntity(Eigen::Vector3f pos, Model * model);
 
    void update(float timeDelta);
-   float getLinearEnergy(RigidBody * rb);
-   float getRotationalEnergy(RigidBody * rb);
-
-   RigidBody bodies[NBODIES];
+   void applyForce(int boneNum, Eigen::Vector3f force);
+   void applyTorque(int boneNum, Eigen::Vector3f torque);
 };
-
-
-
 
 #endif /* __ENTITY_RIGID_H__ */
